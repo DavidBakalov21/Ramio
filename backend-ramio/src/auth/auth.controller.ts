@@ -31,7 +31,9 @@ export class AuthController {
 
   @Public()
   @Post('/refresh')
-  async refresh() {
-    return { message: 'Refresh' };
+  async refresh(@Req() req: Request, @Res() res: Response) {
+    await this.authService.refreshTokens(req, res);
+   
+    return res.json({ message: 'Tokens refreshed successfully' });
   }
 }

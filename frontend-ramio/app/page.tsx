@@ -14,16 +14,14 @@ export default function Home() {
     const checkAuth = async () => {
       try {
         const response = await api.get<User>('/me');
+        console.log(response);
         const currentUser = response.data;
         setUser(currentUser);
-
-        // Redirect to onboarding if user doesn't have role or username
         if (!currentUser.role || !currentUser.username) {
           router.push('/onboarding');
           return;
         }
       } catch (err) {
-        // Not authenticated, redirect to login
         router.push('/login');
       } finally {
         setIsLoading(false);

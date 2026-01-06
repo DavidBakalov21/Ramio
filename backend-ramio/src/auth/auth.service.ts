@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { Response } from 'express';
+import type { Request, Response } from 'express';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TokenResponse } from './interfaces/tokenResponse';
@@ -44,7 +44,6 @@ export class AuthService {
       async handleCallback(code: string, res: Response): Promise<string> {
         const tokens = await this.exchangeCodeForTokens(code);
     
-        // Verify ID token (signature + issuer + audience)
         const idPayload = await this.verifyIdToken(tokens.id_token);
     
         const cognitoSub = String(idPayload.sub || '');
@@ -54,7 +53,6 @@ export class AuthService {
         if (!cognitoSub) throw new UnauthorizedException('Missing sub in id_token');
         if (!email) throw new UnauthorizedException('Missing email in id_token');
     
-        // Upsert user by cognitoSub (best stable key)
         const user = await this.prisma.user.upsert({
           where: { cognitoSub },
           update: {
@@ -70,8 +68,8 @@ export class AuthService {
           },
         });
     
-        // Set cookies (HttpOnly)
-        // If refresh_token is missing, still set access cookie; but usually you want refresh too.
+       
+       
         this.setAuthCookies(res, tokens.access_token, tokens.refresh_token);
     
         const needsOnboarding = !user.role || !user.username;
@@ -161,20 +159,81 @@ export class AuthService {
       async verifyAccessToken(accessToken: string) {
         const clientId = this.config.get('COGNITO_CLIENT_ID');
       
-        const { payload } = await jwtVerify(accessToken, this.jwks, {
-          issuer: this.issuer,
+        try {
+          const { payload } = await jwtVerify(accessToken, this.jwks, {
+            issuer: this.issuer,
+          });
+        
+          
+          if (payload.token_use !== 'access') {
+            throw new UnauthorizedException('token_use is not access');
+          }
+        
+          if (payload.client_id !== clientId) {
+            throw new UnauthorizedException('Wrong client_id');
+          }
+        
+          return payload as any;
+        } catch (error: any) {
+         
+          if (error?.code === 'ERR_JWT_EXPIRED' || error?.code === 'ERR_JWT_INVALID') {
+            throw new UnauthorizedException('Token expired or invalid');
+          }
+  
+          if (error instanceof UnauthorizedException) {
+            throw error;
+          }
+         
+          throw new UnauthorizedException('Invalid token');
+        }
+      }
+
+      async refreshTokens(req: Request, res: Response): Promise<void> {
+        const refreshToken = (req as any).cookies?.refresh_token;
+        if (!refreshToken) {
+          throw new UnauthorizedException('No refresh token cookie');
+        }
+
+        if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
+          throw new UnauthorizedException('Invalid refresh token format');
+        }
+
+        const newTokens = await this.exchangeRefreshTokenForTokens(refreshToken);
+        
+        this.setAuthCookies(res, newTokens.access_token, newTokens.refresh_token);
+      }
+
+      private async exchangeRefreshTokenForTokens(refreshToken: string): Promise<TokenResponse> {
+        const domain = this.config.get('COGNITO_DOMAIN');
+        const clientId = this.config.get('COGNITO_CLIENT_ID');
+        const clientSecret = this.config.get('COGNITO_CLIENT_SECRET');
+
+        const body = new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: clientId,
+          refresh_token: refreshToken,
         });
+
+        const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+        try {
+          const resp = await axios.post(`${domain}/oauth2/token`, body.toString(), {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              Authorization: `Basic ${basic}`,
+            },
+          });
+          return resp.data as TokenResponse;
+        } catch (e: any) {
       
-        // Access token check
-        if (payload.token_use !== 'access') {
-          throw new UnauthorizedException('token_use is not access');
+          const errorMessage = e?.response?.data?.error_description || 
+                              e?.response?.data?.error || 
+                              'Failed to refresh tokens';
+          
+        
+          console.error('[AuthService] Refresh token exchange failed:', errorMessage);
+          
+          throw new UnauthorizedException(errorMessage);
         }
-      
-        // Cognito access tokens commonly use client_id instead of aud
-        if (payload.client_id !== clientId) {
-          throw new UnauthorizedException('Wrong client_id');
-        }
-      
-        return payload as any;
       }
 }

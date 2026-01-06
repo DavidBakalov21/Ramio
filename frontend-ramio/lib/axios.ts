@@ -7,26 +7,31 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // ✅ send/receive HttpOnly cookies
+  withCredentials: true,
 });
 
-// Optional: if access token expires and backend returns 401,
-// try refresh once and retry the original request.
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
 
-    // Avoid infinite loops
+    if (original?.url?.includes('/auth/refresh')) {
+      console.log('[Axios Interceptor] Refresh endpoint error - not retrying:', error?.response?.status);
+      return Promise.reject(error);
+    }
     if (error?.response?.status === 401 && !original?._retry) {
+      console.log('[Axios Interceptor] 401 error detected, attempting refresh...', original?.url);
       original._retry = true;
 
       try {
-        // Backend should read refresh_token cookie and set a new access_token cookie
-        await api.post('/auth/refresh');
-        return api(original);
-      } catch (refreshErr) {
-        // If refresh fails, just bubble up (UI can redirect to /login)
+        console.log('[Axios Interceptor] Calling /auth/refresh...');
+        const refreshResponse = await api.post('/auth/refresh');
+        console.log('[Axios Interceptor] Refresh successful, retrying original request:', original?.url);
+        const retryResponse = await api.request(original);
+        console.log('[Axios Interceptor] Retry successful:', original?.url);
+        return retryResponse;
+      } catch (refreshErr: any) {
+        console.error('[Axios Interceptor] Refresh failed:', refreshErr?.response?.status, refreshErr?.response?.data);
         return Promise.reject(refreshErr);
       }
     }

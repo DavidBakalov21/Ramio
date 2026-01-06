@@ -9,11 +9,11 @@ export class MeController {
   @Get()
   getMe(@Req() req: Request) {
     const u = (req as any).user;
-
+console.log(u);
     return {
-      id: u.id.toString(), // BigInt -> string
+      id: u.id.toString(),
       email: u.email,
-      role: u.role, // 'STUDENT' | 'TEACHER' | null
+      role: u.role,
       username: u.username,
       profilePictureUrl: u.profilePictureUrl,
       createdAt: u.createdAt,
@@ -26,7 +26,6 @@ export class MeController {
   async onboarding(@Req() req: Request, @Body() dto: OnboardingDto) {
     const user = (req as any).user;
 
-    // Prevent updating role if user already has one (role is permanent)
     if (user.role) {
       throw new BadRequestException('User already has a role assigned');
     }
@@ -41,7 +40,7 @@ export class MeController {
     });
 
     return {
-      id: updatedUser.id.toString(), // BigInt -> string
+      id: updatedUser.id.toString(),
       email: updatedUser.email,
       role: updatedUser.role,
       username: updatedUser.username,
