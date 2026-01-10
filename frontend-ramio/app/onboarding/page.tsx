@@ -12,6 +12,7 @@ export default function OnboardingPage() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState('');
   const [isChecking, setIsChecking] = useState(true);
 
@@ -65,6 +66,21 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await api.post('/auth/logout');
+      // Redirect to login page after logout
+      router.push('/login');
+    } catch (err) {
+      // Even if logout fails, redirect to login (cookies might already be cleared)
+      console.error('Logout error:', err);
+      router.push('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   if (isChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
@@ -75,7 +91,17 @@ export default function OnboardingPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
+      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900 relative">
+        {/* Logout Button - Top Right */}
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="absolute top-4 right-4 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          title="Logout"
+        >
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
+        </button>
+
         <div className="text-center">
           <h1 className="text-3xl font-bold text-black dark:text-zinc-50">
             Complete Your Profile

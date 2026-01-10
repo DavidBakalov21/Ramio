@@ -9,7 +9,12 @@ import { MeModule } from './me/me.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
-  imports: [PrismaModule, ConfigModule.forRoot({ isGlobal: true }), AuthModule, MeModule,],
+  imports: [
+    PrismaModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    AuthModule,
+    MeModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,
