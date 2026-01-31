@@ -18,7 +18,7 @@ export class RolesGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // If no roles are required, allow access
+   
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -26,12 +26,12 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // User should be set by JwtAuthGuard
+   
     if (!user) {
       throw new ForbiddenException('User not found in request');
     }
 
-    // Check if user has a role and if it matches required roles
+    
     if (!user.role) {
       throw new ForbiddenException('User does not have a role assigned');
     }

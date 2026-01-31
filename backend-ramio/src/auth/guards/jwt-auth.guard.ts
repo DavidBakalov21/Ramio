@@ -19,7 +19,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
     ) {}
   
     async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    // Check if route is marked as public
+   
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
@@ -39,10 +39,9 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
       const cognitoSub = String(payload.sub || '');
       if (!cognitoSub) throw new UnauthorizedException('Missing sub');
   
-    // Log token payload for debugging (only log first few times to avoid spam)
-    // TODO: Remove or make this conditional in production
+  
     if (Math.random() < 0.1) {
-      // Only log 10% of the time
+     
       console.log('[JwtAuthGuard] Token payload sample:', {
         sub: payload.sub,
         email: payload.email,
@@ -51,16 +50,12 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
       });
     }
 
-    // Try to find user by the token's cognitoSub
+   
     let user = await this.prisma.user.findUnique({ where: { cognitoSub } });
 
-    // If not found, it might be because accounts are linked
-    // The token might have Google user's sub, but DB has password user's sub
-    // Try to find by email as a fallback (if email is in access token)
-    // Note: Access tokens from Cognito typically don't include email
-    // But some configurations might include it in the username field
+ 
     if (!user) {
-      // Try finding by email if available in token
+    
       if (payload.email) {
         const userByEmail = await this.prisma.user.findUnique({
           where: { email: String(payload.email) },
@@ -73,7 +68,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
         }
       }
 
-      // If still not found, try by username (which might be email in some Cognito configs)
+
       if (!user && payload.username) {
         const userByUsername = await this.prisma.user.findFirst({
           where: { email: String(payload.username) },
@@ -86,9 +81,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
         }
       }
 
-      // Last resort: if user not found and we don't have email in token,
-      // query Cognito to get the email, then look up by email
-      // This handles the case where accounts are linked and token has different sub than DB
+
       if (!user) {
         console.log(
           `[JwtAuthGuard] User not found for cognitoSub: ${cognitoSub}. Querying Cognito for email...`,

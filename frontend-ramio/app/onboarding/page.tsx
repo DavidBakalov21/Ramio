@@ -17,13 +17,13 @@ export default function OnboardingPage() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Check if user is authenticated and needs onboarding
+    
     const checkAuth = async () => {
       try {
         const response = await api.get<User>('/me');
         const user = response.data;
         
-        // If user already has role and username, redirect to home
+       
         if (user.role && user.username) {
           router.push('/');
           return;
@@ -56,7 +56,7 @@ export default function OnboardingPage() {
         username: username.trim() || undefined,
       });
 
-      // Onboarding successful, redirect to home
+      
       router.push('/');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'An error occurred');
@@ -70,10 +70,10 @@ export default function OnboardingPage() {
     setIsLoggingOut(true);
     try {
       await api.post('/auth/logout');
-      // Redirect to login page after logout
+     
       router.push('/login');
     } catch (err) {
-      // Even if logout fails, redirect to login (cookies might already be cleared)
+   
       console.error('Logout error:', err);
       router.push('/login');
     } finally {
