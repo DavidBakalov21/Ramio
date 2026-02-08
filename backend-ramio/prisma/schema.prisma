@@ -18,13 +18,87 @@ enum UserRole {
 }
 
 model User {
-  id         BigInt   @id @default(autoincrement())
-  cognitoSub String   @unique
-  email      String   @unique
-  role       UserRole?
-  username   String?
+  id                BigInt   @id @default(autoincrement())
+  cognitoSub        String   @unique
+  email             String   @unique
+  role              UserRole?
+  username          String?
   profilePictureUrl String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  countryCode       String?
+
+  coursesCreated       Course[]
+  enrollments          Enrollment[]
+  assignmentSubmissions AssignmentSubmission[]
+}
+
+model Course {
+  id          BigInt   @id @default(autoincrement())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      BigInt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  courseId  BigInt
+  enrolledAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Assignment {
+  id          BigInt   @id @default(autoincrement())
+  title       String
+  description String?
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courseId    BigInt
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  test        TestFile?
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           BigInt   @id @default(autoincrement())
+  assignmentId BigInt
+  userId      BigInt
+  completedAt DateTime @default(now())
+  assignment  Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  solutionFiles SubmissionFile[]
+
+  @@unique([assignmentId, userId])
+}
+
+model SubmissionFile {
+  id         BigInt   @id @default(autoincrement())
+  url        String
+  key        String
+  name       String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  countryCode String?
+  submissionId BigInt
+  submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model TestFile{
+  id BigInt @id @default(autoincrement())
+  url String
+  key String
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  assignmentId BigInt @unique
+  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 }

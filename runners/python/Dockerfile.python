@@ -1,0 +1,7 @@
+FROM python:3.12-slim
+
+RUN useradd -m -u 10001 runner
+WORKDIR /workspace
+USER runner
+
+CMD ["python", "/workspace/main.py"]
