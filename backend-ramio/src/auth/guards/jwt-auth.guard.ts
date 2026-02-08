@@ -55,7 +55,6 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
  
     if (!user) {
-    
       if (payload.email) {
         const userByEmail = await this.prisma.user.findUnique({
           where: { email: String(payload.email) },
@@ -68,40 +67,25 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
         }
       }
 
-
-      if (!user && payload.username) {
-        const userByUsername = await this.prisma.user.findFirst({
-          where: { email: String(payload.username) },
-        });
-        if (userByUsername) {
-          console.log(
-            `[JwtAuthGuard] Token sub (${cognitoSub}) doesn't match DB cognitoSub (${userByUsername.cognitoSub}), but found user by username/email - accounts likely linked`,
-          );
-          user = userByUsername;
-        }
-      }
-
-
       if (!user) {
-        console.log(
-          `[JwtAuthGuard] User not found for cognitoSub: ${cognitoSub}. Querying Cognito for email...`,
+        const email = await this.auth.getEmailFromCognito(
+          cognitoSub,
+          payload.username,
         );
-        const email = await this.auth.getEmailFromCognitoSub(cognitoSub);
         if (email) {
           const userByEmail = await this.prisma.user.findUnique({
             where: { email },
           });
           if (userByEmail) {
             console.log(
-              `[JwtAuthGuard] Found user by email (${email}) - accounts are linked. Token sub: ${cognitoSub}, DB cognitoSub: ${userByEmail.cognitoSub}`,
+              `[JwtAuthGuard] Found user by email (${email}) from Cognito. Token sub: ${cognitoSub}, DB cognitoSub: ${userByEmail.cognitoSub}`,
             );
             user = userByEmail;
           }
         }
-
         if (!user) {
           console.error(
-            `[JwtAuthGuard] User not found for cognitoSub: ${cognitoSub} even after querying Cognito.`,
+            `[JwtAuthGuard] User not found for cognitoSub: ${cognitoSub} (tried Cognito with sub and username: ${payload.username ?? 'n/a'}).`,
           );
         }
       }

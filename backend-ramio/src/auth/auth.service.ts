@@ -242,28 +242,43 @@ export class AuthService {
     }
   }
 
-  async getEmailFromCognitoSub(cognitoSub: string): Promise<string | null> {
-    try {
-    
-      const userResponse = await this.cognitoClient.send(
-        new AdminGetUserCommand({
-          UserPoolId: this.userPoolId,
-          Username: cognitoSub, 
-        }),
-      );
-
-      const emailAttr = userResponse.UserAttributes?.find(
-        (attr) => attr.Name === 'email',
-      );
-      return emailAttr?.Value || null;
-    } catch (error: any) {
-      console.error(
-        `[AuthService] Failed to get email from Cognito for sub ${cognitoSub}:`,
-        error?.name || 'Unknown error',
-        error?.message || '',
-      );
-      return null;
+  /**
+   * Resolve email from Cognito. For federated (e.g. Google) users, the pool
+   * Username is often the federated identifier (e.g. "Google_123"), not the sub UUID,
+   * so we try both cognitoSub and cognitoUsername if provided.
+   */
+  async getEmailFromCognito(
+    cognitoSub: string,
+    cognitoUsername?: string | null,
+  ): Promise<string | null> {
+    const toTry = [cognitoSub];
+    if (cognitoUsername && cognitoUsername !== cognitoSub) {
+      toTry.push(cognitoUsername);
     }
+    for (const username of toTry) {
+      try {
+        const userResponse = await this.cognitoClient.send(
+          new AdminGetUserCommand({
+            UserPoolId: this.userPoolId,
+            Username: username,
+          }),
+        );
+        const emailAttr = userResponse.UserAttributes?.find(
+          (attr) => attr.Name === 'email',
+        );
+        if (emailAttr?.Value) return emailAttr.Value;
+      } catch (error: any) {
+        if (error?.name === 'UserNotFoundException') {
+          continue;
+        }
+        console.error(
+          `[AuthService] Cognito AdminGetUser failed for ${username}:`,
+          error?.name || 'Unknown error',
+          error?.message || '',
+        );
+      }
+    }
+    return null;
   }
 
   async refreshTokens(req: Request, res: Response): Promise<void> {
