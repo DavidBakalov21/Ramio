@@ -6,7 +6,7 @@ export class AppService {
   constructor(private readonly prisma: PrismaService) {}
   async getHello(): Promise<string> {
     const users = await this.prisma.user.findMany();
-    return `Hello World! ${users.length}`;
+    return `Hello asdas! ${users.length}`;
     return 'Hello World!';
   }
 }

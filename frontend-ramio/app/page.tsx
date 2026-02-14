@@ -3,13 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from './interfaces/User';
+import { Course, CoursePage } from './interfaces/Course';
 import { api } from '@/lib/axios';
 
 export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [coursesPage, setCoursesPage] = useState(1);
+  const [coursesTotalPages, setCoursesTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -31,6 +37,26 @@ export default function Home() {
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    if (!user?.role) return;
+    const fetchCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const res = await api.get<CoursePage>('/course', {
+          params: { page: coursesPage, limit: 6 },
+        });
+        setCourses(res.data.items);
+        setCoursesTotalPages(res.data.totalPages);
+      } catch {
+        setCourses([]);
+        setCoursesTotalPages(1);
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    fetchCourses();
+  }, [user?.role, coursesPage]);
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -41,6 +67,22 @@ export default function Home() {
       router.push('/login');
     } finally {
       setIsLoggingOut(false);
+    }
+  };
+
+  const handleEnroll = async (courseId: string) => {
+    setEnrollingId(courseId);
+    try {
+      await api.post(`/course/${courseId}/enroll`);
+      setCourses((prev) =>
+        prev.map((c) =>
+          c.id === courseId ? { ...c, isEnrolled: true, enrollmentCount: c.enrollmentCount + 1 } : c
+        )
+      );
+    } catch (err) {
+      console.error('Enroll error:', err);
+    } finally {
+      setEnrollingId(null);
     }
   };
 
@@ -57,27 +99,149 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="relative flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 dark:bg-black sm:items-start">
-        <button
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="absolute top-8 right-8 rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-          title="Logout"
-        >
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </button>
-
-        <div className="flex w-full max-w-md flex-col gap-6">
-          <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-            <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-              Welcome to Ramio, {user.username || user.email}!
-            </h1>
-            <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-              You are logged in as a <strong>{user.role}</strong>.
-            </p>
+    <div className="flex min-h-screen items-center justify-center px-4 py-4">
+      <main className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+        <header className="mb-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10">
+              <span className="text-sm font-semibold text-violet-600">
+                {user.username?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Welcome to
+              </p>
+              <p className="text-sm font-semibold text-slate-900">Ramio</p>
+            </div>
           </div>
-        </div>
+
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            title="Logout"
+          >
+            {isLoggingOut ? 'Logging out…' : 'Logout'}
+          </button>
+        </header>
+
+        <section className="mb-6 flex max-w-xl flex-col items-center space-y-3 text-center">
+          <h1 className="text-2xl font-semibold leading-snug text-slate-900">
+            Hi, {user.username || user.email} 👋
+          </h1>
+          <p className="text-sm text-slate-500">
+            You’re signed in as a{' '}
+            <span className="font-semibold text-slate-800">
+              {user.role?.toLowerCase()}
+            </span>
+            . We’ll tailor your experience to help you{' '}
+            {user.role === 'TEACHER' ? 'teach and manage classes.' : 'learn faster.'}
+          </p>
+        </section>
+
+        <section className="flex w-full max-w-2xl flex-col items-center space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Courses
+          </h2>
+          <button
+            type="button"
+            onClick={() => router.push('/courses')}
+            className="text-xs font-medium text-violet-700 underline-offset-2 hover:underline"
+          >
+            View all courses
+          </button>
+          {coursesLoading ? (
+            <p className="text-sm text-slate-500">Loading courses…</p>
+          ) : courses.length === 0 ? (
+            <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
+              No courses yet. Teachers can create courses from the backend or a future admin UI.
+            </div>
+          ) : (
+            <>
+              <ul className="grid w-full gap-3 sm:grid-cols-2">
+                {courses.map((course) => (
+                  <li
+                    key={course.id}
+                    className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+                  >
+                    <h3 className="font-semibold text-slate-900">{course.title}</h3>
+                    {course.description && (
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                        {course.description}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-slate-400">
+                      {course.teacherName} · {course.enrollmentCount} enrolled ·{' '}
+                      {course.assignmentCount} tasks
+                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/courses/${course.id}`)}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                      >
+                        View course
+                      </button>
+
+                      {course.isTeacher ? (
+                        <button
+                          type="button"
+                          // Placeholder until an edit page exists
+                          onClick={() => router.push(`/courses/${course.id}`)}
+                          className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700"
+                        >
+                          Edit course
+                        </button>
+                      ) : course.isEnrolled ? (
+                        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                          Enrolled
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleEnroll(course.id)}
+                          disabled={enrollingId === course.id}
+                          className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                        >
+                          {enrollingId === course.id ? 'Enrolling…' : 'Enroll'}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {coursesTotalPages >= 1 && courses.length > 0 && (
+                <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500">
+                  <button
+                    type="button"
+                    onClick={() => setCoursesPage((p) => Math.max(1, p - 1))}
+                    disabled={coursesPage === 1 || coursesLoading}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Prev
+                  </button>
+                  <span>
+                    Page {coursesPage} of {coursesTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCoursesPage((p) =>
+                        coursesTotalPages ? Math.min(coursesTotalPages, p + 1) : p + 1,
+                      )
+                    }
+                    disabled={coursesPage === coursesTotalPages || coursesLoading}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
       </main>
     </div>
   );

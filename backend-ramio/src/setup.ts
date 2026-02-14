@@ -9,10 +9,10 @@ export function setup(app: INestApplication) {
   app.use(cookieParser());
   const origins = (configService.get<string>('ORIGINS') || '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
   app.enableCors({
-    origin: origins,
+    origin: origins.length ? origins : true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type',

@@ -11,22 +11,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-black dark:text-zinc-50">
-            Welcome to Ramio
+    <div className="flex min-h-screen items-center justify-center px-4 py-4">
+      <div className="flex w-full max-w-3xl flex-col items-center rounded-[1.9rem] bg-white/80 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+        <header className="mb-8 flex w-full items-center justify-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10">
+            <span className="text-sm font-semibold text-violet-600">R</span>
+          </div>
+          <span className="text-xs font-medium tracking-wide text-slate-500">
+            Ramio
+          </span>
+        </header>
+
+        <div className="mb-8 flex max-w-md flex-col items-center space-y-2 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">
+            Welcome back
+          </p>
+          <h1 className="text-3xl font-semibold leading-tight text-slate-900">
+            Sign in to continue
           </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Sign in with your Google account to continue
+          <p className="text-sm text-slate-500">
+            Fast login with your Google account. No extra passwords.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="flex w-full max-w-sm flex-col items-center space-y-4">
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-300 bg-white px-4 py-3 font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            className="flex w-full items-center justify-center gap-3 rounded-full bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800 disabled:opacity-60"
           >
             <svg
               className="h-5 w-5"
@@ -51,8 +63,14 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            {isLoading ? 'Redirecting...' : 'Continue with Google'}
+            {isLoading ? 'Redirecting…' : 'Continue with Google'}
           </button>
+
+          <p className="text-[11px] leading-relaxed text-center text-slate-500">
+            By continuing, you agree to our{' '}
+            <span className="font-medium text-slate-700">Terms</span> and{' '}
+            <span className="font-medium text-slate-700">Privacy Policy</span>.
+          </p>
         </div>
       </div>
     </div>

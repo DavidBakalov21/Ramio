@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { UserRole } from '@prisma/client';
 
 export class OnboardingDto {
@@ -7,10 +7,12 @@ export class OnboardingDto {
   })
   role: UserRole;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty({
+    message: 'Username is required',
+  })
   @MaxLength(50, {
     message: 'Username must be at most 50 characters',
   })
-  username?: string;
+  username: string;
 }

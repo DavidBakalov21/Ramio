@@ -47,13 +47,19 @@ export default function OnboardingPage() {
       return;
     }
 
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setError('Please enter a username');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
       await api.post<User>('/me/onboarding', {
         role,
-        username: username.trim() || undefined,
+        username: trimmedUsername,
       });
 
       
@@ -83,54 +89,59 @@ export default function OnboardingPage() {
 
   if (isChecking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="rounded-2xl bg-white/70 px-6 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+          Loading your profile…
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-lg dark:bg-zinc-900 relative">
+    <div className="flex min-h-screen items-center justify-center px-4 py-4">
+      <div className="relative flex w-full max-w-3xl flex-col items-center space-y-8 rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
         {/* Logout Button - Top Right */}
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="absolute top-4 right-4 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          className="absolute right-4 top-4 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
           title="Logout"
         >
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>
 
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-black dark:text-zinc-50">
-            Complete Your Profile
+        <div className="flex max-w-xl flex-col space-y-2 pt-2 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">
+            Almost there
+          </p>
+          <h1 className="text-2xl font-semibold leading-snug text-slate-900">
+            Choose how you’ll use Ramio
           </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Tell us a bit about yourself to get started
+          <p className="text-sm text-slate-500">
+            Pick your role and add a display name. You can start learning or teaching in seconds.
           </p>
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+          <div className="w-full max-w-md rounded-xl bg-red-50/90 p-3 text-center text-xs text-red-600">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col space-y-6">
           {/* Role Selection */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-              I am a <span className="text-red-500">*</span>
+          <div className="w-full">
+            <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              I am joining as
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1.5">
               <button
                 type="button"
                 onClick={() => setRole('TEACHER')}
-                className={`rounded-lg border-2 px-4 py-3 text-center font-medium transition-all ${
+                className={`rounded-xl px-3 py-3 text-center text-sm font-semibold transition-all ${
                   role === 'TEACHER'
-                    ? 'border-black bg-black text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-black'
-                    : 'border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-200/70'
                 }`}
               >
                 Teacher
@@ -138,27 +149,27 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={() => setRole('STUDENT')}
-                className={`rounded-lg border-2 px-4 py-3 text-center font-medium transition-all ${
+                className={`rounded-xl px-3 py-3 text-center text-sm font-semibold transition-all ${
                   role === 'STUDENT'
-                    ? 'border-black bg-black text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-black'
-                    : 'border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-zinc-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-200/70'
                 }`}
               >
                 Student
               </button>
             </div>
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-2 text-center text-[11px] text-slate-400">
               This cannot be changed later
             </p>
           </div>
 
           {/* Username Input */}
-          <div>
+          <div className="w-full">
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+              className="mb-1.5 block text-center text-xs font-medium text-slate-600"
             >
-              Username (optional)
+              Username <span className="text-red-500">*</span>
             </label>
             <input
               id="username"
@@ -166,19 +177,19 @@ export default function OnboardingPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               maxLength={50}
-              className="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-              placeholder="Choose a username"
+              className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-inner shadow-white/60 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              placeholder="How should we call you?"
             />
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              You can set this later if you prefer
+            <p className="mt-1 text-center text-[11px] text-slate-400">
+              This will be visible to your teachers and classmates.
             </p>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading || !role}
-            className="w-full rounded-lg bg-black px-4 py-3 font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-200"
+            disabled={isLoading || !role || !username.trim()}
+            className="w-full rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? 'Saving...' : 'Continue'}
           </button>

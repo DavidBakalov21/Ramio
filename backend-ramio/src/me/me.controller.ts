@@ -28,12 +28,17 @@ export class MeController {
       throw new BadRequestException('User already has a role assigned');
     }
 
+    const trimmedUsername = dto.username?.trim();
+    if (!trimmedUsername) {
+      throw new BadRequestException('Username is required');
+    }
+
     // Update user with role and username
     const updatedUser = await this.prisma.user.update({
       where: { cognitoSub: user.cognitoSub },
       data: {
         role: dto.role,
-        username: dto.username || null,
+        username: trimmedUsername,
       },
     });
 

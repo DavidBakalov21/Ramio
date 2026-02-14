@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { User } from '../auth/decorators/user.decorator';
@@ -17,6 +19,41 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 @Controller('course')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
+
+  @Get()
+  findAll(
+    @User() user: PrismaUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const limitNum = limit ? Number(limit) : 10;
+    return this.courseService.findAll(user.id, user.role, pageNum, limitNum);
+  }
+
+  @Get('all')
+  findAllUnfiltered(
+    @User() user: PrismaUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? Number(page) : 1;
+    const limitNum = limit ? Number(limit) : 10;
+    return this.courseService.findAllUnfiltered(
+      user.id,
+      user.role,
+      pageNum,
+      limitNum,
+    );
+  }
+
+  @Get(':id')
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.findOne(BigInt(id), user.id);
+  }
 
   @Post()
   @Roles(UserRole.TEACHER)
