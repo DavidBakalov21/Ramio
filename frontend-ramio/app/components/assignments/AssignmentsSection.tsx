@@ -7,6 +7,7 @@ import { Assignment } from '@/app/interfaces/Assignment';
 import {
   getAssignmentLanguageFileExtension,
 } from '@/app/constants/assignmentLanguages';
+import { useToast } from '@/app/components/utility/toast';
 import { AssignmentList } from './AssignmentList';
 import { AddAssignmentModal, AddAssignmentFormData } from './AddAssignmentModal';
 import {
@@ -21,6 +22,7 @@ interface AssignmentsSectionProps {
 
 export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -73,15 +75,16 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         await api.delete(`/assignment/${assignmentId}`);
         await fetchAssignments();
         closeEditModal();
+        showToast('Assignment deleted.', 'success');
       } catch (err: unknown) {
         const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
           ?.data?.message;
-        setEditError(
-          Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to delete',
-        );
+        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to delete';
+        setEditError(msg);
+        showToast(msg, 'error');
       }
     },
-    [fetchAssignments, closeEditModal],
+    [fetchAssignments, closeEditModal, showToast],
   );
 
   const handleCreate = useCallback(
@@ -110,17 +113,18 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         }
         await fetchAssignments();
         setModalOpen(false);
+        showToast('Assignment created.', 'success');
       } catch (err: unknown) {
         const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
           ?.data?.message;
-        setError(
-          Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to create assignment',
-        );
+        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to create assignment';
+        setError(msg);
+        showToast(msg, 'error');
       } finally {
         setSubmitting(false);
       }
     },
-    [courseId, fetchAssignments],
+    [courseId, fetchAssignments, showToast],
   );
 
   const handleEdit = useCallback(
@@ -162,17 +166,18 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         }
         await fetchAssignments();
         closeEditModal();
+        showToast('Assignment updated.', 'success');
       } catch (err: unknown) {
         const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
           ?.data?.message;
-        setEditError(
-          Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to save',
-        );
+        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to save';
+        setEditError(msg);
+        showToast(msg, 'error');
       } finally {
         setEditSubmitting(false);
       }
     },
-    [selectedAssignment, fetchAssignments, closeEditModal],
+    [selectedAssignment, fetchAssignments, closeEditModal, showToast],
   );
 
   return (

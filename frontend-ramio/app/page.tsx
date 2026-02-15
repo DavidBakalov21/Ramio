@@ -6,9 +6,11 @@ import { User } from './interfaces/User';
 import { Course, CoursePage } from './interfaces/Course';
 import { api } from '@/lib/axios';
 import { Navbar } from './components/Navbar';
+import { useToast } from './components/utility/toast';
 
 export default function Home() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
@@ -80,8 +82,13 @@ export default function Home() {
           c.id === courseId ? { ...c, isEnrolled: true, enrollmentCount: c.enrollmentCount + 1 } : c
         )
       );
-    } catch (err) {
-      console.error('Enroll error:', err);
+      showToast('Enrolled in course.', 'success');
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      showToast((msg as string) || 'Failed to enroll.', 'error');
     } finally {
       setEnrollingId(null);
     }

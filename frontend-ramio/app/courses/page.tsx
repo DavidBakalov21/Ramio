@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { User } from '../interfaces/User';
 import { Course, CoursePage } from '../interfaces/Course';
+import { useToast } from '../components/utility/toast';
 
 export default function AllCoursesPage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [page, setPage] = useState(1);
@@ -82,8 +84,13 @@ export default function AllCoursesPage() {
             : c,
         ),
       );
-    } catch (err) {
-      console.error('Enroll error:', err);
+      showToast('Enrolled in course.', 'success');
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null;
+      showToast((msg as string) || 'Failed to enroll.', 'error');
     } finally {
       setEnrollingId(null);
     }
@@ -126,13 +133,14 @@ export default function AllCoursesPage() {
       setCreateTitle('');
       setCreateDescription('');
       await fetchCourses();
+      showToast('Course created successfully.', 'success');
     } catch (err: unknown) {
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string | string[] } } }).response?.data?.message
         : null;
-      setCreateError(
-        Array.isArray(message) ? message[0] : (typeof message === 'string' ? message : 'Failed to create course'),
-      );
+      const msg = Array.isArray(message) ? message[0] : (typeof message === 'string' ? message : 'Failed to create course');
+      setCreateError(msg);
+      showToast(msg, 'error');
     } finally {
       setCreateSubmitting(false);
     }

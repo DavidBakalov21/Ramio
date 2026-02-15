@@ -10,6 +10,7 @@ import {
 } from '@/app/constants/assignmentLanguages';
 import { User } from '@/app/interfaces/User';
 import { Navbar } from '@/app/components/Navbar';
+import { useToast } from '@/app/components/utility/toast';
 
 type RunResult = {
   success: boolean;
@@ -22,6 +23,7 @@ type RunResult = {
 export default function AssignmentSandboxPage() {
   const params = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
   const courseId = params.id as string;
   const assignmentId = params.assignmentId as string;
 
@@ -117,6 +119,7 @@ export default function AssignmentSandboxPage() {
         });
         setLastSubmitWasUpdate(true);
         setSubmitMessage('success');
+        showToast('Submission updated.', 'success');
         setTimeout(() => setSubmitMessage(null), 4000);
       } else {
         await api.post(`/assignment/${assignmentId}/submission`, formData, {
@@ -125,6 +128,7 @@ export default function AssignmentSandboxPage() {
         setLastSubmitWasUpdate(false);
         setSubmitMessage('success');
         setAssignment((prev) => (prev ? { ...prev, submitted: true } : null));
+        showToast('Assignment submitted successfully.', 'success');
         setTimeout(() => setSubmitMessage(null), 4000);
       }
     } catch (err: unknown) {
@@ -133,12 +137,13 @@ export default function AssignmentSandboxPage() {
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      setSubmitMessage('error');
-      setError(
+      const errorMsg =
         status === 409
           ? 'You have already submitted this assignment.'
-          : (msg as string) || 'Failed to submit',
-      );
+          : (msg as string) || 'Failed to submit';
+      setSubmitMessage('error');
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
       if (status === 409) {
         setAssignment((prev) => (prev ? { ...prev, submitted: true } : null));
       }
@@ -160,7 +165,9 @@ export default function AssignmentSandboxPage() {
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      setError(msg || 'Failed to run tests');
+      const errorMsg = msg || 'Failed to run tests';
+      setError(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setIsRunning(false);
     }
