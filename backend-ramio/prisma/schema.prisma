@@ -81,6 +81,8 @@ model AssignmentSubmission {
   assignmentId BigInt
   teacherFeedback String @db.LongText
   points Int @default(0)
+  isChecked Boolean @default(false)
+  checkedAt DateTime?
   userId      BigInt
   completedAt DateTime @default(now())
   assignment  Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)

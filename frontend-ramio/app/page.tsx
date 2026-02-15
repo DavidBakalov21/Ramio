@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User } from './interfaces/User';
 import { Course, CoursePage } from './interfaces/Course';
 import { api } from '@/lib/axios';
+import { Navbar } from './components/Navbar';
 
 export default function Home() {
   const router = useRouter();
@@ -99,34 +100,11 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-4">
-      <main className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
-        <header className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10">
-              <span className="text-sm font-semibold text-violet-600">
-                {user.username?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-                Welcome to
-              </p>
-              <p className="text-sm font-semibold text-slate-900">Ramio</p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-            title="Logout"
-          >
-            {isLoggingOut ? 'Logging out…' : 'Logout'}
-          </button>
-        </header>
-
-        <section className="mb-6 flex max-w-xl flex-col items-center space-y-3 text-center">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
+      <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+      <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 py-6">
+        <div className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60">
+          <section className="mb-6 flex max-w-xl flex-col items-center space-y-3 text-center">
           <h1 className="text-2xl font-semibold leading-snug text-slate-900">
             Hi, {user.username || user.email} 👋
           </h1>
@@ -241,6 +219,7 @@ export default function Home() {
             </>
           )}
         </section>
+        </div>
       </main>
     </div>
   );

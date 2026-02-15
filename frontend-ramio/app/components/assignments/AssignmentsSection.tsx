@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { Assignment } from '@/app/interfaces/Assignment';
 import {
@@ -19,6 +20,7 @@ interface AssignmentsSectionProps {
 }
 
 export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionProps) {
+  const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -202,7 +204,10 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
           )
         }
         isTeacher={isTeacher}
-        onAssignmentClick={isTeacher ? openEditModal : undefined}
+        onAssignmentClick={(assignment) => {
+          if (isTeacher) openEditModal(assignment);
+          else router.push(`/courses/${courseId}/assignment/${assignment.id}`);
+        }}
       />
 
       <EditAssignmentModal

@@ -7,10 +7,12 @@ import {
 } from '@nestjs/common';
 import { AssignmentLanguage } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { CodeTestService } from '../code-test/code-test.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateAssignmentDto } from './dto/create-assignment.dto';
 import type { UpdateAssignmentDto } from './dto/update-assignment.dto';
+import type { RunCodeResponseDto } from '../code-test/dto/run-code.dto';
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 
@@ -22,6 +24,7 @@ export class AssignmentService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly config: ConfigService,
+    private readonly codeTestService: CodeTestService,
   ) {
     this.assignmentBucket =
       this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ?? 'assignments';
@@ -50,7 +53,18 @@ export class AssignmentService {
       include: { test: true },
       orderBy: { createdAt: 'desc' },
     });
-    return assignments.map((a) => this.toAssignmentResponse(a));
+    const assignmentIds = assignments.map((a) => a.id);
+    const submissions = await this.prisma.assignmentSubmission.findMany({
+      where: { userId, assignmentId: { in: assignmentIds } },
+      select: { assignmentId: true },
+    });
+    const submittedIds = new Set(
+      submissions.map((s) => s.assignmentId.toString()),
+    );
+    return assignments.map((a) => ({
+      ...this.toAssignmentResponse(a),
+      submitted: submittedIds.has(a.id.toString()),
+    }));
   }
 
   async findOne(assignmentId: bigint, userId: bigint) {
@@ -60,7 +74,15 @@ export class AssignmentService {
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     await this.assertCanAccessCourse(assignment.courseId, userId);
-    return this.toAssignmentResponse(assignment);
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: {
+        assignmentId_userId: { assignmentId, userId },
+      },
+    });
+    return {
+      ...this.toAssignmentResponse(assignment),
+      submitted: !!submission,
+    };
   }
 
   async update(assignmentId: bigint, teacherId: bigint, dto: UpdateAssignmentDto) {
@@ -126,6 +148,50 @@ export class AssignmentService {
     );
   }
 
+  async getTestFileContentForRun(assignmentId: bigint, userId: bigint): Promise<string> {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true, test: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.assertCanAccessCourse(assignment.courseId, userId);
+    if (!assignment.test) {
+      throw new NotFoundException('This assignment has no tests configured yet');
+    }
+    return this.storage.getFileContentAsText(
+      assignment.test.key,
+      this.assignmentBucket,
+    );
+  }
+
+ 
+  async runAssignment(
+    assignmentId: bigint,
+    userId: bigint,
+    code: string,
+  ): Promise<RunCodeResponseDto> {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true, test: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.assertCanAccessCourse(assignment.courseId, userId);
+    if (!assignment.test) {
+      throw new BadRequestException('This assignment has no tests configured');
+    }
+    const testContent = await this.storage.getFileContentAsText(
+      assignment.test.key,
+      this.assignmentBucket,
+    );
+    if (assignment.language === AssignmentLanguage.PYTHON) {
+      return this.codeTestService.runPythonTests(code, testContent);
+    }
+    if (assignment.language === AssignmentLanguage.NODE_JS) {
+      throw new BadRequestException('Running Node.js assignments in the sandbox is not supported yet');
+    }
+    throw new BadRequestException('Unsupported assignment language');
+  }
+
   async uploadTestFile(
     assignmentId: bigint,
     teacherId: bigint,
@@ -139,11 +205,16 @@ export class AssignmentService {
     if (assignment.course.userId !== teacherId) {
       throw new ForbiddenException('You can only upload test files to your own assignments');
     }
-    const { url, key } = await this.storage.uploadFile(file, this.assignmentBucket, 'tests/');
+    const filename =
+      file.originalname?.split(/[/\\]/).pop() ?? 'test-file';
+    const key = `tests/${assignmentId}/${filename}`;
+    const { url } = await this.storage.overwriteFile(file, this.assignmentBucket, key);
     const name = file.originalname ?? 'test-file';
 
     if (assignment.test) {
-      await this.storage.deleteFile(assignment.test.key, this.assignmentBucket);
+      if (assignment.test.key !== key) {
+        await this.storage.deleteFile(assignment.test.key, this.assignmentBucket);
+      }
       const updated = await this.prisma.testFile.update({
         where: { id: assignment.test.id },
         data: { url, key, name },
@@ -194,6 +265,7 @@ export class AssignmentService {
       data: {
         assignmentId,
         userId: studentId,
+        teacherFeedback: '',
       },
       include: { assignment: true },
     });

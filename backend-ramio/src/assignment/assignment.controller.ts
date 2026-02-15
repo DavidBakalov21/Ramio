@@ -19,6 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import type { User as PrismaUser } from '@prisma/client';
 import { AssignmentService } from './assignment.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 
 @Controller('assignment')
@@ -56,6 +57,15 @@ export class AssignmentController {
     return this.assignmentService.findOne(BigInt(id), user.id);
   }
 
+  @Post(':id/run')
+  run(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: RunAssignmentDto,
+  ) {
+    return this.assignmentService.runAssignment(BigInt(id), user.id, dto.code);
+  }
+
   @Patch(':id')
   @Roles(UserRole.TEACHER)
   update(
@@ -91,7 +101,7 @@ export class AssignmentController {
 
   @Post(':id/submission')
   @Roles(UserRole.STUDENT)
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 11))
   createSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,

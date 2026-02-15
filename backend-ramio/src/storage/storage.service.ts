@@ -107,6 +107,7 @@ import {
         stream.on('error', reject);
       });
     }
+
     async deleteFile(key: string, bucketName: string): Promise<void> {
       try {
         await this.s3Client.send(

@@ -4,6 +4,7 @@ import { CodeTestService } from './code-test.service';
 
 @Module({
   controllers: [CodeTestController],
-  providers: [CodeTestService]
+  providers: [CodeTestService],
+  exports: [CodeTestService],
 })
 export class CodeTestModule {}
