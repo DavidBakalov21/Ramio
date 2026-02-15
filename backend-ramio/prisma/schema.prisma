@@ -36,6 +36,7 @@ model User {
   coursesCreated       Course[]
   enrollments          Enrollment[]
   assignmentSubmissions AssignmentSubmission[]
+  pendingEnrollments PendingEnrollment[]
 }
 
 model Course {
@@ -48,6 +49,7 @@ model Course {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments Assignment[]
   enrollments Enrollment[]
+  pendingEnrollments PendingEnrollment[]
 }
 
 model Enrollment {
@@ -112,4 +114,15 @@ model TestFile{
   updatedAt DateTime @updatedAt
   assignmentId BigInt @unique
   assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model PendingEnrollment {
+  id BigInt @id @default(autoincrement())
+  userId BigInt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId BigInt
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
 }
