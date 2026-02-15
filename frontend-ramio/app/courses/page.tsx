@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { User } from '../interfaces/User';
@@ -15,6 +15,11 @@ export default function AllCoursesPage() {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -35,25 +40,36 @@ export default function AllCoursesPage() {
     fetchUser();
   }, [router]);
 
+  const fetchCourses = useCallback(async () => {
+    if (!user?.role) return;
+    setIsLoadingCourses(true);
+    try {
+      const res = await api.get<CoursePage>('/course/all', {
+        params: { page, limit: 8 },
+      });
+      setCourses(res.data.items);
+      setTotalPages(res.data.totalPages);
+    } catch {
+      setCourses([]);
+      setTotalPages(1);
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  }, [user?.role, page]);
+
   useEffect(() => {
     if (!user?.role) return;
-    const fetchCourses = async () => {
-      setIsLoadingCourses(true);
-      try {
-        const res = await api.get<CoursePage>('/course/all', {
-          params: { page, limit: 8 },
-        });
-        setCourses(res.data.items);
-        setTotalPages(res.data.totalPages);
-      } catch {
-        setCourses([]);
-        setTotalPages(1);
-      } finally {
-        setIsLoadingCourses(false);
-      }
-    };
     fetchCourses();
-  }, [user?.role, page]);
+  }, [user?.role, page, fetchCourses]);
+
+  useEffect(() => {
+    if (!createModalOpen) return;
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeCreateModal();
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [createModalOpen]);
 
   const handleEnroll = async (courseId: string) => {
     setEnrollingId(courseId);
@@ -79,6 +95,47 @@ export default function AllCoursesPage() {
 
   const handleEditCourse = (courseId: string) => {
     router.push(`/courses/${courseId}`);
+  };
+
+  const openCreateModal = () => {
+    setCreateTitle('');
+    setCreateDescription('');
+    setCreateError(null);
+    setCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    if (!createSubmitting) {
+      setCreateModalOpen(false);
+      setCreateError(null);
+    }
+  };
+
+  const handleCreateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = createTitle.trim();
+    if (!title) {
+      setCreateError('Title is required');
+      return;
+    }
+    setCreateError(null);
+    setCreateSubmitting(true);
+    try {
+      await api.post('/course', { title, description: createDescription.trim() || undefined });
+      setCreateModalOpen(false);
+      setCreateTitle('');
+      setCreateDescription('');
+      await fetchCourses();
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string | string[] } } }).response?.data?.message
+        : null;
+      setCreateError(
+        Array.isArray(message) ? message[0] : (typeof message === 'string' ? message : 'Failed to create course'),
+      );
+    } finally {
+      setCreateSubmitting(false);
+    }
   };
 
   if (isLoadingUser) {
@@ -115,6 +172,15 @@ export default function AllCoursesPage() {
               </p>
             </div>
           </div>
+          {user.role === 'TEACHER' && (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="shrink-0 rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700"
+            >
+              Create course
+            </button>
+          )}
         </header>
 
         <section className="flex w-full max-w-4xl flex-col items-center space-y-4">
@@ -211,6 +277,78 @@ export default function AllCoursesPage() {
           )}
         </section>
       </main>
+
+      {createModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={closeCreateModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-course-title"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="create-course-title" className="text-lg font-semibold text-slate-900">
+              Create course
+            </h2>
+            <form onSubmit={handleCreateCourse} className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="create-course-title-input" className="block text-xs font-medium text-slate-600">
+                  Title
+                </label>
+                <input
+                  id="create-course-title-input"
+                  type="text"
+                  value={createTitle}
+                  onChange={(e) => setCreateTitle(e.target.value)}
+                  placeholder="e.g. Introduction to Python"
+                  maxLength={255}
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  disabled={createSubmitting}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label htmlFor="create-course-description" className="block text-xs font-medium text-slate-600">
+                  Description <span className="text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  id="create-course-description"
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
+                  placeholder="Brief description of the course"
+                  maxLength={2000}
+                  rows={3}
+                  className="mt-1 w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  disabled={createSubmitting}
+                />
+              </div>
+              {createError && (
+                <p className="text-sm text-red-600">{createError}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeCreateModal}
+                  disabled={createSubmitting}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createSubmitting}
+                  className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:opacity-60"
+                >
+                  {createSubmitting ? 'Creating…' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

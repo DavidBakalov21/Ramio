@@ -1,5 +1,15 @@
-import { IsString, IsOptional, MaxLength, MinLength, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  MinLength,
+  IsNumber,
+  Min,
+  IsEnum,
+  ValidateIf,
+} from 'class-validator';
 import { Type } from 'class-transformer';
+import { AssignmentLanguage } from '@prisma/client';
 
 export class UpdateAssignmentDto {
   @IsOptional()
@@ -17,5 +27,16 @@ export class UpdateAssignmentDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  dueDate?: number; // Unix timestamp (seconds), null to clear
+  points?: number;
+
+  @IsOptional()
+  @IsEnum(AssignmentLanguage)
+  language?: AssignmentLanguage;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v != null)
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  dueDate?: number | null; // Unix timestamp (seconds), null to clear
 }

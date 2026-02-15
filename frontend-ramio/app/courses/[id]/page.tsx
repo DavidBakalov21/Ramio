@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { User } from '../../interfaces/User';
 import { Course } from '../../interfaces/Course';
-import { Assignment } from '../../interfaces/Assignment';
+import { AssignmentsSection } from '@/app/components/assignments';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -14,15 +14,8 @@ export default function CourseDetailPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingCourse, setLoadingCourse] = useState(true);
-  const [loadingAssignments, setLoadingAssignments] = useState(true);
-  const [showAddAssignment, setShowAddAssignment] = useState(false);
-  const [addAssignmentTitle, setAddAssignmentTitle] = useState('');
-  const [addAssignmentDescription, setAddAssignmentDescription] = useState('');
-  const [addAssignmentSubmitting, setAddAssignmentSubmitting] = useState(false);
-  const [addAssignmentError, setAddAssignmentError] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -58,50 +51,6 @@ export default function CourseDetailPage() {
     };
     fetchCourse();
   }, [courseId, user?.role]);
-
-  useEffect(() => {
-    if (!courseId || !user?.role) return;
-    const fetchAssignments = async () => {
-      setLoadingAssignments(true);
-      try {
-        const res = await api.get<Assignment[]>(`/assignment/course/${courseId}`);
-        setAssignments(res.data);
-      } catch {
-        setAssignments([]);
-      } finally {
-        setLoadingAssignments(false);
-      }
-    };
-    fetchAssignments();
-  }, [courseId, user?.role]);
-
-  const handleAddAssignment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const title = addAssignmentTitle.trim();
-    if (!title) {
-      setAddAssignmentError('Title is required');
-      return;
-    }
-    setAddAssignmentError('');
-    setAddAssignmentSubmitting(true);
-    try {
-      await api.post('/assignment', {
-        title,
-        description: addAssignmentDescription.trim() || undefined,
-        courseId: Number(courseId),
-      });
-      const res = await api.get<Assignment[]>(`/assignment/course/${courseId}`);
-      setAssignments(res.data);
-      setShowAddAssignment(false);
-      setAddAssignmentTitle('');
-      setAddAssignmentDescription('');
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setAddAssignmentError(msg || 'Failed to create assignment');
-    } finally {
-      setAddAssignmentSubmitting(false);
-    }
-  };
 
   if (loadingUser) {
     return (
@@ -149,103 +98,12 @@ export default function CourseDetailPage() {
             <p className="text-sm text-slate-500">{course.description}</p>
           )}
           <p className="text-xs text-slate-400">
-            {course.teacherName} · {course.enrollmentCount} enrolled · {course.assignmentCount} assignments
+            {course.teacherName} · {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
+            assignments
           </p>
         </header>
 
-        {/* Assignments */}
-        <section className="mb-8 flex w-full flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">Assignments</h2>
-            {course.isTeacher && (
-              <button
-                type="button"
-                onClick={() => setShowAddAssignment(true)}
-                className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
-              >
-                Add
-              </button>
-            )}
-          </div>
-
-          {showAddAssignment && (
-            <form
-              onSubmit={handleAddAssignment}
-              className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3"
-            >
-              <input
-                type="text"
-                value={addAssignmentTitle}
-                onChange={(e) => setAddAssignmentTitle(e.target.value)}
-                placeholder="Assignment title"
-                maxLength={255}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              />
-              <textarea
-                value={addAssignmentDescription}
-                onChange={(e) => setAddAssignmentDescription(e.target.value)}
-                placeholder="Description (optional)"
-                rows={2}
-                maxLength={2000}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              />
-              {addAssignmentError && (
-                <p className="text-xs text-red-600">{addAssignmentError}</p>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={addAssignmentSubmitting}
-                  className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-                >
-                  {addAssignmentSubmitting ? 'Creating…' : 'Create'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddAssignment(false);
-                    setAddAssignmentError('');
-                    setAddAssignmentTitle('');
-                    setAddAssignmentDescription('');
-                  }}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {loadingAssignments ? (
-            <p className="text-sm text-slate-500">Loading assignments…</p>
-          ) : assignments.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
-              No assignments yet.
-              {course.isTeacher && ' Use "Add" to create one.'}
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {assignments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium text-slate-900">{a.title}</p>
-                    {a.description && (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{a.description}</p>
-                    )}
-                    {a.dueDate && (
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        Due {new Date(a.dueDate).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
 
         {/* Lecture materials */}
         <section className="flex w-full flex-col gap-3">

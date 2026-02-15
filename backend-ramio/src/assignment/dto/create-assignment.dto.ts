@@ -1,5 +1,6 @@
-import { IsString, IsOptional, MaxLength, MinLength, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, MaxLength, MinLength, IsNumber, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { AssignmentLanguage } from '@prisma/client';
 
 export class CreateAssignmentDto {
   @IsString()
@@ -11,6 +12,16 @@ export class CreateAssignmentDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  points?: number;
+
+  @IsOptional()
+  @IsEnum(AssignmentLanguage)
+  language?: AssignmentLanguage;
 
   @IsOptional()
   @IsNumber()

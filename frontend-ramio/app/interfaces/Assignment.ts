@@ -1,7 +1,11 @@
+export type AssignmentLanguage = 'PYTHON' | 'NODE_JS';
+
 export interface Assignment {
   id: string;
   title: string;
   description: string | null;
+  points: number;
+  language: AssignmentLanguage;
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;

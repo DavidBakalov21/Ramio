@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { AssignmentLanguage } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -33,6 +34,8 @@ export class AssignmentService {
       data: {
         title: dto.title,
         description: dto.description ?? null,
+        points: dto.points ?? 100,
+        language: dto.language ?? AssignmentLanguage.PYTHON,
         dueDate,
         courseId: BigInt(dto.courseId),
       },
@@ -80,6 +83,8 @@ export class AssignmentService {
       data: {
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.points !== undefined && { points: dto.points }),
+        ...(dto.language !== undefined && { language: dto.language }),
         ...(dueDate !== undefined && { dueDate }),
       },
     });
@@ -102,6 +107,25 @@ export class AssignmentService {
     return { success: true };
   }
 
+  async getTestFileContent(assignmentId: bigint, teacherId: bigint): Promise<string> {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true, test: true },
+    });
+    console.log(assignment);
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    if (assignment.course.userId !== teacherId) {
+      throw new ForbiddenException('You can only view test files for your own assignments');
+    }
+    if (!assignment.test) {
+      throw new NotFoundException('No test file for this assignment');
+    }
+    return this.storage.getFileContentAsText(
+      assignment.test.key,
+      this.assignmentBucket,
+    );
+  }
+
   async uploadTestFile(
     assignmentId: bigint,
     teacherId: bigint,
@@ -115,7 +139,7 @@ export class AssignmentService {
     if (assignment.course.userId !== teacherId) {
       throw new ForbiddenException('You can only upload test files to your own assignments');
     }
-    const { url, key } = await this.storage.uploadFile(file, this.assignmentBucket);
+    const { url, key } = await this.storage.uploadFile(file, this.assignmentBucket, 'tests/');
     const name = file.originalname ?? 'test-file';
 
     if (assignment.test) {
@@ -219,6 +243,8 @@ export class AssignmentService {
     id: bigint;
     title: string;
     description: string | null;
+    points: number;
+    language: AssignmentLanguage;
     dueDate: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -229,6 +255,8 @@ export class AssignmentService {
       id: a.id.toString(),
       title: a.title,
       description: a.description,
+      points: a.points,
+      language: a.language,
       dueDate: a.dueDate?.toISOString() ?? null,
       createdAt: a.createdAt,
       updatedAt: a.updatedAt,

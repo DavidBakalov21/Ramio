@@ -39,6 +39,15 @@ export class AssignmentController {
     return this.assignmentService.findByCourse(BigInt(courseId), user.id);
   }
 
+  @Get(':id/test-file')
+  @Roles(UserRole.TEACHER)
+  getTestFileContent(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.getTestFileContent(BigInt(id), user.id);
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe) id: number,

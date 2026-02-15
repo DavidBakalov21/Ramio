@@ -17,6 +17,11 @@ enum UserRole {
   TEACHER
 }
 
+enum AssignmentLanguage {
+  PYTHON
+  NODE_JS
+}
+
 model User {
   id                BigInt   @id @default(autoincrement())
   cognitoSub        String   @unique
@@ -57,14 +62,16 @@ model Enrollment {
 }
 
 model Assignment {
-  id          BigInt   @id @default(autoincrement())
+  id          BigInt             @id @default(autoincrement())
   title       String
   description String?
+  points      Int                @default(100)
+  language    AssignmentLanguage @default(PYTHON)
   dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   courseId    BigInt
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   test        TestFile?
   submissions AssignmentSubmission[]
 }
@@ -72,6 +79,8 @@ model Assignment {
 model AssignmentSubmission {
   id           BigInt   @id @default(autoincrement())
   assignmentId BigInt
+  teacherFeedback String @db.LongText
+  points Int @default(0)
   userId      BigInt
   completedAt DateTime @default(now())
   assignment  Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)

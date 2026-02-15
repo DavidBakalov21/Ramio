@@ -25,9 +25,10 @@ import {
     async uploadFile(
       file: Express.Multer.File,
       bucketName: string,
+      pathPrefix = '',
     ): Promise<{ url: string; key: string }> {
-      const fileKey = `${randomUUID()}-${file.originalname}`;
-  
+      const fileKey = `${pathPrefix}${randomUUID()}-${file.originalname}`;
+
       try {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -78,11 +79,11 @@ import {
             Key: key,
           }),
         );
-  
+
         if (!getObjectResult.Body) {
           throw new Error('File not found or no body returned');
         }
-  
+
         return {
           stream: getObjectResult.Body as Stream,
           contentType: getObjectResult.ContentType || 'application/octet-stream',
@@ -91,6 +92,20 @@ import {
         console.error('Error downloading file:', error);
         throw new Error('Failed to download file');
       }
+    }
+
+    async getFileContentAsText(key: string, bucketName: string): Promise<string> {
+      const { stream } = await this.downloadFile(key, bucketName);
+      const chunks: Buffer[] = [];
+      return new Promise<string>((resolve, reject) => {
+        stream.on('data', (chunk: Buffer | Uint8Array) =>
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+        );
+        stream.on('end', () =>
+          resolve(Buffer.concat(chunks).toString('utf-8')),
+        );
+        stream.on('error', reject);
+      });
     }
     async deleteFile(key: string, bucketName: string): Promise<void> {
       try {

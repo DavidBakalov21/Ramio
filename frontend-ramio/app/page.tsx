@@ -187,7 +187,6 @@ export default function Home() {
                       {course.isTeacher ? (
                         <button
                           type="button"
-                          // Placeholder until an edit page exists
                           onClick={() => router.push(`/courses/${course.id}`)}
                           className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700"
                         >
