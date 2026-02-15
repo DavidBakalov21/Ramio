@@ -33,7 +33,6 @@ export class MeController {
       throw new BadRequestException('Username is required');
     }
 
-    // Update user with role and username
     const updatedUser = await this.prisma.user.update({
       where: { cognitoSub: user.cognitoSub },
       data: {

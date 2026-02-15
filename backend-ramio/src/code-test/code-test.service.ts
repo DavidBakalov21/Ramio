@@ -44,7 +44,7 @@ private readonly nodeImage: string;
       return result;
     } finally {
       await fs.rm(workspaceDir, { recursive: true, force: true }).catch(() => {
-        // ignore cleanup errors
+       console.error('Error cleaning up workspace directory', workspaceDir);
       });
     }
   }
@@ -148,7 +148,7 @@ private readonly nodeImage: string;
       return result;
     } finally {
       await fs.rm(workspaceDir, { recursive: true, force: true }).catch(() => {
-        // ignore cleanup errors
+       console.error('Error cleaning up workspace directory', workspaceDir);
       });
     }
     

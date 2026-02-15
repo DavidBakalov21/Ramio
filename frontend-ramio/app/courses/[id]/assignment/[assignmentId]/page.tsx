@@ -34,6 +34,7 @@ export default function AssignmentSandboxPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<'success' | 'error' | null>(null);
+  const [lastSubmitWasUpdate, setLastSubmitWasUpdate] = useState(false);
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -72,11 +73,36 @@ export default function AssignmentSandboxPage() {
     fetchAssignment();
   }, [assignmentId, user?.role]);
 
+  useEffect(() => {
+    if (
+      !assignmentId ||
+      !assignment ||
+      user?.role !== 'STUDENT' ||
+      !assignment.submitted
+    ) {
+      return;
+    }
+    const fetchSubmission = async () => {
+      try {
+        const res = await api.get<{ solutionContent?: string | null }>(
+          `/assignment/${assignmentId}/submission`,
+        );
+        if (res.data.solutionContent != null) {
+          setCode(res.data.solutionContent);
+        }
+      } catch {
+        console.error('Failed to fetch submission');
+      }
+    };
+    fetchSubmission();
+  }, [assignmentId, assignment?.id, assignment?.submitted, user?.role]);
+
   const handleSubmit = async () => {
     if (!assignment) return;
     setSubmitMessage(null);
     setError('');
     setIsSubmitting(true);
+    const isUpdate = !!assignment.submitted;
     try {
       const ext = getAssignmentLanguageFileExtension(assignment.language);
       const filename = `solution.${ext}`;
@@ -85,12 +111,22 @@ export default function AssignmentSandboxPage() {
       });
       const formData = new FormData();
       formData.append('files', file);
-      await api.post(`/assignment/${assignmentId}/submission`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setSubmitMessage('success');
-      setAssignment((prev) => (prev ? { ...prev, submitted: true } : null));
-      setTimeout(() => setSubmitMessage(null), 4000);
+      if (isUpdate) {
+        await api.patch(`/assignment/${assignmentId}/submission`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setLastSubmitWasUpdate(true);
+        setSubmitMessage('success');
+        setTimeout(() => setSubmitMessage(null), 4000);
+      } else {
+        await api.post(`/assignment/${assignmentId}/submission`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setLastSubmitWasUpdate(false);
+        setSubmitMessage('success');
+        setAssignment((prev) => (prev ? { ...prev, submitted: true } : null));
+        setTimeout(() => setSubmitMessage(null), 4000);
+      }
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       const msg =
@@ -218,7 +254,9 @@ export default function AssignmentSandboxPage() {
 
               {submitMessage === 'success' && (
                 <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
-                  Assignment submitted successfully.
+                  {lastSubmitWasUpdate
+                    ? 'Submission updated.'
+                    : 'Assignment submitted successfully.'}
                 </div>
               )}
               {submitMessage === 'error' && (
@@ -274,24 +312,22 @@ export default function AssignmentSandboxPage() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={
-                      isSubmitting ||
-                      assignment.submitted ||
-                      !code.trim()
-                    }
+                    disabled={isSubmitting || !code.trim()}
                     className="rounded-full bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                     title={
-                      assignment.submitted
-                        ? 'Already submitted'
-                        : !code.trim()
-                          ? 'Write your solution first'
+                      !code.trim()
+                        ? 'Write your solution first'
+                        : assignment.submitted
+                          ? 'Update your submission'
                           : 'Submit for grading'
                     }
                   >
-                    {assignment.submitted
-                      ? 'Submitted'
-                      : isSubmitting
-                        ? 'Submitting…'
+                    {isSubmitting
+                      ? assignment.submitted
+                        ? 'Updating…'
+                        : 'Submitting…'
+                      : assignment.submitted
+                        ? 'Update submission'
                         : 'Submit assignment'}
                   </button>
                 )}

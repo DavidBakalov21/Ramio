@@ -49,6 +49,14 @@ export class AssignmentController {
     return this.assignmentService.getTestFileContent(BigInt(id), user.id);
   }
 
+  @Get(':id/submission')
+  getSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.getSubmission(BigInt(id), user.id);
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -112,5 +120,19 @@ export class AssignmentController {
       user.id,
       files && files.length > 0 ? files : undefined,
     );
+  }
+
+  @Patch(':id/submission')
+  @Roles(UserRole.STUDENT)
+  @UseInterceptors(FilesInterceptor('files', 11))
+  updateSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    if (!files?.length) {
+      throw new BadRequestException('At least one file is required');
+    }
+    return this.assignmentService.updateSubmission(BigInt(id), user.id, files);
   }
 }

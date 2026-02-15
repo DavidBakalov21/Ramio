@@ -271,8 +271,13 @@ export class AssignmentService {
     });
 
     if (files?.length) {
+      const solutionPrefix = `solutions/${assignmentId}/${studentId}/`;
       for (const file of files) {
-        const { url, key } = await this.storage.uploadFile(file, this.assignmentBucket);
+        const { url, key } = await this.storage.uploadFile(
+          file,
+          this.assignmentBucket,
+          solutionPrefix,
+        );
         const name = file.originalname ?? 'file';
         await this.prisma.submissionFile.create({
           data: { url, key, name, submissionId: submission.id },
@@ -285,6 +290,99 @@ export class AssignmentService {
       include: { solutionFiles: true, assignment: true },
     });
     return this.toSubmissionResponse(withFiles!);
+  }
+
+  async updateSubmission(
+    assignmentId: bigint,
+    studentId: bigint,
+    files: Express.Multer.File[],
+  ) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId: studentId, courseId: assignment.courseId },
+      },
+    });
+    if (!enrollment) {
+      throw new ForbiddenException('You must be enrolled in this course to submit');
+    }
+
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: {
+        assignmentId_userId: { assignmentId, userId: studentId },
+      },
+      include: { solutionFiles: true, assignment: true },
+    });
+    if (!submission) {
+      throw new NotFoundException('You have not submitted this assignment yet');
+    }
+
+    for (const f of submission.solutionFiles) {
+      await this.storage.deleteFile(f.key, this.assignmentBucket);
+    }
+    await this.prisma.submissionFile.deleteMany({
+      where: { submissionId: submission.id },
+    });
+
+    if (files?.length) {
+      const solutionPrefix = `solutions/${assignmentId}/${studentId}/`;
+      for (const file of files) {
+        const { url, key } = await this.storage.uploadFile(
+          file,
+          this.assignmentBucket,
+          solutionPrefix,
+        );
+        const name = file.originalname ?? 'file';
+        await this.prisma.submissionFile.create({
+          data: { url, key, name, submissionId: submission.id },
+        });
+      }
+    }
+
+    const updated = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submission.id },
+      include: { solutionFiles: true, assignment: true },
+    });
+    return this.toSubmissionResponse(updated!);
+  }
+
+  async getSubmission(assignmentId: bigint, userId: bigint) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.assertCanAccessCourse(assignment.courseId, userId);
+
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: {
+        assignmentId_userId: { assignmentId, userId },
+      },
+      include: { solutionFiles: true, assignment: true },
+    });
+    if (!submission) throw new NotFoundException('No submission found');
+
+    let solutionContent: string | null = null;
+    const firstFile = submission.solutionFiles[0];
+    if (firstFile) {
+      try {
+        solutionContent = await this.storage.getFileContentAsText(
+          firstFile.key,
+          this.assignmentBucket,
+        );
+      } catch {
+        solutionContent = null;
+      }
+    }
+
+    return {
+      ...this.toSubmissionResponse(submission),
+      solutionContent,
+    };
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
