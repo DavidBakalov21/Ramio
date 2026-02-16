@@ -15,6 +15,7 @@ import type { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import type { RunCodeResponseDto } from '../code-test/dto/run-code.dto';
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
+const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 
 @Injectable()
 export class AssignmentService {
@@ -27,7 +28,9 @@ export class AssignmentService {
     private readonly codeTestService: CodeTestService,
   ) {
     this.assignmentBucket =
-      this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ?? 'assignments';
+      this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ??
+      this.config.get<string>(DEFAULT_BUCKET_KEY) ??
+      'ramio-file-storage';
   }
 
   async create(teacherId: bigint, dto: CreateAssignmentDto) {

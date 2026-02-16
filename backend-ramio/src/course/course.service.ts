@@ -47,6 +47,7 @@ export class CourseService {
           user: { select: { username: true, email: true } },
           _count: { select: { enrollments: true, assignments: true } },
           enrollments: { where: { userId }, select: { id: true } },
+          pendingEnrollments: { where: { userId }, select: { id: true } },
         },
       }),
     ]);
@@ -58,6 +59,7 @@ export class CourseService {
       assignmentCount: c._count.assignments,
       isTeacher: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
+      hasPendingRequest: c.pendingEnrollments.length > 0,
     }));
 
     const totalPages =
@@ -95,6 +97,7 @@ export class CourseService {
           user: { select: { username: true, email: true } },
           _count: { select: { enrollments: true, assignments: true } },
           enrollments: { where: { userId }, select: { id: true } },
+          pendingEnrollments: { where: { userId }, select: { id: true } },
         },
       }),
     ]);
@@ -106,6 +109,7 @@ export class CourseService {
       assignmentCount: c._count.assignments,
       isTeacher: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
+      hasPendingRequest: c.pendingEnrollments.length > 0,
     }));
 
     const totalPages =
@@ -125,8 +129,15 @@ export class CourseService {
       where: { id: courseId },
       include: {
         user: { select: { username: true, email: true } },
-        _count: { select: { enrollments: true, assignments: true } },
+        _count: {
+          select: {
+            enrollments: true,
+            assignments: true,
+            pendingEnrollments: true,
+          },
+        },
         enrollments: { where: { userId }, select: { id: true } },
+        pendingEnrollments: { where: { userId }, select: { id: true } },
       },
     });
     if (!course) throw new NotFoundException('Course not found');
@@ -142,6 +153,8 @@ export class CourseService {
       assignmentCount: course._count.assignments,
       isTeacher,
       isEnrolled,
+      hasPendingRequest: course.pendingEnrollments.length > 0,
+      pendingRequestCount: isTeacher ? course._count.pendingEnrollments : 0,
     };
   }
 
@@ -176,22 +189,31 @@ export class CourseService {
     return this.toResponse(updated);
   }
 
-  async enroll(courseId: bigint, studentId: bigint) {
+  /** Student requests to enroll; teacher must accept before student is added to course. */
+  async requestEnroll(courseId: bigint, studentId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    const existing = await this.prisma.enrollment.findUnique({
+    const existingEnrollment = await this.prisma.enrollment.findUnique({
       where: {
         userId_courseId: { userId: studentId, courseId },
       },
     });
-    if (existing) {
+    if (existingEnrollment) {
       throw new ConflictException('You are already enrolled in this course');
     }
-    const enrollment = await this.prisma.enrollment.create({
+    const existingPending = await this.prisma.pendingEnrollment.findUnique({
+      where: {
+        userId_courseId: { userId: studentId, courseId },
+      },
+    });
+    if (existingPending) {
+      throw new ConflictException('You already have a pending request for this course');
+    }
+    const pending = await this.prisma.pendingEnrollment.create({
       data: {
         userId: studentId,
         courseId,
@@ -199,10 +221,99 @@ export class CourseService {
       include: { course: true },
     });
     return {
-      id: enrollment.id.toString(),
-      courseId: enrollment.courseId.toString(),
-      enrolledAt: enrollment.enrolledAt,
-      course: this.toResponse(enrollment.course),
+      id: pending.id.toString(),
+      courseId: pending.courseId.toString(),
+      requestedAt: pending.createdAt,
+      course: this.toResponse(pending.course),
+    };
+  }
+
+  async getPendingEnrollments(courseId: bigint, teacherId: bigint) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can view pending requests');
+    }
+    const list = await this.prisma.pendingEnrollment.findMany({
+      where: { courseId },
+      include: {
+        user: { select: { id: true, username: true, email: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return list.map((p) => ({
+      id: p.id.toString(),
+      courseId: p.courseId.toString(),
+      userId: p.userId.toString(),
+      requestedAt: p.createdAt,
+      username: p.user.username ?? null,
+      email: p.user.email,
+    }));
+  }
+
+  async acceptPendingEnrollment(
+    courseId: bigint,
+    pendingId: bigint,
+    teacherId: bigint,
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can accept requests');
+    }
+    const pending = await this.prisma.pendingEnrollment.findFirst({
+      where: { id: pendingId, courseId },
+      include: { user: true },
+    });
+    if (!pending) {
+      throw new NotFoundException('Pending enrollment request not found');
+    }
+    await this.prisma.$transaction([
+      this.prisma.enrollment.create({
+        data: {
+          userId: pending.userId,
+          courseId,
+        },
+      }),
+      this.prisma.pendingEnrollment.delete({
+        where: { id: pendingId },
+      }),
+    ]);
+    return {
+      message: 'Student accepted and enrolled',
+      userId: pending.userId.toString(),
+      courseId: courseId.toString(),
+    };
+  }
+
+  async declinePendingEnrollment(
+    courseId: bigint,
+    pendingId: bigint,
+    teacherId: bigint,
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can decline requests');
+    }
+    const pending = await this.prisma.pendingEnrollment.findFirst({
+      where: { id: pendingId, courseId },
+    });
+    if (!pending) {
+      throw new NotFoundException('Pending enrollment request not found');
+    }
+    await this.prisma.pendingEnrollment.delete({
+      where: { id: pendingId },
+    });
+    return {
+      message: 'Request declined',
+      courseId: courseId.toString(),
     };
   }
 

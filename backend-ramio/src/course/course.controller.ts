@@ -73,10 +73,47 @@ export class CourseController {
 
   @Post(':id/enroll')
   @Roles(UserRole.STUDENT)
-  enroll(
+  requestEnroll(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
   ) {
-    return this.courseService.enroll(BigInt(id), user.id);
+    return this.courseService.requestEnroll(BigInt(id), user.id);
+  }
+
+  @Get(':id/pending-enrollments')
+  @Roles(UserRole.TEACHER)
+  getPendingEnrollments(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.getPendingEnrollments(BigInt(id), user.id);
+  }
+
+  @Post(':id/pending-enrollments/:pendingId/accept')
+  @Roles(UserRole.TEACHER)
+  acceptPendingEnrollment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('pendingId', ParseIntPipe) pendingId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.acceptPendingEnrollment(
+      BigInt(id),
+      BigInt(pendingId),
+      user.id,
+    );
+  }
+
+  @Post(':id/pending-enrollments/:pendingId/decline')
+  @Roles(UserRole.TEACHER)
+  declinePendingEnrollment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('pendingId', ParseIntPipe) pendingId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.declinePendingEnrollment(
+      BigInt(id),
+      BigInt(pendingId),
+      user.id,
+    );
   }
 }

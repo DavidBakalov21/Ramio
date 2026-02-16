@@ -16,12 +16,17 @@ import { S3Client } from '@aws-sdk/client-s3';
           throw new Error('S3 configuration is incomplete.');
         }
 
+        // Force regional endpoint to avoid redirects (e.g. from global or wrong endpoint)
+        const endpoint = `https://s3.${region}.amazonaws.com`;
         return new S3Client({
           region,
+          endpoint,
+          forcePathStyle: true, // use https://s3.region.amazonaws.com/bucket/key (some buckets need this)
           credentials: {
             accessKeyId,
             secretAccessKey,
           },
+          followRegionRedirects: true,
         });
       },
       inject: [ConfigService],
