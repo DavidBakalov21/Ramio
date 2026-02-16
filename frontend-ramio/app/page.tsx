@@ -79,16 +79,16 @@ export default function Home() {
       await api.post(`/course/${courseId}/enroll`);
       setCourses((prev) =>
         prev.map((c) =>
-          c.id === courseId ? { ...c, isEnrolled: true, enrollmentCount: c.enrollmentCount + 1 } : c
+          c.id === courseId ? { ...c, hasPendingRequest: true } : c
         )
       );
-      showToast('Enrolled in course.', 'success');
+      showToast('Enrollment request sent. Teacher will review it.', 'success');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      showToast((msg as string) || 'Failed to enroll.', 'error');
+      showToast((msg as string) || 'Failed to send request.', 'error');
     } finally {
       setEnrollingId(null);
     }
@@ -181,6 +181,10 @@ export default function Home() {
                         <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
                           Enrolled
                         </span>
+                      ) : course.hasPendingRequest ? (
+                        <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
+                          Request sent
+                        </span>
                       ) : (
                         <button
                           type="button"
@@ -188,7 +192,7 @@ export default function Home() {
                           disabled={enrollingId === course.id}
                           className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
                         >
-                          {enrollingId === course.id ? 'Enrolling…' : 'Enroll'}
+                          {enrollingId === course.id ? 'Sending…' : 'Request to enroll'}
                         </button>
                       )}
                     </div>

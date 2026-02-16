@@ -10,6 +10,17 @@ export interface Course {
   assignmentCount: number;
   isTeacher: boolean;
   isEnrolled: boolean;
+  hasPendingRequest?: boolean;
+  pendingRequestCount?: number;
+}
+
+export interface PendingEnrollmentRequest {
+  id: string;
+  courseId: string;
+  userId: string;
+  requestedAt: string;
+  username: string | null;
+  email: string;
 }
 
 export interface CoursePage {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { User } from '../../interfaces/User';
-import { Course } from '../../interfaces/Course';
+import { Course, PendingEnrollmentRequest } from '../../interfaces/Course';
 import { AssignmentsSection } from '@/app/components/assignments';
 
 export default function CourseDetailPage() {
@@ -16,6 +16,10 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingCourse, setLoadingCourse] = useState(true);
+  const [activeTab, setActiveTab] = useState<'assignments' | 'materials' | 'requests'>('assignments');
+  const [pendingRequests, setPendingRequests] = useState<PendingEnrollmentRequest[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [actingPendingId, setActingPendingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -51,6 +55,59 @@ export default function CourseDetailPage() {
     };
     fetchCourse();
   }, [courseId, user?.role]);
+
+  useEffect(() => {
+    if (!courseId || !course?.isTeacher || activeTab !== 'requests') return;
+    const fetchPending = async () => {
+      setLoadingPending(true);
+      try {
+        const res = await api.get<PendingEnrollmentRequest[]>(`/course/${courseId}/pending-enrollments`);
+        setPendingRequests(res.data);
+      } catch {
+        setPendingRequests([]);
+      } finally {
+        setLoadingPending(false);
+      }
+    };
+    fetchPending();
+  }, [courseId, course?.isTeacher, activeTab]);
+
+  const handleAcceptRequest = async (pendingId: string) => {
+    setActingPendingId(pendingId);
+    try {
+      await api.post(`/course/${courseId}/pending-enrollments/${pendingId}/accept`);
+      setPendingRequests((prev) => prev.filter((r) => r.id !== pendingId));
+      setCourse((prev) =>
+        prev
+          ? {
+              ...prev,
+              enrollmentCount: prev.enrollmentCount + 1,
+              pendingRequestCount: Math.max(0, (prev.pendingRequestCount ?? 0) - 1),
+            }
+          : null,
+      );
+    } finally {
+      setActingPendingId(null);
+    }
+  };
+
+  const handleDeclineRequest = async (pendingId: string) => {
+    setActingPendingId(pendingId);
+    try {
+      await api.post(`/course/${courseId}/pending-enrollments/${pendingId}/decline`);
+      setPendingRequests((prev) => prev.filter((r) => r.id !== pendingId));
+      setCourse((prev) =>
+        prev
+          ? {
+              ...prev,
+              pendingRequestCount: Math.max(0, (prev.pendingRequestCount ?? 0) - 1),
+            }
+          : null,
+      );
+    } finally {
+      setActingPendingId(null);
+    }
+  };
 
   if (loadingUser) {
     return (
@@ -101,28 +158,127 @@ export default function CourseDetailPage() {
             {course.teacherName} · {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
             assignments
           </p>
-        </header>
 
-        <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
-
-        {/* Lecture materials */}
-        <section className="flex w-full flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">Lecture materials</h2>
+          {/* Tabs */}
+          <div className="mt-4 flex gap-2 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setActiveTab('assignments')}
+              className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                activeTab === 'assignments'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Assignments
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('materials')}
+              className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                activeTab === 'materials'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Lecture materials
+            </button>
             {course.isTeacher && (
               <button
                 type="button"
-                className="rounded-full border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
+                onClick={() => setActiveTab('requests')}
+                className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                  activeTab === 'requests'
+                    ? 'border-slate-900 text-slate-900'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
               >
-                Add
+                Requests
+                {((activeTab === 'requests' ? pendingRequests.length : course.pendingRequestCount) ?? 0) > 0 && (
+                  <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">
+                    {activeTab === 'requests' ? pendingRequests.length : (course.pendingRequestCount ?? 0)}
+                  </span>
+                )}
               </button>
             )}
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
-            No lecture materials yet.
-            {course.isTeacher && ' Use "Add" to upload slides or links (coming soon).'}
-          </div>
-        </section>
+        </header>
+
+        {activeTab === 'assignments' && (
+          <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
+        )}
+
+        {activeTab === 'materials' && (
+          <section className="mb-8 flex w-full flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Lecture materials</h2>
+              {course.isTeacher && (
+                <button
+                  type="button"
+                  className="rounded-full border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
+                >
+                  Add
+                </button>
+              )}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
+              No lecture materials yet.
+              {course.isTeacher && ' Use "Add" to upload slides or links (coming soon).'}
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'requests' && course.isTeacher && (
+          <section className="mb-8 flex w-full flex-col gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Enrollment requests</h2>
+            {loadingPending ? (
+              <p className="text-sm text-slate-500">Loading requests…</p>
+            ) : pendingRequests.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
+                No pending enrollment requests.
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {pendingRequests.map((req) => (
+                  <li
+                    key={req.id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {req.username || req.email}
+                      </p>
+                      {req.username && (
+                        <p className="text-xs text-slate-500">{req.email}</p>
+                      )}
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Requested {new Date(req.requestedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDeclineRequest(req.id)}
+                        disabled={actingPendingId === req.id}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAcceptRequest(req.id)}
+                        disabled={actingPendingId === req.id}
+                        className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700 disabled:opacity-60"
+                      >
+                        {actingPendingId === req.id ? '…' : 'Accept'}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );
