@@ -13,6 +13,7 @@ import { StorageService } from '../storage/storage.service';
 import type { CreateAssignmentDto } from './dto/create-assignment.dto';
 import type { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import type { RunCodeResponseDto } from '../code-test/dto/run-code.dto';
+import type { AssessSubmissionDto } from './dto/assess-submission.dto';
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
@@ -385,6 +386,157 @@ export class AssignmentService {
     return {
       ...this.toSubmissionResponse(submission),
       solutionContent,
+    };
+  }
+
+  async getSubmissionsByAssignment(assignmentId: bigint, teacherId: bigint) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    if (assignment.course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can view submissions');
+    }
+    const submissions = await this.prisma.assignmentSubmission.findMany({
+      where: { assignmentId },
+      include: { user: true, solutionFiles: true, assignment: true },
+      orderBy: { completedAt: 'desc' },
+    });
+    return submissions.map((s) => ({
+      ...this.toSubmissionResponse(s),
+      teacherFeedback: s.teacherFeedback,
+      points: s.points,
+      isChecked: s.isChecked,
+      checkedAt: s.checkedAt?.toISOString() ?? null,
+      user: {
+        id: s.user.id.toString(),
+        username: s.user.username,
+        email: s.user.email,
+      },
+    }));
+  }
+
+  async getSubmissionById(submissionId: bigint, teacherId: bigint) {
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        solutionFiles: true,
+        assignment: { include: { course: true } },
+        user: true,
+      },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.assignment.course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can view this submission');
+    }
+    let solutionContent: string | null = null;
+    const firstFile = submission.solutionFiles[0];
+    if (firstFile) {
+      try {
+        solutionContent = await this.storage.getFileContentAsText(
+          firstFile.key,
+          this.assignmentBucket,
+        );
+      } catch {
+        solutionContent = null;
+      }
+    }
+    return {
+      ...this.toSubmissionResponse(submission),
+      teacherFeedback: submission.teacherFeedback,
+      points: submission.points,
+      isChecked: submission.isChecked,
+      checkedAt: submission.checkedAt?.toISOString() ?? null,
+      user: {
+        id: submission.user.id.toString(),
+        username: submission.user.username,
+        email: submission.user.email,
+      },
+      assignment: {
+        id: submission.assignment.id.toString(),
+        title: submission.assignment.title,
+        points: submission.assignment.points,
+        language: submission.assignment.language,
+      },
+      solutionContent,
+    };
+  }
+
+  async runSubmissionTests(submissionId: bigint, teacherId: bigint): Promise<RunCodeResponseDto> {
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        solutionFiles: true,
+        assignment: { include: { course: true, test: true } },
+      },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.assignment.course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can run tests on submissions');
+    }
+    if (!submission.assignment.test) {
+      throw new BadRequestException('This assignment has no tests configured');
+    }
+    let code = '';
+    const firstFile = submission.solutionFiles[0];
+    if (firstFile) {
+      try {
+        code = await this.storage.getFileContentAsText(
+          firstFile.key,
+          this.assignmentBucket,
+        );
+      } catch {
+        throw new BadRequestException('Could not read submission file');
+      }
+    }
+    if (!code.trim()) {
+      throw new BadRequestException('Submission has no code');
+    }
+    const testContent = await this.storage.getFileContentAsText(
+      submission.assignment.test.key,
+      this.assignmentBucket,
+    );
+    if (submission.assignment.language === AssignmentLanguage.PYTHON) {
+      return this.codeTestService.runPythonTests(code, testContent);
+    }
+    if (submission.assignment.language === AssignmentLanguage.NODE_JS) {
+      throw new BadRequestException('Running Node.js in the sandbox is not supported yet');
+    }
+    throw new BadRequestException('Unsupported assignment language');
+  }
+
+  async assessSubmission(
+    submissionId: bigint,
+    teacherId: bigint,
+    dto: AssessSubmissionDto,
+  ) {
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      include: { assignment: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.assignment.course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can assess submissions');
+    }
+    const data: Record<string, unknown> = {};
+    if (dto.teacherFeedback !== undefined) data.teacherFeedback = dto.teacherFeedback;
+    if (dto.points !== undefined) data.points = dto.points;
+    if (dto.isChecked !== undefined) {
+      data.isChecked = dto.isChecked;
+      if (dto.isChecked) data.checkedAt = new Date();
+    }
+    const updated = await this.prisma.assignmentSubmission.update({
+      where: { id: submissionId },
+      data,
+      include: { solutionFiles: true, assignment: true },
+    });
+    return {
+      ...this.toSubmissionResponse(updated),
+      teacherFeedback: updated.teacherFeedback,
+      points: updated.points,
+      isChecked: updated.isChecked,
+      checkedAt: updated.checkedAt?.toISOString() ?? null,
     };
   }
 

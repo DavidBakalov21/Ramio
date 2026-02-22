@@ -80,6 +80,15 @@ export class CourseController {
     return this.courseService.requestEnroll(BigInt(id), user.id);
   }
 
+  @Get(':id/student-results')
+  @Roles(UserRole.TEACHER)
+  getStudentResults(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.getStudentResults(BigInt(id), user.id);
+  }
+
   @Get(':id/pending-enrollments')
   @Roles(UserRole.TEACHER)
   getPendingEnrollments(

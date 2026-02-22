@@ -7,6 +7,8 @@ import { User } from '../../interfaces/User';
 import { Course, PendingEnrollmentRequest } from '../../interfaces/Course';
 import { AssignmentsSection } from '@/app/components/assignments';
 import { PendingEnrollmentRequests } from '@/app/components/PendingEnrollmentRequests';
+import { StudentResultsTable } from '@/app/components/course/StudentResultsTable';
+import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -17,10 +19,12 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingCourse, setLoadingCourse] = useState(true);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'materials' | 'requests'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'materials' | 'requests' | 'results'>('assignments');
   const [pendingRequests, setPendingRequests] = useState<PendingEnrollmentRequest[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [actingPendingId, setActingPendingId] = useState<string | null>(null);
+  const [studentResults, setStudentResults] = useState<StudentResultsResponse | null>(null);
+  const [loadingResults, setLoadingResults] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -56,6 +60,22 @@ export default function CourseDetailPage() {
     };
     fetchCourse();
   }, [courseId, user?.role]);
+
+  useEffect(() => {
+    if (!courseId || !course?.isTeacher || activeTab !== 'results') return;
+    const fetchResults = async () => {
+      setLoadingResults(true);
+      try {
+        const res = await api.get<StudentResultsResponse>(`/course/${courseId}/student-results`);
+        setStudentResults(res.data);
+      } catch {
+        setStudentResults(null);
+      } finally {
+        setLoadingResults(false);
+      }
+    };
+    fetchResults();
+  }, [courseId, course?.isTeacher, activeTab]);
 
   useEffect(() => {
     if (!courseId || !course?.isTeacher || activeTab !== 'requests') return;
@@ -187,6 +207,19 @@ export default function CourseDetailPage() {
             {course.isTeacher && (
               <button
                 type="button"
+                onClick={() => setActiveTab('results')}
+                className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                  activeTab === 'results'
+                    ? 'border-slate-900 text-slate-900'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Results
+              </button>
+            )}
+            {course.isTeacher && (
+              <button
+                type="button"
                 onClick={() => setActiveTab('requests')}
                 className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
                   activeTab === 'requests'
@@ -226,6 +259,13 @@ export default function CourseDetailPage() {
               No lecture materials yet.
               {course.isTeacher && ' Use "Add" to upload slides or links (coming soon).'}
             </div>
+          </section>
+        )}
+
+        {activeTab === 'results' && course.isTeacher && (
+          <section className="mb-8 flex w-full flex-col gap-3">
+            <h2 className="text-lg font-semibold text-slate-900">Student results</h2>
+            <StudentResultsTable data={studentResults} loading={loadingResults} />
           </section>
         )}
 

@@ -18,6 +18,7 @@ import { User } from '../auth/decorators/user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { User as PrismaUser } from '@prisma/client';
 import { AssignmentService } from './assignment.service';
+import { AssessSubmissionDto } from './dto/assess-submission.dto';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
@@ -30,6 +31,43 @@ export class AssignmentController {
   @Roles(UserRole.TEACHER)
   create(@User() user: PrismaUser, @Body() dto: CreateAssignmentDto) {
     return this.assignmentService.create(user.id, dto);
+  }
+
+  @Get(':id/submissions')
+  @Roles(UserRole.TEACHER)
+  getSubmissionsByAssignment(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.getSubmissionsByAssignment(BigInt(id), user.id);
+  }
+
+  @Get('submission/:submissionId')
+  @Roles(UserRole.TEACHER)
+  getSubmissionById(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.getSubmissionById(BigInt(submissionId), user.id);
+  }
+
+  @Post('submission/:submissionId/run')
+  @Roles(UserRole.TEACHER)
+  runSubmissionTests(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.runSubmissionTests(BigInt(submissionId), user.id);
+  }
+
+  @Patch('submission/:submissionId')
+  @Roles(UserRole.TEACHER)
+  assessSubmission(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+    @Body() dto: AssessSubmissionDto,
+  ) {
+    return this.assignmentService.assessSubmission(BigInt(submissionId), user.id, dto);
   }
 
   @Get('course/:courseId')

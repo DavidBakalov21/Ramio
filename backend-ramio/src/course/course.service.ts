@@ -317,6 +317,82 @@ export class CourseService {
     };
   }
 
+  async getStudentResults(courseId: bigint, teacherId: bigint) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        assignments: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, title: true, points: true },
+        },
+        enrollments: {
+          include: {
+            user: { select: { id: true, username: true, email: true } },
+          },
+        },
+      },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can view student results');
+    }
+
+    const assignmentIds = course.assignments.map((a) => a.id);
+    const assignmentMap = new Map(course.assignments.map((a) => [a.id.toString(), a]));
+    const totalMax = course.assignments.reduce((sum, a) => sum + a.points, 0);
+
+    const submissions = await this.prisma.assignmentSubmission.findMany({
+      where: {
+        assignmentId: { in: assignmentIds },
+        userId: { in: course.enrollments.map((e) => e.userId) },
+      },
+      select: {
+        assignmentId: true,
+        userId: true,
+        points: true,
+        isChecked: true,
+      },
+    });
+
+    const submissionMap = new Map<string, { points: number; isChecked: boolean }>();
+    for (const s of submissions) {
+      submissionMap.set(`${s.userId}-${s.assignmentId}`, {
+        points: s.points,
+        isChecked: s.isChecked,
+      });
+    }
+
+    const students = course.enrollments.map((e) => {
+      const assignmentResults = course.assignments.map((a) => {
+        const sub = submissionMap.get(`${e.userId}-${a.id}`);
+        return sub ? { points: sub.points, maxPoints: a.points, isChecked: sub.isChecked } : null;
+      });
+      const totalEarned = assignmentResults.reduce(
+        (sum, r) => sum + (r?.points ?? 0),
+        0,
+      );
+      return {
+        userId: e.user.id.toString(),
+        username: e.user.username ?? null,
+        email: e.user.email,
+        assignmentResults,
+        totalEarned,
+        totalMax,
+      };
+    });
+
+    return {
+      assignments: course.assignments.map((a) => ({
+        id: a.id.toString(),
+        title: a.title,
+        maxPoints: a.points,
+      })),
+      students: students.sort((a, b) =>
+        (a.username ?? a.email).localeCompare(b.username ?? b.email),
+      ),
+    };
+  }
+
   private toResponse(course: { id: bigint; title: string; description: string | null; createdAt: Date; updatedAt: Date; userId: bigint }) {
     return {
       id: course.id.toString(),

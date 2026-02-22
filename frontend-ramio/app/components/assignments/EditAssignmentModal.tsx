@@ -6,6 +6,8 @@ import { api } from '@/lib/axios';
 import { Assignment } from '@/app/interfaces/Assignment';
 import { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { ASSIGNMENT_LANGUAGE_MAP } from '@/app/constants/assignmentLanguages';
+import { SubmissionListItem } from '@/app/interfaces/Submission';
+import { AssessSubmissionModal } from './AssessSubmissionModal';
 
 export interface EditAssignmentFormData {
   title: string;
@@ -47,6 +49,10 @@ export function EditAssignmentModal({
   const [deleting, setDeleting] = useState(false);
   const [validationError, setValidationError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [assessModalOpen, setAssessModalOpen] = useState(false);
+  const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(null);
 
   const fetchTestCode = useCallback(async (assignmentId: string) => {
     setTestCodeLoading(true);
@@ -80,6 +86,22 @@ export function EditAssignmentModal({
         setNewTestCode('');
         setTestCodeLoading(false);
       }
+
+      setSubmissions([]);
+      setAssessModalOpen(false);
+      setAssessSubmissionId(null);
+      const fetchSubmissions = async () => {
+        setSubmissionsLoading(true);
+        try {
+          const res = await api.get<SubmissionListItem[]>(`/assignment/${assignment.id}/submissions`);
+          setSubmissions(res.data);
+        } catch {
+          setSubmissions([]);
+        } finally {
+          setSubmissionsLoading(false);
+        }
+      };
+      fetchSubmissions();
     }
   }, [isOpen, assignment, fetchTestCode]);
 
@@ -116,6 +138,19 @@ export function EditAssignmentModal({
     setNewTestFile(file ?? null);
     if (file) setNewTestCode('');
   };
+
+  const openAssessModal = (submissionId: string) => {
+    setAssessSubmissionId(submissionId);
+    setAssessModalOpen(true);
+  };
+
+  const handleAssessSaved = useCallback(() => {
+    if (assignment) {
+      api.get<SubmissionListItem[]>(`/assignment/${assignment.id}/submissions`).then((res) => {
+        setSubmissions(res.data);
+      });
+    }
+  }, [assignment]);
 
   const handleDelete = async () => {
     if (!assignment || !onDelete) return;
@@ -294,6 +329,44 @@ export function EditAssignmentModal({
             </div>
           </div>
 
+          {/* Submissions section for teachers */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+            <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
+            {submissionsLoading ? (
+              <p className="text-xs text-slate-500">Loading submissions…</p>
+            ) : submissions.length === 0 ? (
+              <p className="text-xs text-slate-500">No submissions yet.</p>
+            ) : (
+              <ul className="space-y-2 max-h-40 overflow-y-auto">
+                {submissions.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {s.user.username || s.user.email}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {s.isChecked
+                          ? `${s.points} pts · Checked`
+                          : 'Not assessed yet'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openAssessModal(s.id)}
+                      disabled={isSubmitting}
+                      className="shrink-0 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700 disabled:opacity-60"
+                    >
+                      Assess
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {(validationError || error) && (
             <p className="text-sm text-red-600">{validationError || error}</p>
           )}
@@ -333,7 +406,18 @@ export function EditAssignmentModal({
     </div>
   );
 
-  return typeof document !== 'undefined'
-    ? createPortal(modalContent, document.body)
-    : null;
+  return (
+    <>
+      {typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null}
+      <AssessSubmissionModal
+        isOpen={assessModalOpen}
+        submissionId={assessSubmissionId}
+        onClose={() => {
+          setAssessModalOpen(false);
+          setAssessSubmissionId(null);
+        }}
+        onSaved={handleAssessSaved}
+      />
+    </>
+  );
 }
