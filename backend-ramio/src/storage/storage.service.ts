@@ -26,6 +26,7 @@ import {
       file: Express.Multer.File,
       bucketName: string,
       pathPrefix = '',
+      options?: { acl?: 'public-read' },
     ): Promise<{ url: string; key: string }> {
       const fileKey = `${pathPrefix}${randomUUID()}-${file.originalname}`;
 
@@ -36,6 +37,7 @@ import {
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
+            ...(options?.acl && { ACL: options.acl }),
           }),
         );
   
