@@ -113,15 +113,15 @@ export default function Home() {
         <div className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60">
           <section className="mb-6 flex max-w-xl flex-col items-center space-y-3 text-center">
           <h1 className="text-2xl font-semibold leading-snug text-slate-900">
-            Hi, {user.username || user.email} 👋
+            Hi, {user.username || user.email} 
           </h1>
           <p className="text-sm text-slate-500">
             You’re signed in as a{' '}
             <span className="font-semibold text-slate-800">
               {user.role?.toLowerCase()}
             </span>
-            . We’ll tailor your experience to help you{' '}
-            {user.role === 'TEACHER' ? 'teach and manage classes.' : 'learn faster.'}
+            . Ramio will help you {' '}
+            {user.role === 'TEACHER' ? 'create and manage classes.' : 'learn new skills.'}
           </p>
         </section>
 
@@ -140,7 +140,7 @@ export default function Home() {
             <p className="text-sm text-slate-500">Loading courses…</p>
           ) : courses.length === 0 ? (
             <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
-              No courses yet. Teachers can create courses from the backend or a future admin UI.
+              No courses yet.
             </div>
           ) : (
             <>

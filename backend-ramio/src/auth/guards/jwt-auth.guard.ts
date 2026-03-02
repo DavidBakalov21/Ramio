@@ -51,13 +51,17 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
     }
 
    
-    let user = await this.prisma.user.findUnique({ where: { cognitoSub } });
+    let user = await this.prisma.user.findUnique({
+      where: { cognitoSub },
+      include: { profilePicture: true },
+    });
 
  
     if (!user) {
       if (payload.email) {
         const userByEmail = await this.prisma.user.findUnique({
           where: { email: String(payload.email) },
+          include: { profilePicture: true },
         });
         if (userByEmail) {
           console.log(
@@ -75,6 +79,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
         if (email) {
           const userByEmail = await this.prisma.user.findUnique({
             where: { email },
+            include: { profilePicture: true },
           });
           if (userByEmail) {
             console.log(

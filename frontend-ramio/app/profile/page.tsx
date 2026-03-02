@@ -205,7 +205,7 @@ export default function ProfilePage() {
             <div>
               <p className="text-sm font-medium text-slate-900">Profile photo</p>
               <p className="text-xs text-slate-500">
-                JPEG, PNG, GIF or WebP. Max 3MB, 720×720px.
+                JPEG, PNG, GIF or WebP.
               </p>
               <input
                 ref={fileInputRef}

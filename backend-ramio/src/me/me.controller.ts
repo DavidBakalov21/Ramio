@@ -16,6 +16,8 @@ import { MeService } from './me.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import type { User as PrismaUser } from '@prisma/client';
 
+type UserWithProfile = PrismaUser & { profilePicture?: { url: string } | null };
+
 @Controller('me')
 export class MeController {
   constructor(
@@ -24,13 +26,13 @@ export class MeController {
   ) {}
 
   @Get()
-  getMe(@User() user: PrismaUser) {
+  getMe(@User() user: UserWithProfile) {
     return {
       id: user.id.toString(),
       email: user.email,
       role: user.role,
       username: user.username,
-      profilePictureUrl: user.profilePictureUrl,
+      profilePictureUrl: user.profilePicture?.url ?? null,
       aboutMe: user.aboutMe,
       birthdate: user.birthdate,
       createdAt: user.createdAt,
@@ -73,6 +75,7 @@ export class MeController {
         role: dto.role,
         username: trimmedUsername,
       },
+      include: { profilePicture: true },
     });
 
     return {
@@ -80,7 +83,7 @@ export class MeController {
       email: updatedUser.email,
       role: updatedUser.role,
       username: updatedUser.username,
-      profilePictureUrl: updatedUser.profilePictureUrl,
+      profilePictureUrl: updatedUser.profilePicture?.url ?? null,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };

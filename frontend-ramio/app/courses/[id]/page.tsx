@@ -143,7 +143,7 @@ export default function CourseDetailPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         {loadingCourse ? (
-          <div className="text-sm text-slate-500">Loading course...</div>
+          <div className="text-sm text-slate-500">Loading course</div>
         ) : (
           <div className="text-center">
             <p className="text-sm text-slate-600">Course not found or you don’t have access.</p>

@@ -18,7 +18,7 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
         <div className="flex items-center gap-3">
           <Link
             href="/profile"
-            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-violet-500/10 ring-1 ring-violet-200/50 transition hover:ring-violet-300"
+            className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-violet-500/10 ring-1 ring-violet-200/50 transition hover:ring-violet-300"
           >
             {user.profilePictureUrl ? (
               <img
@@ -27,7 +27,7 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-sm font-semibold text-violet-600">{initial}</span>
+              <span className="text-lg font-semibold text-violet-600">{initial}</span>
             )}
           </Link>
           <div>

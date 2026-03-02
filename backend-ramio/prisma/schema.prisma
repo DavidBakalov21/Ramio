@@ -1,3 +1,9 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,107 +12,130 @@ datasource db {
   provider = "mysql"
 }
 
-model assignment {
-  id          BigInt              @id @default(autoincrement())
-  title       String
-  description String?
-  dueDate     DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime
-  courseId    BigInt
-  language    assignment_language @default(PYTHON)
-  points      Int                 @default(100)
-
-  @@index([courseId], map: "Assignment_courseId_fkey")
-}
-
-model assignmentsubmission {
-  id              BigInt    @id @default(autoincrement())
-  assignmentId    BigInt
-  userId          BigInt
-  completedAt     DateTime  @default(now())
-  points          Int       @default(0)
-  teacherFeedback String    @db.LongText
-  checkedAt       DateTime?
-  isChecked       Boolean   @default(false)
-
-  @@unique([assignmentId, userId], map: "AssignmentSubmission_assignmentId_userId_key")
-  @@index([userId], map: "AssignmentSubmission_userId_fkey")
-}
-
-model course {
-  id          BigInt   @id @default(autoincrement())
-  title       String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  userId      BigInt
-
-  @@index([userId], map: "Course_userId_fkey")
-}
-
-model enrollment {
-  id         BigInt   @id @default(autoincrement())
-  userId     BigInt
-  courseId   BigInt
-  enrolledAt DateTime @default(now())
-
-  @@unique([userId, courseId], map: "Enrollment_userId_courseId_key")
-  @@index([courseId], map: "Enrollment_courseId_fkey")
-}
-
-model pendingenrollment {
-  id        BigInt   @id @default(autoincrement())
-  userId    BigInt
-  courseId  BigInt
-  createdAt DateTime @default(now())
-
-  @@unique([userId, courseId], map: "PendingEnrollment_userId_courseId_key")
-  @@index([courseId], map: "PendingEnrollment_courseId_fkey")
-}
-
-model submissionfile {
-  id           BigInt   @id @default(autoincrement())
-  url          String
-  key          String
-  name         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime
-  submissionId BigInt
-
-  @@index([submissionId], map: "SubmissionFile_submissionId_fkey")
-}
-
-model testfile {
-  id           BigInt   @id @default(autoincrement())
-  url          String
-  key          String
-  name         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime
-  assignmentId BigInt   @unique(map: "TestFile_assignmentId_key")
-}
-
-model user {
-  id                BigInt     @id @default(autoincrement())
-  cognitoSub        String     @unique(map: "User_cognitoSub_key")
-  email             String     @unique(map: "User_email_key")
-  role              user_role?
-  username          String?
-  profilePictureUrl String?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime
-  countryCode       String?
-  aboutMe           String?    @db.LongText
-  birthdate         DateTime?
-}
-
-enum user_role {
+enum UserRole {
   STUDENT
   TEACHER
 }
 
-enum assignment_language {
+enum AssignmentLanguage {
   PYTHON
   NODE_JS
+}
+
+model User {
+  id                BigInt   @id @default(autoincrement())
+  cognitoSub        String   @unique
+  email             String   @unique
+  role              UserRole?
+  username          String?
+  profilePicture ProfilePicture?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  countryCode       String?
+  aboutMe           String?    @db.LongText
+  birthdate         DateTime?
+
+  coursesCreated       Course[]
+  enrollments          Enrollment[]
+  assignmentSubmissions AssignmentSubmission[]
+  pendingEnrollments PendingEnrollment[]
+}
+
+model ProfilePicture {
+  id BigInt @id @default(autoincrement())
+  url String
+  key String
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId BigInt @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id          BigInt   @id @default(autoincrement())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      BigInt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  enrollments Enrollment[]
+  pendingEnrollments PendingEnrollment[]
+}
+
+model Enrollment {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  courseId  BigInt
+  enrolledAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Assignment {
+  id          BigInt             @id @default(autoincrement())
+  title       String
+  description String?
+  points      Int                @default(100)
+  language    AssignmentLanguage @default(PYTHON)
+  dueDate     DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  courseId    BigInt
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  test        TestFile?
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           BigInt   @id @default(autoincrement())
+  assignmentId BigInt
+  teacherFeedback String @db.LongText
+  points Int @default(0)
+  isChecked Boolean @default(false)
+  checkedAt DateTime?
+  userId      BigInt
+  completedAt DateTime @default(now())
+  assignment  Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  solutionFiles SubmissionFile[]
+
+  @@unique([assignmentId, userId])
+}
+
+model SubmissionFile {
+  id         BigInt   @id @default(autoincrement())
+  url        String
+  key        String
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  submissionId BigInt
+  submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model TestFile{
+  id BigInt @id @default(autoincrement())
+  url String
+  key String
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  assignmentId BigInt @unique
+  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model PendingEnrollment {
+  id BigInt @id @default(autoincrement())
+  userId BigInt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId BigInt
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
 }

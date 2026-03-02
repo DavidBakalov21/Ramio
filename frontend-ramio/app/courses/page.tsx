@@ -172,10 +172,6 @@ export default function AllCoursesPage() {
               <h1 className="text-xl font-semibold text-slate-900">
                 All courses
               </h1>
-              <p className="text-xs text-slate-500">
-                Browse every course in Ramio. Enroll as a student or edit your
-                own courses as a teacher.
-              </p>
             </div>
           </div>
           {user.role === 'TEACHER' && (
