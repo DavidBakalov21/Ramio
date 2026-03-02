@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { User } from './interfaces/User';
 import { Course, CoursePage } from './interfaces/Course';
 import { api } from '@/lib/axios';
@@ -97,7 +98,14 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="text-zinc-600 dark:text-zinc-400"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
@@ -110,7 +118,12 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
       <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 py-6">
-        <div className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60"
+        >
           <section className="mb-6 flex max-w-xl flex-col items-center space-y-3 text-center">
           <h1 className="text-2xl font-semibold leading-snug text-slate-900">
             Hi, {user.username || user.email} 
@@ -145,9 +158,16 @@ export default function Home() {
           ) : (
             <>
               <ul className="grid w-full gap-3 sm:grid-cols-2">
-                {courses.map((course) => (
-                  <li
+                {courses.map((course, i) => (
+                  <motion.li
                     key={course.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: Math.min(i * 0.05, 0.2),
+                      ease: 'easeOut',
+                    }}
                     className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
                   >
                     <h3 className="font-semibold text-slate-900">{course.title}</h3>
@@ -196,7 +216,7 @@ export default function Home() {
                         </button>
                       )}
                     </div>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
 
@@ -230,7 +250,7 @@ export default function Home() {
             </>
           )}
         </section>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

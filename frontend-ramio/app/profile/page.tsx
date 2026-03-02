@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '@/app/interfaces/User';
 import { useToast } from '@/app/components/utility/toast';
@@ -103,7 +104,14 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-slate-500">Loading...</div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="text-sm text-slate-500"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
@@ -125,7 +133,12 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <main className="w-full max-w-xl rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60">
+      <motion.main
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="w-full max-w-xl rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60"
+      >
         <header className="mb-6 flex items-start justify-between gap-4">
           <div>
             <Link
@@ -152,7 +165,13 @@ export default function ProfilePage() {
 
         {!editMode ? (
           /* View mode: how others see your profile */
-          <div className="space-y-6">
+          <motion.div
+            key="view-mode"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="space-y-6"
+          >
             <div className="flex items-center gap-4">
               <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-violet-500/10 ring-2 ring-violet-200">
                 <ProfileAvatar className="h-full w-full object-cover" />
@@ -184,9 +203,16 @@ export default function ProfilePage() {
                 </p>
               </div>
             ) : null}
-          </div>
+          </motion.div>
         ) : (
-          <form onSubmit={handleSave} className="space-y-6">
+          <motion.form
+            key="edit-mode"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            onSubmit={handleSave}
+            className="space-y-6"
+          >
           {/* Avatar */}
           <div className="flex items-center gap-4">
             <button
@@ -287,9 +313,9 @@ export default function ProfilePage() {
               Cancel
             </button>
           </div>
-        </form>
+        </motion.form>
         )}
-      </main>
+      </motion.main>
     </div>
   );
 }
