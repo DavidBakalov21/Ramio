@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,7 +13,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-4">
-      <div className="flex w-full max-w-3xl flex-col items-center rounded-[1.9rem] bg-white/80 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="flex w-full max-w-3xl flex-col items-center rounded-[1.9rem] bg-white/80 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+      >
         <header className="mb-8 flex w-full items-center justify-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10">
             <span className="text-sm font-semibold text-violet-600">R</span>
@@ -72,7 +78,7 @@ export default function LoginPage() {
             <span className="font-medium text-slate-700">Privacy Policy</span>.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

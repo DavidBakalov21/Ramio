@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '@/app/interfaces/User';
 
@@ -90,16 +91,26 @@ export default function OnboardingPage() {
   if (isChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="rounded-2xl bg-white/70 px-6 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="rounded-2xl bg-white/70 px-6 py-3 text-sm text-slate-600 shadow-sm backdrop-blur"
+        >
           Loading your profile…
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-4">
-      <div className="relative flex w-full max-w-3xl flex-col items-center space-y-8 rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="relative flex w-full max-w-3xl flex-col items-center space-y-8 rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+      >
         {/* Logout Button - Top Right */}
         <button
           onClick={handleLogout}
@@ -194,7 +205,7 @@ export default function OnboardingPage() {
             {isLoading ? 'Saving...' : 'Continue'}
           </button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

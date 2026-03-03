@@ -80,17 +80,19 @@ export function AssignmentList({
               </span>
             )}
             <div>
-            <p className="font-medium text-slate-900">{a.title}</p>
-            {a.description && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{a.description}</p>
-            )}
-            <p className={`mt-1 text-[11px] ${a.submitted ? 'text-green-700' : 'text-slate-400'}`}>
-              {a.points} pts · {getAssignmentLanguageLabel(a.language)}
-              {a.dueDate && ` · Due ${new Date(a.dueDate).toLocaleDateString()}`}
-              {a.submitted && (
-                <span className="ml-1.5 font-medium text-green-600">· Submitted</span>
+              <p className="font-medium text-slate-900">{a.title}</p>
+              {a.description && (
+                <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{a.description}</p>
               )}
-            </p>
+              <p className={`mt-1 text-[11px] ${a.submitted ? 'text-green-700' : 'text-slate-400'}`}>
+                {a.points} pts · {getAssignmentLanguageLabel(a.language)}
+                {a.dueDate && ` · Due ${new Date(a.dueDate).toLocaleDateString()}`}
+                {a.submitted && (
+                  <span className="ml-1.5 font-medium text-green-600">
+                    · {a.isChecked ? 'Assessed' : 'Submitted'}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           {isClickable && (

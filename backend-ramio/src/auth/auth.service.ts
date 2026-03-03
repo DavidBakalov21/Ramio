@@ -78,12 +78,10 @@ export class AuthService {
       where: { cognitoSub },
       update: {
         email,
-        profilePictureUrl: picture ?? undefined,
       },
       create: {
         cognitoSub,
         email,
-        profilePictureUrl: picture ?? undefined,
         role: null,
         username: null,
       },

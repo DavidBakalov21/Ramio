@@ -28,15 +28,28 @@ model User {
   email             String   @unique
   role              UserRole?
   username          String?
-  profilePictureUrl String?
+  profilePicture ProfilePicture?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   countryCode       String?
+  aboutMe           String?    @db.LongText
+  birthdate         DateTime?
 
   coursesCreated       Course[]
   enrollments          Enrollment[]
   assignmentSubmissions AssignmentSubmission[]
   pendingEnrollments PendingEnrollment[]
+}
+
+model ProfilePicture {
+  id BigInt @id @default(autoincrement())
+  url String
+  key String
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId BigInt @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Course {

@@ -60,14 +60,23 @@ export class AssignmentService {
     const assignmentIds = assignments.map((a) => a.id);
     const submissions = await this.prisma.assignmentSubmission.findMany({
       where: { userId, assignmentId: { in: assignmentIds } },
-      select: { assignmentId: true },
+      select: { assignmentId: true, isChecked: true },
     });
-    const submittedIds = new Set(
-      submissions.map((s) => s.assignmentId.toString()),
-    );
+    const submissionStatusByAssignment = new Map<
+      string,
+      { submitted: boolean; isChecked: boolean }
+    >();
+    for (const s of submissions) {
+      const key = s.assignmentId.toString();
+      submissionStatusByAssignment.set(key, {
+        submitted: true,
+        isChecked: !!s.isChecked,
+      });
+    }
     return assignments.map((a) => ({
       ...this.toAssignmentResponse(a),
-      submitted: submittedIds.has(a.id.toString()),
+      submitted: submissionStatusByAssignment.get(a.id.toString())?.submitted ?? false,
+      isChecked: submissionStatusByAssignment.get(a.id.toString())?.isChecked ?? false,
     }));
   }
 
@@ -86,6 +95,7 @@ export class AssignmentService {
     return {
       ...this.toAssignmentResponse(assignment),
       submitted: !!submission,
+      isChecked: !!submission?.isChecked,
     };
   }
 
@@ -385,6 +395,10 @@ export class AssignmentService {
 
     return {
       ...this.toSubmissionResponse(submission),
+      teacherFeedback: submission.teacherFeedback,
+      points: submission.points,
+      isChecked: submission.isChecked,
+      checkedAt: submission.checkedAt?.toISOString() ?? null,
       solutionContent,
     };
   }

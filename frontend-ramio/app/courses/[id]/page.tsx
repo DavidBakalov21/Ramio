@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '../../interfaces/User';
 import { Course, PendingEnrollmentRequest } from '../../interfaces/Course';
@@ -9,6 +10,7 @@ import { AssignmentsSection } from '@/app/components/assignments';
 import { PendingEnrollmentRequests } from '@/app/components/PendingEnrollmentRequests';
 import { StudentResultsTable } from '@/app/components/course/StudentResultsTable';
 import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
+import { Navbar } from '@/app/components/Navbar';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -25,6 +27,7 @@ export default function CourseDetailPage() {
   const [actingPendingId, setActingPendingId] = useState<string | null>(null);
   const [studentResults, setStudentResults] = useState<StudentResultsResponse | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -76,6 +79,18 @@ export default function CourseDetailPage() {
     };
     fetchResults();
   }, [courseId, course?.isTeacher, activeTab]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await api.post('/auth/logout');
+      router.push('/login');
+    } catch {
+      router.push('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     if (!courseId || !course?.isTeacher || activeTab !== 'requests') return;
@@ -133,7 +148,14 @@ export default function CourseDetailPage() {
   if (loadingUser) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm text-slate-500">Loading...</div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="text-sm text-slate-500"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
@@ -141,28 +163,52 @@ export default function CourseDetailPage() {
 
   if (loadingCourse || !course) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        {loadingCourse ? (
-          <div className="text-sm text-slate-500">Loading course...</div>
-        ) : (
-          <div className="text-center">
-            <p className="text-sm text-slate-600">Course not found or you don’t have access.</p>
-            <button
-              type="button"
-              onClick={() => router.push('/courses')}
-              className="mt-3 text-sm font-medium text-violet-600 hover:underline"
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
+        <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+        <main className="flex flex-1 items-center justify-center px-4 py-4">
+          {loadingCourse ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
+              className="text-sm text-slate-500"
             >
-              Back to all courses
-            </button>
-          </div>
-        )}
+              Loading course
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="text-center"
+            >
+              <p className="text-sm text-slate-600">
+                Course not found or you don’t have access.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/courses')}
+                className="mt-3 text-sm font-medium text-violet-600 hover:underline"
+              >
+                Back to all courses
+              </button>
+            </motion.div>
+          )}
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-4">
-      <main className="relative flex w-full max-w-4xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
+      <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+      <main className="flex flex-1 items-center justify-center px-4 py-4">
+      <motion.main
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="relative flex w-full max-w-4xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+      >
         <header className="mb-6 flex w-full flex-col gap-2">
           <button
             type="button"
@@ -278,6 +324,7 @@ export default function CourseDetailPage() {
             onDecline={handleDeclineRequest}
           />
         )}
+      </motion.main>
       </main>
     </div>
   );

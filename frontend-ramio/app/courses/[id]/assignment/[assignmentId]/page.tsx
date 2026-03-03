@@ -9,6 +9,7 @@ import {
   getAssignmentLanguageFileExtension,
 } from '@/app/constants/assignmentLanguages';
 import { User } from '@/app/interfaces/User';
+import { SubmissionDetail } from '@/app/interfaces/Submission';
 import { Navbar } from '@/app/components/Navbar';
 import { useToast } from '@/app/components/utility/toast';
 
@@ -39,6 +40,7 @@ export default function AssignmentSandboxPage() {
   const [lastSubmitWasUpdate, setLastSubmitWasUpdate] = useState(false);
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -86,9 +88,8 @@ export default function AssignmentSandboxPage() {
     }
     const fetchSubmission = async () => {
       try {
-        const res = await api.get<{ solutionContent?: string | null }>(
-          `/assignment/${assignmentId}/submission`,
-        );
+        const res = await api.get<SubmissionDetail>(`/assignment/${assignmentId}/submission`);
+        setSubmission(res.data);
         if (res.data.solutionContent != null) {
           setCode(res.data.solutionContent);
         }
@@ -185,6 +186,10 @@ export default function AssignmentSandboxPage() {
     }
   };
 
+  const isStudent = user?.role === 'STUDENT';
+  const isAssessed =
+    isStudent && (submission?.isChecked || submission?.points != null);
+
   if (loadingUser || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -232,113 +237,146 @@ export default function AssignmentSandboxPage() {
                 </p>
               </header>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="sandbox-code"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Your solution
-                </label>
-                <textarea
-                  id="sandbox-code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder={
-                    assignment.language === 'PYTHON'
-                      ? '# Write your Python solution here\n# Use the function/class names expected by the tests'
-                      : '// Write your solution here'
-                  }
-                  rows={16}
-                  className="block w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
-                />
-              </div>
-
-              {assignment.language === 'NODE_JS' && (
-                <p className="mt-3 text-xs text-amber-700">
-                  Running Node.js assignments in the sandbox is not available yet. You can still view the assignment.
-                </p>
-              )}
-
-              {submitMessage === 'success' && (
-                <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
-                  {lastSubmitWasUpdate
-                    ? 'Submission updated.'
-                    : 'Assignment submitted successfully.'}
-                </div>
-              )}
-              {submitMessage === 'error' && (
-                <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-
-              {error && submitMessage !== 'error' && (
-                <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-
-              {result && (
-                <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={
-                        result.success
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }
-                    >
-                      {result.success ? 'All tests passed' : 'Tests failed'}
-                      {result.timedOut ? ' (timed out)' : ''}
-                    </span>
-                    <span className="text-xs text-slate-500">exit code {result.exitCode}</span>
+              {isStudent && isAssessed ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-sm text-green-900">
+                    <p className="font-semibold">
+                      Your result:{' '}
+                      {submission?.points != null ? (
+                        <>
+                          {submission.points} / {assignment.points} pts
+                        </>
+                      ) : (
+                        'Checked'
+                      )}
+                    </p>
+                    {submission?.teacherFeedback && (
+                      <p className="mt-1 text-xs whitespace-pre-wrap">
+                        {submission.teacherFeedback}
+                      </p>
+                    )}
                   </div>
-                  {result.stdout && (
-                    <pre className="max-h-64 overflow-auto rounded-lg bg-white p-3 font-mono text-xs text-slate-800">
-                      {result.stdout}
-                    </pre>
-                  )}
-                  {result.stderr && (
-                    <pre className="max-h-64 overflow-auto rounded-lg bg-red-50 p-3 font-mono text-xs text-red-800">
-                      {result.stderr}
-                    </pre>
-                  )}
-                </div>
-              )}
 
-              <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={handleRun}
-                  disabled={isRunning || assignment.language === 'NODE_JS'}
-                  className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isRunning ? 'Running…' : 'Run tests'}
-                </button>
-                {user.role === 'STUDENT' && (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || !code.trim()}
-                    className="rounded-full bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    title={
-                      !code.trim()
-                        ? 'Write your solution first'
-                        : assignment.submitted
-                          ? 'Update your submission'
-                          : 'Submit for grading'
-                    }
-                  >
-                    {isSubmitting
-                      ? assignment.submitted
-                        ? 'Updating…'
-                        : 'Submitting…'
-                      : assignment.submitted
-                        ? 'Update submission'
-                        : 'Submit assignment'}
-                  </button>
-                )}
-              </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Your submitted solution
+                    </p>
+                    <pre className="max-h-80 overflow-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900">
+                      {code || '// No code submitted'}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="sandbox-code"
+                      className="block text-sm font-medium text-slate-700"
+                    >
+                      Your solution
+                    </label>
+                    <textarea
+                      id="sandbox-code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder={
+                        assignment.language === 'PYTHON'
+                          ? '# Write your Python solution here\n# Use the function/class names expected by the tests'
+                          : '// Write your solution here'
+                      }
+                      rows={16}
+                      className="block w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    />
+                  </div>
+
+                  {assignment.language === 'NODE_JS' && (
+                    <p className="mt-3 text-xs text-amber-700">
+                      Running Node.js assignments in the sandbox is not available yet. You can still view the assignment.
+                    </p>
+                  )}
+
+                  {submitMessage === 'success' && (
+                    <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
+                      {lastSubmitWasUpdate
+                        ? 'Submission updated.'
+                        : 'Assignment submitted successfully.'}
+                    </div>
+                  )}
+                  {submitMessage === 'error' && (
+                    <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                      {error}
+                    </div>
+                  )}
+
+                  {error && submitMessage !== 'error' && (
+                    <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                      {error}
+                    </div>
+                  )}
+
+                  {result && (
+                    <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={
+                            result.success
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }
+                        >
+                          {result.success ? 'All tests passed' : 'Tests failed'}
+                          {result.timedOut ? ' (timed out)' : ''}
+                        </span>
+                        <span className="text-xs text-slate-500">exit code {result.exitCode}</span>
+                      </div>
+                      {result.stdout && (
+                        <pre className="max-h-64 overflow-auto rounded-lg bg-white p-3 font-mono text-xs text-slate-800">
+                          {result.stdout}
+                        </pre>
+                      )}
+                      {result.stderr && (
+                        <pre className="max-h-64 overflow-auto rounded-lg bg-red-50 p-3 font-mono text-xs text-red-800">
+                          {result.stderr}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={handleRun}
+                      disabled={isRunning || assignment.language === 'NODE_JS'}
+                      className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isRunning ? 'Running…' : 'Run tests'}
+                    </button>
+                    {isStudent && (
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting || !code.trim()}
+                        className="rounded-full bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        title={
+                          !code.trim()
+                            ? 'Write your solution first'
+                            : assignment.submitted
+                              ? 'Update your submission'
+                              : 'Submit for grading'
+                        }
+                      >
+                        {isSubmitting
+                          ? assignment.submitted
+                            ? 'Updating…'
+                            : 'Submitting…'
+                          : assignment.submitted
+                            ? 'Update submission'
+                            : 'Submit assignment'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '../interfaces/User';
 import { Course, CoursePage } from '../interfaces/Course';
+import { Navbar } from '../components/Navbar';
 import { useToast } from '../components/utility/toast';
 
 export default function AllCoursesPage() {
@@ -22,6 +24,7 @@ export default function AllCoursesPage() {
   const [createDescription, setCreateDescription] = useState('');
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -72,6 +75,18 @@ export default function AllCoursesPage() {
     window.addEventListener('keydown', onEscape);
     return () => window.removeEventListener('keydown', onEscape);
   }, [createModalOpen]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await api.post('/auth/logout');
+      router.push('/login');
+    } catch {
+      router.push('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleEnroll = async (courseId: string) => {
     setEnrollingId(courseId);
@@ -147,7 +162,14 @@ export default function AllCoursesPage() {
   if (isLoadingUser) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="text-sm text-slate-500">Loading...</div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          className="text-sm text-slate-500"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
@@ -157,8 +179,15 @@ export default function AllCoursesPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-4">
-      <main className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
+      <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+      <main className="flex flex-1 items-center justify-center px-4 py-4">
+      <motion.main
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="relative flex w-full max-w-5xl flex-col items-center rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+      >
         <header className="mb-6 flex w-full items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <button
@@ -172,10 +201,6 @@ export default function AllCoursesPage() {
               <h1 className="text-xl font-semibold text-slate-900">
                 All courses
               </h1>
-              <p className="text-xs text-slate-500">
-                Browse every course in Ramio. Enroll as a student or edit your
-                own courses as a teacher.
-              </p>
             </div>
           </div>
           {user.role === 'TEACHER' && (
@@ -199,9 +224,16 @@ export default function AllCoursesPage() {
           ) : (
             <>
               <ul className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {courses.map((course) => (
-                  <li
+                {courses.map((course, i) => (
+                  <motion.li
                     key={course.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: Math.min(i * 0.05, 0.25),
+                      ease: 'easeOut',
+                    }}
                     className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
                   >
                     <h3 className="line-clamp-1 text-sm font-semibold text-slate-900">
@@ -252,7 +284,7 @@ export default function AllCoursesPage() {
                         </button>
                       )}
                     </div>
-                  </li>
+                  </motion.li>
                 ))}
               </ul>
 
@@ -286,7 +318,7 @@ export default function AllCoursesPage() {
             </>
           )}
         </section>
-      </main>
+      </motion.main>
 
       {createModalOpen && (
         <div
@@ -359,6 +391,7 @@ export default function AllCoursesPage() {
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 }

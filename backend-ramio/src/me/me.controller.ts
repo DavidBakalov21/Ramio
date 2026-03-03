@@ -1,25 +1,61 @@
-import { BadRequestException, Body, Controller, Get, Post } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from 'src/auth/decorators/user.decorator';
 import { OnboardingDto } from './dto/onboarding.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { MeService } from './me.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 import type { User as PrismaUser } from '@prisma/client';
+
+type UserWithProfile = PrismaUser & { profilePicture?: { url: string } | null };
 
 @Controller('me')
 export class MeController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly meService: MeService,
+  ) {}
 
   @Get()
-  getMe(@User() user: PrismaUser) {
+  getMe(@User() user: UserWithProfile) {
     return {
       id: user.id.toString(),
       email: user.email,
       role: user.role,
       username: user.username,
-      profilePictureUrl: user.profilePictureUrl,
+      profilePictureUrl: user.profilePicture?.url ?? null,
+      aboutMe: user.aboutMe,
+      birthdate: user.birthdate,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       needsOnboarding: !user.role || !user.username,
     };
+  }
+
+  @Patch()
+  updateProfile(@User() user: PrismaUser, @Body() dto: UpdateProfileDto) {
+    return this.meService.updateProfile(user.cognitoSub, dto);
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAvatar(
+    @User() user: PrismaUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+    return this.meService.uploadAvatar(user.cognitoSub, file);
   }
 
   @Post('onboarding')
@@ -39,6 +75,7 @@ export class MeController {
         role: dto.role,
         username: trimmedUsername,
       },
+      include: { profilePicture: true },
     });
 
     return {
@@ -46,7 +83,7 @@ export class MeController {
       email: updatedUser.email,
       role: updatedUser.role,
       username: updatedUser.username,
-      profilePictureUrl: updatedUser.profilePictureUrl,
+      profilePictureUrl: updatedUser.profilePicture?.url ?? null,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
     };
