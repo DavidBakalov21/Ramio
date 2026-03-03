@@ -12,4 +12,5 @@ export interface Assignment {
   courseId: string;
   test: { id: string; url: string; key: string; name: string } | null;
   submitted?: boolean;
+   isChecked?: boolean;
 }

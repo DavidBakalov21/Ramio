@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '../interfaces/User';
 import { Course, CoursePage } from '../interfaces/Course';
+import { Navbar } from '../components/Navbar';
 import { useToast } from '../components/utility/toast';
 
 export default function AllCoursesPage() {
@@ -23,6 +24,7 @@ export default function AllCoursesPage() {
   const [createDescription, setCreateDescription] = useState('');
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -73,6 +75,18 @@ export default function AllCoursesPage() {
     window.addEventListener('keydown', onEscape);
     return () => window.removeEventListener('keydown', onEscape);
   }, [createModalOpen]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await api.post('/auth/logout');
+      router.push('/login');
+    } catch {
+      router.push('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const handleEnroll = async (courseId: string) => {
     setEnrollingId(courseId);
@@ -165,7 +179,9 @@ export default function AllCoursesPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-4">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
+      <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+      <main className="flex flex-1 items-center justify-center px-4 py-4">
       <motion.main
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -375,6 +391,7 @@ export default function AllCoursesPage() {
           </div>
         </div>
       )}
+      </main>
     </div>
   );
 }

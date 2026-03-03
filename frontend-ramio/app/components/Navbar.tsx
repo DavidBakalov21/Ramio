@@ -40,6 +40,12 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
 
         <div className="flex items-center gap-2">
           <Link
+            href="/"
+            className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+          >
+            Home
+          </Link>
+          <Link
             href="/profile"
             className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
           >
