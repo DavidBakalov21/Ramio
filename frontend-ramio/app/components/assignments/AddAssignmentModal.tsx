@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { ASSIGNMENT_LANGUAGE_MAP } from '@/app/constants/assignmentLanguages';
+import { api } from '@/lib/axios';
 
 export interface AddAssignmentFormData {
   title: string;
@@ -34,6 +35,8 @@ export function AddAssignmentModal({
   const [language, setLanguage] = useState<AssignmentLanguage>('PYTHON');
   const [testCode, setTestCode] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [generatingTests, setGeneratingTests] = useState(false);
+  const [generateError, setGenerateError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -43,8 +46,38 @@ export function AddAssignmentModal({
       setLanguage('PYTHON');
       setTestCode('');
       setValidationError('');
+      setGenerateError('');
     }
   }, [isOpen]);
+
+  const handleGenerateTests = async () => {
+    const trimmed = description.trim();
+    if (!trimmed) {
+      setGenerateError('Enter a description first.');
+      return;
+    }
+    setGenerateError('');
+    setGeneratingTests(true);
+    try {
+      const res = await api.post<{ tests: string }>(
+        '/code-test/generate-tests-from-description',
+        {
+          description: trimmed,
+          language: language === 'PYTHON' ? 'python' : 'javascript',
+        },
+      );
+      setTestCode(res.data.tests ?? '');
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string | string[] } } })
+          ?.response?.data?.message;
+      setGenerateError(
+        Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to generate tests.',
+      );
+    } finally {
+      setGeneratingTests(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -156,12 +189,25 @@ export function AddAssignmentModal({
             </div>
           </div>
           <div>
-            <label htmlFor="add-assignment-test-code" className="block text-xs font-medium text-slate-600 mb-1">
-              Test code <span className="text-slate-400">(optional)</span>
-            </label>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="add-assignment-test-code" className="block text-xs font-medium text-slate-600">
+                Test code <span className="text-slate-400">(optional)</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleGenerateTests}
+                disabled={isSubmitting || generatingTests || !description.trim()}
+                className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {generatingTests ? 'Generating…' : 'Generate from description'}
+              </button>
+            </div>
             <p className="mb-1 text-[11px] text-slate-400">
               {ASSIGNMENT_LANGUAGE_MAP[language].testCodeHint}
             </p>
+            {generateError && (
+              <p className="mb-1 text-xs text-red-600">{generateError}</p>
+            )}
             <textarea
               id="add-assignment-test-code"
               value={testCode}

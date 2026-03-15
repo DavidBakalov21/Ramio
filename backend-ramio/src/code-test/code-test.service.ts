@@ -5,6 +5,8 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import type { RunCodeResponseDto } from './dto/run-code.dto';
+import type { TestLanguage } from '../bedrock/bedrock.service';
+import { BedrockService } from '../bedrock/bedrock.service';
 
 const SOLUTION_FILE = 'solution.py';
 const TEST_FILE = 'test_solution.py';
@@ -14,7 +16,10 @@ export class CodeTestService {
   private readonly pythonImage: string;
   private readonly timeoutMs: number;
 private readonly nodeImage: string;
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly bedrockService: BedrockService,
+  ) {
     this.pythonImage =
       this.config.get<string>('RUNNER_PYTHON_IMAGE') ?? 'runner-python:3.12';
     this.timeoutMs =
@@ -125,6 +130,23 @@ private readonly nodeImage: string;
         });
       });
     });
+  }
+
+  async generateUnitTests(
+    sourceCode: string,
+    language: TestLanguage = 'python',
+  ): Promise<string> {
+    return this.bedrockService.generateUnitTests(sourceCode, language);
+  }
+
+  async generateUnitTestsFromDescription(
+    description: string,
+    language: TestLanguage = 'python',
+  ): Promise<string> {
+    return this.bedrockService.generateUnitTestsFromDescription(
+      description,
+      language,
+    );
   }
 
   private async runNodeTests(code: string, tests: string): Promise<RunCodeResponseDto> {
