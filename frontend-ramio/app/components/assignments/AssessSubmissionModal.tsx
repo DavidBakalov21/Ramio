@@ -34,6 +34,7 @@ export function AssessSubmissionModal({
   const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   const fetchSubmission = useCallback(async () => {
     if (!submissionId) return;
@@ -107,6 +108,38 @@ export function AssessSubmissionModal({
       setError((msg as string) || 'Failed to save assessment');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleGenerateAiFeedback = async () => {
+    if (!submissionId || !submission) return;
+    setError(null);
+    setIsGeneratingAi(true);
+    try {
+      const { data } = await api.post<{
+        feedback: string;
+        suggestedPoints?: number;
+      }>(
+        `/assignment/${submission.assignment.id}/submission/${submission.id}/ai-feedback`,
+      );
+      if (data.feedback) {
+        setFeedback(data.feedback);
+      }
+      if (
+        typeof data.suggestedPoints === 'number' &&
+        !Number.isNaN(data.suggestedPoints)
+      ) {
+        setPoints(data.suggestedPoints);
+      }
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message
+          : null;
+      setError((msg as string) || 'Failed to get AI feedback');
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
@@ -202,6 +235,19 @@ export function AssessSubmissionModal({
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                   disabled={isSaving}
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiFeedback}
+                    disabled={isGeneratingAi || isSaving || !submission}
+                    className="rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isGeneratingAi ? 'Asking AI…' : 'Ask AI for feedback'}
+                  </button>
+                  <p className="text-[11px] text-slate-400">
+                    AI suggests feedback; you can edit before saving.
+                  </p>
+                </div>
               </div>
 
               {/* Points */}
