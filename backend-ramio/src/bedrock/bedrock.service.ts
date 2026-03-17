@@ -79,6 +79,70 @@ export class BedrockService {
     return body.content?.[0]?.text ?? '';
   }
 
+  async generateSubmissionFeedback(input: {
+    language: 'PYTHON' | 'NODE_JS';
+    assignmentTitle: string;
+    assignmentDescription?: string | null;
+    maxPoints: number;
+    code: string;
+  }): Promise<{ feedback: string; suggestedPoints?: number }> {
+    const languageLabel =
+      input.language === 'PYTHON' ? 'Python' : 'JavaScript / Node.js';
+
+    const prompt = `You are an experienced programming teacher reviewing a student's solution.
+
+Your task is to provide feedback FOR THE TEACHER, not for the student directly.
+
+Please:
+- Briefly summarize what the student's code does and how close it is to the expected solution.
+- List concrete strengths of the solution (correctness, style, structure, tests passing, etc.).
+- List concrete weaknesses, mistakes, or misconceptions you see.
+- Suggest how the teacher could explain these issues or coach the student in the next lesson.
+- Optionally suggest a numeric score from 0 to ${input.maxPoints}.
+
+IMPORTANT:
+- Do NOT address the student directly (no "you should...").
+- Speak about "the student" and "the solution".
+
+Return your answer in this exact format:
+
+FeedbackForTeacher:
+<your analysis and teaching suggestions in plain text>
+
+SuggestedPoints:
+<integer between 0 and ${input.maxPoints}, or leave empty if you cannot decide>
+
+---
+Assignment:
+Title: ${input.assignmentTitle}
+Description: ${input.assignmentDescription ?? '(no description)'}
+Language: ${languageLabel}
+Max points: ${input.maxPoints}
+
+Student code:
+"""${languageLabel}
+${input.code}
+"""`;
+
+    const raw = await this.invoke(prompt, 2048);
+    const text = stripMarkdownCodeFences(raw);
+
+    const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
+    const suggestedPoints = pointsMatch ? Number(pointsMatch[1]) : undefined;
+    const feedbackMatch = text.match(
+      /FeedbackForTeacher:\s*([\s\S]*?)(?:SuggestedPoints:|$)/i,
+    );
+    const feedback = (feedbackMatch ? feedbackMatch[1] : text).trim();
+
+    return {
+      feedback,
+      suggestedPoints:
+        typeof suggestedPoints === 'number' && !Number.isNaN(suggestedPoints)
+          ? suggestedPoints
+          : undefined,
+    };
+  }
+
   async generateUnitTests(
     sourceCode: string,
     language: TestLanguage = 'python',

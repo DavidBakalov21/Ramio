@@ -173,4 +173,18 @@ export class AssignmentController {
     }
     return this.assignmentService.updateSubmission(BigInt(id), user.id, files);
   }
+
+  @Post(':id/submission/:submissionId/ai-feedback')
+  @Roles(UserRole.TEACHER)
+  getAiFeedbackForSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.assignmentService.getAiFeedbackForSubmission(
+      BigInt(id),
+      BigInt(submissionId),
+      user.id,
+    );
+  }
 }
