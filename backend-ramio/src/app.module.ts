@@ -13,6 +13,7 @@ import { CodeTestModule } from './code-test/code-test.module';
 import { CourseModule } from './course/course.module';
 import { AssignmentModule } from './assignment/assignment.module';
 import { StripeModule } from './stripe/stripe.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { StripeModule } from './stripe/stripe.module';
     CourseModule,
     AssignmentModule,
     StripeModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [

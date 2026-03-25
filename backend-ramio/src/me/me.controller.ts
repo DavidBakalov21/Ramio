@@ -14,6 +14,7 @@ import { OnboardingDto } from './dto/onboarding.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MeService } from './me.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { SubscriptionService } from 'src/subscription/subscription.service';
 import type { User as PrismaUser } from '@prisma/client';
 
 type UserWithProfile = PrismaUser & { profilePicture?: { url: string } | null };
@@ -23,16 +24,21 @@ export class MeController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly meService: MeService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   @Get()
-  getMe(@User() user: UserWithProfile) {
+  async getMe(@User() user: UserWithProfile) {
+    const subscriptionTier = await this.subscriptionService.getSubscriptionTier(
+      user.id,
+    );
     return {
       id: user.id.toString(),
       email: user.email,
       role: user.role,
       username: user.username,
       profilePictureUrl: user.profilePicture?.url ?? null,
+      subscriptionTier,
       aboutMe: user.aboutMe,
       birthdate: user.birthdate,
       createdAt: user.createdAt,

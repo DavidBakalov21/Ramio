@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { User } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
+import { SubscriptionCheckoutDto } from './dto/subscription-checkout.dto';
 import { SupportCheckoutDto } from './dto/support-checkout.dto';
 
 @Injectable()
@@ -15,7 +17,10 @@ export class StripeService {
   private readonly logger = new Logger(StripeService.name);
   private stripe: Stripe | null = null;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   private getStripe(): Stripe {
     const key = this.config.get<string>('STRIPE_SECRET_KEY');
@@ -67,7 +72,75 @@ export class StripeService {
     return { url: session.url };
   }
 
-  handleWebhook(rawBody: Buffer, signature: string | undefined) {
+  async createSubscriptionCheckout(user: User, dto: SubscriptionCheckoutDto) {
+    const priceId =
+      dto.tier === 'PREMIUM'
+        ? this.config.get<string>('STRIPE_PREMIUM_PRICE_ID')
+        : this.config.get<string>('STRIPE_PRO_PRICE_ID');
+    const frontend = this.config.get<string>('FRONTEND_BASE_URL')?.replace(/\/$/, '');
+    if (!priceId || !frontend) {
+      throw new ServiceUnavailableException(
+        `Subscription checkout is not configured (STRIPE_${dto.tier}_PRICE_ID, FRONTEND_BASE_URL)`,
+      );
+    }
+
+    const stripe = this.getStripe();
+
+    let customerId: string | undefined = user.stripeCustomerId ?? undefined;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId: user.id.toString() },
+      });
+      customerId = customer.id;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${frontend}/support?subscription=success`,
+      cancel_url: `${frontend}/support?subscription=cancelled`,
+      client_reference_id: user.id.toString(),
+      subscription_data: {
+        metadata: { userId: user.id.toString(), tier: dto.tier },
+      },
+    });
+
+    if (!session.url) {
+      throw new InternalServerErrorException('Stripe did not return a checkout URL');
+    }
+
+    return { url: session.url };
+  }
+
+  private async upsertSubscription(
+    stripeSubscriptionId: string,
+    stripeCustomerId: string,
+    userId: bigint,
+    status: string,
+    currentPeriodEnd: Date,
+    priceId?: string,
+  ): Promise<void> {
+    await this.prisma.userSubscription.upsert({
+      where: { stripeSubscriptionId },
+      create: {
+        userId,
+        stripeSubscriptionId,
+        stripeCustomerId,
+        status,
+        currentPeriodEnd,
+        priceId,
+      },
+      update: { status, currentPeriodEnd, priceId, updatedAt: new Date() },
+    });
+  }
+
+  async handleWebhook(rawBody: Buffer, signature: string | undefined) {
     const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
       throw new ServiceUnavailableException('Stripe webhook is not configured');
@@ -89,7 +162,95 @@ export class StripeService {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         this.logger.log(
-          `checkout.session.completed id=${session.id} amount_total=${session.amount_total} currency=${session.currency} client_reference_id=${session.client_reference_id} metadata=${JSON.stringify(session.metadata ?? {})}`,
+          `checkout.session.completed id=${session.id} mode=${session.mode} client_reference_id=${session.client_reference_id}`,
+        );
+        if (
+          session.mode === 'subscription' &&
+          session.customer &&
+          session.subscription
+        ) {
+          const userId = session.client_reference_id;
+          const customerId =
+            typeof session.customer === 'string'
+              ? session.customer
+              : session.customer.id;
+          if (userId) {
+            await this.prisma.user.update({
+              where: { id: BigInt(userId) },
+              data: { stripeCustomerId: customerId },
+            });
+            const subId =
+              typeof session.subscription === 'string'
+                ? session.subscription
+                : session.subscription?.id;
+            if (subId) {
+              const stripe = this.getStripe();
+              const sub = await stripe.subscriptions.retrieve(subId);
+              const priceId = sub.items.data[0]?.price?.id ?? undefined;
+              const periodEnd = (sub as { current_period_end?: number })
+                .current_period_end;
+              await this.upsertSubscription(
+                sub.id,
+                customerId,
+                BigInt(userId),
+                sub.status,
+                new Date((periodEnd ?? 0) * 1000),
+                priceId,
+              );
+            }
+          }
+        }
+        break;
+      }
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof subscription.customer === 'string'
+            ? subscription.customer
+            : subscription.customer?.id;
+        if (!customerId) break;
+        const user = await this.prisma.user.findUnique({
+          where: { stripeCustomerId: customerId },
+        });
+        if (!user) break;
+        const priceId = subscription.items.data[0]?.price?.id ?? undefined;
+        const periodEnd = (subscription as { current_period_end?: number })
+          .current_period_end;
+        await this.upsertSubscription(
+          subscription.id,
+          customerId,
+          user.id,
+          subscription.status,
+          new Date((periodEnd ?? 0) * 1000),
+          priceId,
+        );
+        this.logger.log(
+          `customer.subscription.updated id=${subscription.id} status=${subscription.status}`,
+        );
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof subscription.customer === 'string'
+            ? subscription.customer
+            : subscription.customer?.id;
+        if (!customerId) break;
+        const user = await this.prisma.user.findUnique({
+          where: { stripeCustomerId: customerId },
+        });
+        if (!user) break;
+        const periodEnd = (subscription as { current_period_end?: number })
+          .current_period_end;
+        await this.upsertSubscription(
+          subscription.id,
+          customerId,
+          user.id,
+          'canceled',
+          new Date((periodEnd ?? 0) * 1000),
+        );
+        this.logger.log(
+          `customer.subscription.deleted id=${subscription.id} -> status=canceled`,
         );
         break;
       }

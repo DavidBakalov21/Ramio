@@ -11,6 +11,7 @@ import type { Request } from 'express';
 import { User } from 'src/auth/decorators/user.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 import type { User as PrismaUser } from '@prisma/client';
+import { SubscriptionCheckoutDto } from './dto/subscription-checkout.dto';
 import { SupportCheckoutDto } from './dto/support-checkout.dto';
 import { StripeService } from './stripe.service';
 
@@ -24,6 +25,14 @@ export class StripeController {
     @Body() dto: SupportCheckoutDto,
   ) {
     return this.stripeService.createSupportCheckout(user, dto);
+  }
+
+  @Post('subscription-checkout')
+  createSubscriptionCheckout(
+    @User() user: PrismaUser,
+    @Body() dto: SubscriptionCheckoutDto,
+  ) {
+    return this.stripeService.createSubscriptionCheckout(user, dto);
   }
 
   @Post('webhook')
