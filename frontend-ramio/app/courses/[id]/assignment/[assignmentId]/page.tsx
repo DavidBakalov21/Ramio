@@ -41,6 +41,12 @@ export default function AssignmentSandboxPage() {
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
+  const [chatMessages, setChatMessages] = useState<
+    { role: 'user' | 'assistant'; content: string }[]
+  >([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -187,8 +193,32 @@ export default function AssignmentSandboxPage() {
   };
 
   const isStudent = user?.role === 'STUDENT';
-  const isAssessed =
-    isStudent && (submission?.isChecked || submission?.points != null);
+  const isAssessed = isStudent && !!submission?.isChecked;
+
+  const handleChatSend = async () => {
+    if (!chatInput.trim() || chatLoading || !isAssessed || !assignmentId) return;
+    const userMsg = { role: 'user' as const, content: chatInput.trim() };
+    const next = [...chatMessages, userMsg];
+    setChatInput('');
+    setChatLoading(true);
+    setChatError('');
+    try {
+      const { data } = await api.post<{ reply: string }>(
+        `/assignment/${assignmentId}/submission/chat`,
+        { messages: next },
+      );
+      setChatMessages([...next, { role: 'assistant', content: data.reply }]);
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : null;
+      setChatError((msg as string) || 'Could not reach the tutor. Try again.');
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   if (loadingUser || !user) {
     return (
@@ -264,6 +294,67 @@ export default function AssignmentSandboxPage() {
                     <pre className="max-h-80 overflow-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900">
                       {code || '// No code submitted'}
                     </pre>
+                  </div>
+
+                  <div className="rounded-xl border border-violet-200 bg-violet-50/40 px-4 py-3">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      Discuss this assignment with AI
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Ask about your grade, mistakes, or how to improve. The assistant knows your
+                      task, your code, test output from the grader runner, and your teacher&apos;s
+                      feedback.
+                    </p>
+                    <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
+                      {chatMessages.length === 0 ? (
+                        <p className="px-2 py-4 text-center text-xs text-slate-400">
+                          Start the conversation below.
+                        </p>
+                      ) : (
+                        chatMessages.map((m, i) => (
+                          <div
+                            key={i}
+                            className={`rounded-lg px-3 py-2 text-sm ${
+                              m.role === 'user'
+                                ? 'ml-4 bg-violet-100 text-slate-900'
+                                : 'mr-4 bg-slate-100 text-slate-800'
+                            }`}
+                          >
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                              {m.role === 'user' ? 'You' : 'Assistant'}
+                            </p>
+                            <p className="mt-0.5 whitespace-pre-wrap">{m.content}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {chatError && (
+                      <p className="mt-2 text-xs text-red-600">{chatError}</p>
+                    )}
+                    <div className="mt-2 flex gap-2">
+                      <textarea
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void handleChatSend();
+                          }
+                        }}
+                        placeholder="Ask a question…"
+                        rows={2}
+                        disabled={chatLoading}
+                        className="min-h-[44px] flex-1 resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleChatSend()}
+                        disabled={chatLoading || !chatInput.trim()}
+                        className="self-end rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {chatLoading ? '…' : 'Send'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

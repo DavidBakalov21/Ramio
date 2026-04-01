@@ -79,6 +79,41 @@ export class BedrockService {
     return body.content?.[0]?.text ?? '';
   }
 
+  /**
+   * Multi-turn chat with a fixed system prompt (Claude on Bedrock Messages API).
+   */
+  async chatWithSystem(
+    system: string,
+    messages: { role: 'user' | 'assistant'; content: string }[],
+    maxTokens = 4096,
+  ): Promise<string> {
+    if (!messages.length) {
+      throw new Error('messages must not be empty');
+    }
+    const payload = {
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: maxTokens,
+      temperature: 0.35,
+      system,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: [{ type: 'text' as const, text: m.content }],
+      })),
+    };
+
+    const command = new InvokeModelCommand({
+      modelId: this.modelId,
+      contentType: 'application/json',
+      accept: 'application/json',
+      body: JSON.stringify(payload),
+    });
+
+    const response = await this.client.send(command);
+    const decoded = new TextDecoder().decode(response.body);
+    const body = JSON.parse(decoded) as InvokeResponseBody;
+    return body.content?.[0]?.text ?? '';
+  }
+
   async generateSubmissionFeedback(input: {
     language: 'PYTHON' | 'NODE_JS';
     assignmentTitle: string;
