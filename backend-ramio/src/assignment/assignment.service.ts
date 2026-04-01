@@ -8,6 +8,7 @@ import {
 import { AssignmentLanguage } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { CodeTestService } from '../code-test/code-test.service';
+import { BedrockService } from '../bedrock/bedrock.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -27,6 +28,7 @@ export class AssignmentService {
     private readonly storage: StorageService,
     private readonly config: ConfigService,
     private readonly codeTestService: CodeTestService,
+    private readonly bedrock: BedrockService,
   ) {
     this.assignmentBucket =
       this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ??
@@ -551,6 +553,62 @@ export class AssignmentService {
       points: updated.points,
       isChecked: updated.isChecked,
       checkedAt: updated.checkedAt?.toISOString() ?? null,
+    };
+  }
+
+  async getAiFeedbackForSubmission(
+    assignmentId: bigint,
+    submissionId: bigint,
+    teacherId: bigint,
+  ) {
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        solutionFiles: true,
+        assignment: { include: { course: true } },
+      },
+    });
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+    if (submission.assignment.id !== assignmentId) {
+      throw new BadRequestException('Submission does not belong to this assignment');
+    }
+    if (submission.assignment.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can request AI feedback for this submission',
+      );
+    }
+
+    let code = '';
+    const firstFile = submission.solutionFiles[0];
+    if (firstFile) {
+      try {
+        code = await this.storage.getFileContentAsText(
+          firstFile.key,
+          this.assignmentBucket,
+        );
+      } catch {
+        throw new BadRequestException('Could not read submission file');
+      }
+    }
+    if (!code.trim()) {
+      throw new BadRequestException('Submission has no code');
+    }
+
+    const { feedback, suggestedPoints } = await this.bedrock.generateSubmissionFeedback(
+      {
+        language: submission.assignment.language,
+        assignmentTitle: submission.assignment.title,
+        assignmentDescription: submission.assignment.description,
+        maxPoints: submission.assignment.points,
+        code,
+      },
+    );
+
+    return {
+      feedback,
+      suggestedPoints,
     };
   }
 
