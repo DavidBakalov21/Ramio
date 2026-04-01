@@ -46,6 +46,12 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
             Home
           </Link>
           <Link
+            href="/subscription"
+            className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+          >
+            Subscription
+          </Link>
+          <Link
             href="/support"
             className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
           >
