@@ -48,10 +48,7 @@ export class CourseController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @User() user: PrismaUser,
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
     return this.courseService.findOne(BigInt(id), user.id);
   }
 

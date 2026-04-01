@@ -77,8 +77,10 @@ export class AssignmentService {
     }
     return assignments.map((a) => ({
       ...this.toAssignmentResponse(a),
-      submitted: submissionStatusByAssignment.get(a.id.toString())?.submitted ?? false,
-      isChecked: submissionStatusByAssignment.get(a.id.toString())?.isChecked ?? false,
+      submitted:
+        submissionStatusByAssignment.get(a.id.toString())?.submitted ?? false,
+      isChecked:
+        submissionStatusByAssignment.get(a.id.toString())?.isChecked ?? false,
     }));
   }
 
@@ -101,14 +103,20 @@ export class AssignmentService {
     };
   }
 
-  async update(assignmentId: bigint, teacherId: bigint, dto: UpdateAssignmentDto) {
+  async update(
+    assignmentId: bigint,
+    teacherId: bigint,
+    dto: UpdateAssignmentDto,
+  ) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only edit assignments in your own courses');
+      throw new ForbiddenException(
+        'You can only edit assignments in your own courses',
+      );
     }
     const dueDate =
       dto.dueDate !== undefined
@@ -136,7 +144,9 @@ export class AssignmentService {
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only delete assignments in your own courses');
+      throw new ForbiddenException(
+        'You can only delete assignments in your own courses',
+      );
     }
     if (assignment.test) {
       await this.storage.deleteFile(assignment.test.key, this.assignmentBucket);
@@ -145,7 +155,10 @@ export class AssignmentService {
     return { success: true };
   }
 
-  async getTestFileContent(assignmentId: bigint, teacherId: bigint): Promise<string> {
+  async getTestFileContent(
+    assignmentId: bigint,
+    teacherId: bigint,
+  ): Promise<string> {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
       include: { course: true, test: true },
@@ -153,7 +166,9 @@ export class AssignmentService {
     console.log(assignment);
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only view test files for your own assignments');
+      throw new ForbiddenException(
+        'You can only view test files for your own assignments',
+      );
     }
     if (!assignment.test) {
       throw new NotFoundException('No test file for this assignment');
@@ -164,7 +179,10 @@ export class AssignmentService {
     );
   }
 
-  async getTestFileContentForRun(assignmentId: bigint, userId: bigint): Promise<string> {
+  async getTestFileContentForRun(
+    assignmentId: bigint,
+    userId: bigint,
+  ): Promise<string> {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
       include: { course: true, test: true },
@@ -172,7 +190,9 @@ export class AssignmentService {
     if (!assignment) throw new NotFoundException('Assignment not found');
     await this.assertCanAccessCourse(assignment.courseId, userId);
     if (!assignment.test) {
-      throw new NotFoundException('This assignment has no tests configured yet');
+      throw new NotFoundException(
+        'This assignment has no tests configured yet',
+      );
     }
     return this.storage.getFileContentAsText(
       assignment.test.key,
@@ -180,7 +200,6 @@ export class AssignmentService {
     );
   }
 
- 
   async runAssignment(
     assignmentId: bigint,
     userId: bigint,
@@ -203,7 +222,15 @@ export class AssignmentService {
       return this.codeTestService.runPythonTests(code, testContent);
     }
     if (assignment.language === AssignmentLanguage.NODE_JS) {
-      throw new BadRequestException('Running Node.js assignments in the sandbox is not supported yet');
+      throw new BadRequestException(
+        'Running Node.js assignments in the sandbox is not supported yet',
+      );
+    }
+    if (assignment.language === AssignmentLanguage.JAVA) {
+      return this.codeTestService.runJavaTests(code, testContent);
+    }
+    if (assignment.language === AssignmentLanguage.DOTNET) {
+      return this.codeTestService.runDotnetTests(code, testContent);
     }
     throw new BadRequestException('Unsupported assignment language');
   }
@@ -219,17 +246,25 @@ export class AssignmentService {
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only upload test files to your own assignments');
+      throw new ForbiddenException(
+        'You can only upload test files to your own assignments',
+      );
     }
-    const filename =
-      file.originalname?.split(/[/\\]/).pop() ?? 'test-file';
+    const filename = file.originalname?.split(/[/\\]/).pop() ?? 'test-file';
     const key = `tests/${assignmentId}/${filename}`;
-    const { url } = await this.storage.overwriteFile(file, this.assignmentBucket, key);
+    const { url } = await this.storage.overwriteFile(
+      file,
+      this.assignmentBucket,
+      key,
+    );
     const name = file.originalname ?? 'test-file';
 
     if (assignment.test) {
       if (assignment.test.key !== key) {
-        await this.storage.deleteFile(assignment.test.key, this.assignmentBucket);
+        await this.storage.deleteFile(
+          assignment.test.key,
+          this.assignmentBucket,
+        );
       }
       const updated = await this.prisma.testFile.update({
         where: { id: assignment.test.id },
@@ -265,7 +300,9 @@ export class AssignmentService {
       },
     });
     if (!enrollment) {
-      throw new ForbiddenException('You must be enrolled in this course to submit');
+      throw new ForbiddenException(
+        'You must be enrolled in this course to submit',
+      );
     }
 
     const existing = await this.prisma.assignmentSubmission.findUnique({
@@ -324,7 +361,9 @@ export class AssignmentService {
       },
     });
     if (!enrollment) {
-      throw new ForbiddenException('You must be enrolled in this course to submit');
+      throw new ForbiddenException(
+        'You must be enrolled in this course to submit',
+      );
     }
 
     const submission = await this.prisma.assignmentSubmission.findUnique({
@@ -412,7 +451,9 @@ export class AssignmentService {
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can view submissions');
+      throw new ForbiddenException(
+        'Only the course teacher can view submissions',
+      );
     }
     const submissions = await this.prisma.assignmentSubmission.findMany({
       where: { assignmentId },
@@ -444,7 +485,9 @@ export class AssignmentService {
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can view this submission');
+      throw new ForbiddenException(
+        'Only the course teacher can view this submission',
+      );
     }
     let solutionContent: string | null = null;
     const firstFile = submission.solutionFiles[0];
@@ -479,7 +522,10 @@ export class AssignmentService {
     };
   }
 
-  async runSubmissionTests(submissionId: bigint, teacherId: bigint): Promise<RunCodeResponseDto> {
+  async runSubmissionTests(
+    submissionId: bigint,
+    teacherId: bigint,
+  ): Promise<RunCodeResponseDto> {
     const submission = await this.prisma.assignmentSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -489,7 +535,9 @@ export class AssignmentService {
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can run tests on submissions');
+      throw new ForbiddenException(
+        'Only the course teacher can run tests on submissions',
+      );
     }
     if (!submission.assignment.test) {
       throw new BadRequestException('This assignment has no tests configured');
@@ -517,7 +565,15 @@ export class AssignmentService {
       return this.codeTestService.runPythonTests(code, testContent);
     }
     if (submission.assignment.language === AssignmentLanguage.NODE_JS) {
-      throw new BadRequestException('Running Node.js in the sandbox is not supported yet');
+      throw new BadRequestException(
+        'Running Node.js in the sandbox is not supported yet',
+      );
+    }
+    if (submission.assignment.language === AssignmentLanguage.JAVA) {
+      return this.codeTestService.runJavaTests(code, testContent);
+    }
+    if (submission.assignment.language === AssignmentLanguage.DOTNET) {
+      return this.codeTestService.runDotnetTests(code, testContent);
     }
     throw new BadRequestException('Unsupported assignment language');
   }
@@ -533,10 +589,13 @@ export class AssignmentService {
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can assess submissions');
+      throw new ForbiddenException(
+        'Only the course teacher can assess submissions',
+      );
     }
     const data: Record<string, unknown> = {};
-    if (dto.teacherFeedback !== undefined) data.teacherFeedback = dto.teacherFeedback;
+    if (dto.teacherFeedback !== undefined)
+      data.teacherFeedback = dto.teacherFeedback;
     if (dto.points !== undefined) data.points = dto.points;
     if (dto.isChecked !== undefined) {
       data.isChecked = dto.isChecked;
@@ -572,7 +631,9 @@ export class AssignmentService {
       throw new NotFoundException('Submission not found');
     }
     if (submission.assignment.id !== assignmentId) {
-      throw new BadRequestException('Submission does not belong to this assignment');
+      throw new BadRequestException(
+        'Submission does not belong to this assignment',
+      );
     }
     if (submission.assignment.course.userId !== teacherId) {
       throw new ForbiddenException(
@@ -596,15 +657,14 @@ export class AssignmentService {
       throw new BadRequestException('Submission has no code');
     }
 
-    const { feedback, suggestedPoints } = await this.bedrock.generateSubmissionFeedback(
-      {
+    const { feedback, suggestedPoints } =
+      await this.bedrock.generateSubmissionFeedback({
         language: submission.assignment.language,
         assignmentTitle: submission.assignment.title,
         assignmentDescription: submission.assignment.description,
         maxPoints: submission.assignment.points,
         code,
-      },
-    );
+      });
 
     return {
       feedback,
@@ -618,7 +678,9 @@ export class AssignmentService {
     });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('You can only create assignments in your own courses');
+      throw new ForbiddenException(
+        'You can only create assignments in your own courses',
+      );
     }
   }
 
@@ -662,7 +724,12 @@ export class AssignmentService {
     };
   }
 
-  private toTestFileResponse(t: { id: bigint; url: string; key: string; name: string }) {
+  private toTestFileResponse(t: {
+    id: bigint;
+    url: string;
+    key: string;
+    name: string;
+  }) {
     return {
       id: t.id.toString(),
       url: t.url,

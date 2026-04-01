@@ -7,6 +7,7 @@ import { Assignment } from '@/app/interfaces/Assignment';
 import {
   getAssignmentLanguageFileExtension,
 } from '@/app/constants/assignmentLanguages';
+import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { useToast } from '@/app/components/utility/toast';
 import { AssignmentList } from './AssignmentList';
 import { AddAssignmentModal, AddAssignmentFormData } from './AddAssignmentModal';
@@ -19,6 +20,13 @@ interface AssignmentsSectionProps {
   courseId: string;
   isTeacher: boolean;
 }
+
+const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
+  PYTHON: 'text/x-python',
+  NODE_JS: 'text/javascript',
+  JAVA: 'text/x-java-source',
+  DOTNET: 'text/plain',
+};
 
 export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionProps) {
   const router = useRouter();
@@ -103,7 +111,7 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         if (data.testCode) {
           const ext = getAssignmentLanguageFileExtension(data.language);
           const file = new File([data.testCode], `test.${ext}`, {
-            type: ext === 'js' ? 'text/javascript' : 'text/x-python',
+            type: LANGUAGE_MIME_TYPE[data.language],
           });
           const formData = new FormData();
           formData.append('file', file);
@@ -154,7 +162,7 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         } else if (data.newTestCode) {
           const ext = getAssignmentLanguageFileExtension(data.language);
           const file = new File([data.newTestCode], `test.${ext}`, {
-            type: ext === 'js' ? 'text/javascript' : 'text/x-python',
+            type: LANGUAGE_MIME_TYPE[data.language],
           });
           const formData = new FormData();
           formData.append('file', file);

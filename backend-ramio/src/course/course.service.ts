@@ -13,7 +13,12 @@ import type { UpdateCourseDto } from './dto/update-course.dto';
 export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(userId: bigint, role: UserRole | null, page: number, pageSize: number) {
+  async findAll(
+    userId: bigint,
+    role: UserRole | null,
+    page: number,
+    pageSize: number,
+  ) {
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
     const normalizedPageSize =
       Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10;
@@ -211,7 +216,9 @@ export class CourseService {
       },
     });
     if (existingPending) {
-      throw new ConflictException('You already have a pending request for this course');
+      throw new ConflictException(
+        'You already have a pending request for this course',
+      );
     }
     const pending = await this.prisma.pendingEnrollment.create({
       data: {
@@ -234,7 +241,9 @@ export class CourseService {
     });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can view pending requests');
+      throw new ForbiddenException(
+        'Only the course teacher can view pending requests',
+      );
     }
     const list = await this.prisma.pendingEnrollment.findMany({
       where: { courseId },
@@ -263,7 +272,9 @@ export class CourseService {
     });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can accept requests');
+      throw new ForbiddenException(
+        'Only the course teacher can accept requests',
+      );
     }
     const pending = await this.prisma.pendingEnrollment.findFirst({
       where: { id: pendingId, courseId },
@@ -300,7 +311,9 @@ export class CourseService {
     });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can decline requests');
+      throw new ForbiddenException(
+        'Only the course teacher can decline requests',
+      );
     }
     const pending = await this.prisma.pendingEnrollment.findFirst({
       where: { id: pendingId, courseId },
@@ -334,11 +347,15 @@ export class CourseService {
     });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can view student results');
+      throw new ForbiddenException(
+        'Only the course teacher can view student results',
+      );
     }
 
     const assignmentIds = course.assignments.map((a) => a.id);
-    const assignmentMap = new Map(course.assignments.map((a) => [a.id.toString(), a]));
+    const assignmentMap = new Map(
+      course.assignments.map((a) => [a.id.toString(), a]),
+    );
     const totalMax = course.assignments.reduce((sum, a) => sum + a.points, 0);
 
     const submissions = await this.prisma.assignmentSubmission.findMany({
@@ -354,7 +371,10 @@ export class CourseService {
       },
     });
 
-    const submissionMap = new Map<string, { points: number; isChecked: boolean }>();
+    const submissionMap = new Map<
+      string,
+      { points: number; isChecked: boolean }
+    >();
     for (const s of submissions) {
       submissionMap.set(`${s.userId}-${s.assignmentId}`, {
         points: s.points,
@@ -365,7 +385,13 @@ export class CourseService {
     const students = course.enrollments.map((e) => {
       const assignmentResults = course.assignments.map((a) => {
         const sub = submissionMap.get(`${e.userId}-${a.id}`);
-        return sub ? { points: sub.points, maxPoints: a.points, isChecked: sub.isChecked } : null;
+        return sub
+          ? {
+              points: sub.points,
+              maxPoints: a.points,
+              isChecked: sub.isChecked,
+            }
+          : null;
       });
       const totalEarned = assignmentResults.reduce(
         (sum, r) => sum + (r?.points ?? 0),
@@ -393,7 +419,14 @@ export class CourseService {
     };
   }
 
-  private toResponse(course: { id: bigint; title: string; description: string | null; createdAt: Date; updatedAt: Date; userId: bigint }) {
+  private toResponse(course: {
+    id: bigint;
+    title: string;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: bigint;
+  }) {
     return {
       id: course.id.toString(),
       title: course.title,

@@ -35,7 +35,9 @@ export class StripeService {
 
   async createSupportCheckout(user: User, dto: SupportCheckoutDto) {
     const priceId = this.config.get<string>('STRIPE_SUPPORT_PRICE_ID');
-    const frontend = this.config.get<string>('FRONTEND_BASE_URL')?.replace(/\/$/, '');
+    const frontend = this.config
+      .get<string>('FRONTEND_BASE_URL')
+      ?.replace(/\/$/, '');
     if (!priceId || !frontend) {
       throw new ServiceUnavailableException(
         'Support checkout is not configured (STRIPE_SUPPORT_PRICE_ID, FRONTEND_BASE_URL)',
@@ -66,7 +68,9 @@ export class StripeService {
     });
 
     if (!session.url) {
-      throw new InternalServerErrorException('Stripe did not return a checkout URL');
+      throw new InternalServerErrorException(
+        'Stripe did not return a checkout URL',
+      );
     }
 
     return { url: session.url };
@@ -77,7 +81,9 @@ export class StripeService {
       dto.tier === 'PREMIUM'
         ? this.config.get<string>('STRIPE_PREMIUM_PRICE_ID')
         : this.config.get<string>('STRIPE_PRO_PRICE_ID');
-    const frontend = this.config.get<string>('FRONTEND_BASE_URL')?.replace(/\/$/, '');
+    const frontend = this.config
+      .get<string>('FRONTEND_BASE_URL')
+      ?.replace(/\/$/, '');
     if (!priceId || !frontend) {
       throw new ServiceUnavailableException(
         `Subscription checkout is not configured (STRIPE_${dto.tier}_PRICE_ID, FRONTEND_BASE_URL)`,
@@ -112,7 +118,9 @@ export class StripeService {
     });
 
     if (!session.url) {
-      throw new InternalServerErrorException('Stripe did not return a checkout URL');
+      throw new InternalServerErrorException(
+        'Stripe did not return a checkout URL',
+      );
     }
 
     return { url: session.url };
@@ -160,7 +168,7 @@ export class StripeService {
 
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
         this.logger.log(
           `checkout.session.completed id=${session.id} mode=${session.mode} client_reference_id=${session.client_reference_id}`,
         );
@@ -203,7 +211,7 @@ export class StripeService {
         break;
       }
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         const customerId =
           typeof subscription.customer === 'string'
             ? subscription.customer
@@ -230,7 +238,7 @@ export class StripeService {
         break;
       }
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object;
         const customerId =
           typeof subscription.customer === 'string'
             ? subscription.customer

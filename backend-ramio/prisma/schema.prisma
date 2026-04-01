@@ -26,6 +26,8 @@ enum UserSubscriptionTier {
 enum AssignmentLanguage {
   PYTHON
   NODE_JS
+  JAVA
+  DOTNET
 }
 
 model User {

@@ -6,10 +6,10 @@ export class GenerateTestsDto {
   code: string;
 
   @IsOptional()
-  @IsIn(['python', 'javascript'], {
-    message: 'language must be "python" or "javascript"',
+  @IsIn(['python', 'javascript', 'java', 'csharp'], {
+    message: 'language must be "python", "javascript", "java", or "csharp"',
   })
-  language?: 'python' | 'javascript';
+  language?: 'python' | 'javascript' | 'java' | 'csharp';
 }
 
 export class GenerateTestsResponseDto {

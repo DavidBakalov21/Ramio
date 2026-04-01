@@ -34,10 +34,8 @@ export class AuthService {
       new URL(`${this.issuer}/.well-known/jwks.json`),
     );
 
-   
     this.cognitoClient = new CognitoIdentityProviderClient({
       region: this.region,
-
     });
   }
   buildAuthorizeUrl(opts: { identityProvider?: 'Google' }) {
@@ -73,7 +71,6 @@ export class AuthService {
     if (!cognitoSub) throw new UnauthorizedException('Missing sub in id_token');
     if (!email) throw new UnauthorizedException('Missing email in id_token');
 
-    
     const user = await this.prisma.user.upsert({
       where: { cognitoSub },
       update: {
@@ -146,7 +143,7 @@ export class AuthService {
     refreshToken?: string,
   ) {
     const secure = this.config.get('COOKIE_SECURE') === 'true';
-    const sameSiteRaw = (this.config.get('COOKIE_SAMESITE') || 'Lax') as string;
+    const sameSiteRaw = this.config.get('COOKIE_SAMESITE') || 'Lax';
     const sameSite =
       sameSiteRaw.toLowerCase() === 'none'
         ? 'none'
@@ -162,7 +159,7 @@ export class AuthService {
       sameSite,
       domain,
       path: '/',
-      maxAge: 15 * 60 * 1000, 
+      maxAge: 15 * 60 * 1000,
     });
 
     if (refreshToken) {
@@ -172,14 +169,14 @@ export class AuthService {
         sameSite,
         domain,
         path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000, 
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       });
     }
   }
 
   clearAuthCookies(res: Response): void {
     const secure = this.config.get('COOKIE_SECURE') === 'true';
-    const sameSiteRaw = (this.config.get('COOKIE_SAMESITE') || 'Lax') as string;
+    const sameSiteRaw = this.config.get('COOKIE_SAMESITE') || 'Lax';
     const sameSite =
       sameSiteRaw.toLowerCase() === 'none'
         ? 'none'
@@ -189,7 +186,6 @@ export class AuthService {
 
     const domain = (this.config.get('COOKIE_DOMAIN') || '').trim() || undefined;
 
-  
     res.clearCookie('access_token', {
       httpOnly: true,
       secure,
@@ -198,7 +194,6 @@ export class AuthService {
       path: '/',
     });
 
-  
     res.clearCookie('refresh_token', {
       httpOnly: true,
       secure,
@@ -331,5 +326,4 @@ export class AuthService {
       throw new UnauthorizedException(errorMessage);
     }
   }
-
 }

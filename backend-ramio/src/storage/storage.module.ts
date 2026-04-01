@@ -9,7 +9,9 @@ import { S3Client } from '@aws-sdk/client-s3';
       provide: 'S3Client',
       useFactory: (configService: ConfigService) => {
         const accessKeyId = configService.get<string>('S3_ACCESS_KEY_ID');
-        const secretAccessKey = configService.get<string>('S3_SECRET_ACCESS_KEY');
+        const secretAccessKey = configService.get<string>(
+          'S3_SECRET_ACCESS_KEY',
+        );
         const region = configService.get<string>('S3_REGION');
 
         if (!accessKeyId || !secretAccessKey || !region) {

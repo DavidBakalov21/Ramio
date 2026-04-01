@@ -39,7 +39,10 @@ export class AssignmentController {
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
   ) {
-    return this.assignmentService.getSubmissionsByAssignment(BigInt(id), user.id);
+    return this.assignmentService.getSubmissionsByAssignment(
+      BigInt(id),
+      user.id,
+    );
   }
 
   @Get('submission/:submissionId')
@@ -48,7 +51,10 @@ export class AssignmentController {
     @Param('submissionId', ParseIntPipe) submissionId: number,
     @User() user: PrismaUser,
   ) {
-    return this.assignmentService.getSubmissionById(BigInt(submissionId), user.id);
+    return this.assignmentService.getSubmissionById(
+      BigInt(submissionId),
+      user.id,
+    );
   }
 
   @Post('submission/:submissionId/run')
@@ -57,7 +63,10 @@ export class AssignmentController {
     @Param('submissionId', ParseIntPipe) submissionId: number,
     @User() user: PrismaUser,
   ) {
-    return this.assignmentService.runSubmissionTests(BigInt(submissionId), user.id);
+    return this.assignmentService.runSubmissionTests(
+      BigInt(submissionId),
+      user.id,
+    );
   }
 
   @Patch('submission/:submissionId')
@@ -67,7 +76,11 @@ export class AssignmentController {
     @User() user: PrismaUser,
     @Body() dto: AssessSubmissionDto,
   ) {
-    return this.assignmentService.assessSubmission(BigInt(submissionId), user.id, dto);
+    return this.assignmentService.assessSubmission(
+      BigInt(submissionId),
+      user.id,
+      dto,
+    );
   }
 
   @Get('course/:courseId')
@@ -96,10 +109,7 @@ export class AssignmentController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @User() user: PrismaUser,
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
     return this.assignmentService.findOne(BigInt(id), user.id);
   }
 
@@ -124,10 +134,7 @@ export class AssignmentController {
 
   @Delete(':id')
   @Roles(UserRole.TEACHER)
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @User() user: PrismaUser,
-  ) {
+  remove(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
     return this.assignmentService.remove(BigInt(id), user.id);
   }
 

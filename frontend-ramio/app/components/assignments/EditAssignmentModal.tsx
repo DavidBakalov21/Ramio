@@ -296,7 +296,7 @@ export function EditAssignmentModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".py,.js"
+                  accept=".py,.js,.java,.cs"
                   onChange={handleFileChange}
                   disabled={isSubmitting}
                   className="block w-full text-xs text-slate-600 file:mr-2 file:rounded-full file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"

@@ -1,25 +1,24 @@
 import {
-    CanActivate,
-    ExecutionContext,
-    Injectable,
-    UnauthorizedException,
-  } from '@nestjs/common';
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-  import type { Request } from 'express';
+import type { Request } from 'express';
 import { AuthService } from '../auth.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-  
-  @Injectable()
-  export class JwtAuthGuard implements CanActivate {
-    constructor(
-      private readonly auth: AuthService,
-      private readonly prisma: PrismaService,
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
-    ) {}
-  
-    async canActivate(ctx: ExecutionContext): Promise<boolean> {
-   
+  ) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
@@ -29,19 +28,17 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
       return true;
     }
 
-      const req = ctx.switchToHttp().getRequest<Request>();
-  
-      const accessToken = req.cookies?.access_token;
-      if (!accessToken) throw new UnauthorizedException('No access token cookie');
+    const req = ctx.switchToHttp().getRequest<Request>();
 
-      const payload = await this.auth.verifyAccessToken(accessToken);
-  
-      const cognitoSub = String(payload.sub || '');
-      if (!cognitoSub) throw new UnauthorizedException('Missing sub');
-  
-  
+    const accessToken = req.cookies?.access_token;
+    if (!accessToken) throw new UnauthorizedException('No access token cookie');
+
+    const payload = await this.auth.verifyAccessToken(accessToken);
+
+    const cognitoSub = String(payload.sub || '');
+    if (!cognitoSub) throw new UnauthorizedException('Missing sub');
+
     if (Math.random() < 0.1) {
-     
       console.log('[JwtAuthGuard] Token payload sample:', {
         sub: payload.sub,
         email: payload.email,
@@ -50,13 +47,11 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
       });
     }
 
-   
     let user = await this.prisma.user.findUnique({
       where: { cognitoSub },
       include: { profilePicture: true },
     });
 
- 
     if (!user) {
       if (payload.email) {
         const userByEmail = await this.prisma.user.findUnique({
@@ -96,9 +91,9 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
       }
     }
 
-      if (!user) throw new UnauthorizedException('User not found');
-  
-      (req as any).user = user;
-      return true;
-    }
+    if (!user) throw new UnauthorizedException('User not found');
+
+    (req as any).user = user;
+    return true;
   }
+}
