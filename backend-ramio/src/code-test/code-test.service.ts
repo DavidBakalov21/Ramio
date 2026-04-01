@@ -47,6 +47,32 @@ export class CodeTestService {
     });
   }
 
+  async runNodeTests(code: string, tests: string): Promise<RunCodeResponseDto> {
+    const solutionFile = 'solution.js';
+    const testFile = 'test.js';
+    const jestConfigContent = `module.exports = {
+  testEnvironment: 'node',
+  testMatch: ['<rootDir>/test.js'],
+};
+`;
+    return this.runLanguageTests({
+      code,
+      tests,
+      solutionFile,
+      testFile,
+      image: this.nodeImage,
+      command: [
+        'jest',
+        '--config',
+        '/workspace/jest.config.cjs',
+        '/workspace/test.js',
+        '--runInBand',
+        '--no-cache',
+      ],
+      extraFiles: { 'jest.config.cjs': jestConfigContent },
+    });
+  }
+
   async runJavaTests(code: string, tests: string): Promise<RunCodeResponseDto> {
     const solutionFile = 'Solution.java';
     const testFile = 'SolutionTest.java';
@@ -91,6 +117,7 @@ export class CodeTestService {
     testFile: string;
     image: string;
     command: string[];
+    extraFiles?: Record<string, string>;
   }): Promise<RunCodeResponseDto> {
     const workspaceDir = await fs.mkdtemp(
       path.join(os.tmpdir(), 'ramio-runner-'),
@@ -107,6 +134,11 @@ export class CodeTestService {
         input.tests,
         'utf-8',
       );
+      if (input.extraFiles) {
+        for (const [name, content] of Object.entries(input.extraFiles)) {
+          await fs.writeFile(path.join(workspaceDir, name), content, 'utf-8');
+        }
+      }
 
       const result = await this.runDocker(
         workspaceDir,

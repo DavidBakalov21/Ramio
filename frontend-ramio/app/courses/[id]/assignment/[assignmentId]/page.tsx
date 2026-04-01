@@ -392,12 +392,6 @@ export default function AssignmentSandboxPage() {
                     />
                   </div>
 
-                  {assignment.language === 'NODE_JS' && (
-                    <p className="mt-3 text-xs text-amber-700">
-                      Running Node.js assignments in the sandbox is not available yet. You can still view the assignment.
-                    </p>
-                  )}
-
                   {submitMessage === 'success' && (
                     <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
                       {lastSubmitWasUpdate
@@ -449,7 +443,7 @@ export default function AssignmentSandboxPage() {
                     <button
                       type="button"
                       onClick={handleRun}
-                      disabled={isRunning || assignment.language === 'NODE_JS'}
+                      disabled={isRunning}
                       className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isRunning ? 'Running…' : 'Run tests'}

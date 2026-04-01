@@ -229,9 +229,7 @@ export class AssignmentService {
       return this.codeTestService.runPythonTests(code, testContent);
     }
     if (assignment.language === AssignmentLanguage.NODE_JS) {
-      throw new BadRequestException(
-        'Running Node.js assignments in the sandbox is not supported yet',
-      );
+      return this.codeTestService.runNodeTests(code, testContent);
     }
     if (assignment.language === AssignmentLanguage.JAVA) {
       return this.codeTestService.runJavaTests(code, testContent);
@@ -572,9 +570,7 @@ export class AssignmentService {
       return this.codeTestService.runPythonTests(code, testContent);
     }
     if (submission.assignment.language === AssignmentLanguage.NODE_JS) {
-      throw new BadRequestException(
-        'Running Node.js in the sandbox is not supported yet',
-      );
+      return this.codeTestService.runNodeTests(code, testContent);
     }
     if (submission.assignment.language === AssignmentLanguage.JAVA) {
       return this.codeTestService.runJavaTests(code, testContent);
