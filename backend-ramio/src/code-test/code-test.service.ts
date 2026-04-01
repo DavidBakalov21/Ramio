@@ -59,7 +59,7 @@ export class CodeTestService {
       command: [
         'sh',
         '-lc',
-        'javac Solution.java SolutionTest.java && java SolutionTest',
+        'cp /workspace/Solution.java /workspace/SolutionTest.java /tmp/ && cd /tmp && javac Solution.java SolutionTest.java && java SolutionTest',
       ],
     });
   }
@@ -79,7 +79,7 @@ export class CodeTestService {
       command: [
         'sh',
         '-lc',
-        'dotnet new console --force >/tmp/dotnet-new.log 2>&1 && cp Solution.cs SolutionTests.cs ./ && dotnet run',
+        'mkdir -p /tmp/proj && cd /tmp/proj && dotnet new console --force >/tmp/dotnet-new.log 2>&1 && rm -f Program.cs && cp /workspace/Solution.cs /workspace/SolutionTests.cs ./ && dotnet run',
       ],
     });
   }
