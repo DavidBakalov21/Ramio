@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+RUN useradd -m -u 10001 runner
+WORKDIR /workspace
+USER runner
+
+CMD ["dotnet", "--info"]

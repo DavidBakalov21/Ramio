@@ -18,7 +18,6 @@ export class RolesGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-   
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
@@ -26,12 +25,10 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-   
     if (!user) {
       throw new ForbiddenException('User not found in request');
     }
 
-    
     if (!user.role) {
       throw new ForbiddenException('User does not have a role assigned');
     }

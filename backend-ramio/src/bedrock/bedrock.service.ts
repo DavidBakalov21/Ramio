@@ -4,8 +4,9 @@ import {
   BedrockRuntimeClient,
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
+import { AssignmentLanguage } from '@prisma/client';
 
-export type TestLanguage = 'python' | 'javascript';
+export type TestLanguage = 'python' | 'javascript' | 'java' | 'csharp';
 
 interface InvokeResponseBody {
   content?: Array<{ text: string }>;
@@ -17,10 +18,7 @@ function stripMarkdownCodeFences(text: string): string {
   return match ? match[1].trim() : trimmed;
 }
 
-function toInferenceProfileId(
-  modelId: string,
-  region: string,
-): string {
+function toInferenceProfileId(modelId: string, region: string): string {
   if (
     modelId.startsWith('us.') ||
     modelId.startsWith('eu.') ||
@@ -28,11 +26,13 @@ function toInferenceProfileId(
   ) {
     return modelId;
   }
-  const prefix =
-    region.startsWith('eu') ? 'eu.' :
-    region.startsWith('us') ? 'us.' :
-    region.startsWith('ap') ? 'apac.' :
-    'us.';
+  const prefix = region.startsWith('eu')
+    ? 'eu.'
+    : region.startsWith('us')
+      ? 'us.'
+      : region.startsWith('ap')
+        ? 'apac.'
+        : 'us.';
   return `${prefix}${modelId}`;
 }
 
@@ -48,8 +48,7 @@ export class BedrockService {
     const rawModelId =
       this.config.get<string>('BEDROCK_MODEL_ID') ??
       'anthropic.claude-haiku-4-5-20251001-v1:0';
-    const region =
-      this.config.get<string>('BEDROCK_REGION') ?? 'eu-north-1';
+    const region = this.config.get<string>('BEDROCK_REGION') ?? 'eu-north-1';
     this.modelId = toInferenceProfileId(rawModelId, region);
   }
 
@@ -115,14 +114,19 @@ export class BedrockService {
   }
 
   async generateSubmissionFeedback(input: {
-    language: 'PYTHON' | 'NODE_JS';
+    language: AssignmentLanguage;
     assignmentTitle: string;
     assignmentDescription?: string | null;
     maxPoints: number;
     code: string;
   }): Promise<{ feedback: string; suggestedPoints?: number }> {
-    const languageLabel =
-      input.language === 'PYTHON' ? 'Python' : 'JavaScript / Node.js';
+    const languageLabelByAssignment: Record<AssignmentLanguage, string> = {
+      PYTHON: 'Python',
+      NODE_JS: 'JavaScript / Node.js',
+      JAVA: 'Java',
+      DOTNET: 'C# / .NET',
+    };
+    const languageLabel = languageLabelByAssignment[input.language];
 
     const prompt = `You are an experienced programming teacher reviewing a student's solution.
 
@@ -182,10 +186,13 @@ ${input.code}
     sourceCode: string,
     language: TestLanguage = 'python',
   ): Promise<string> {
-    const framework =
-      language === 'python'
-        ? 'Python unittest'
-        : 'JavaScript/Node.js with Jest';
+    const frameworkByLanguage: Record<TestLanguage, string> = {
+      python: 'Python unittest',
+      javascript: 'JavaScript/Node.js with Jest',
+      java: 'Java tests without external dependencies (plain java/javac)',
+      csharp: 'C#/.NET tests without external dependencies',
+    };
+    const framework = frameworkByLanguage[language];
 
     const prompt = `You are a senior developer. Generate unit tests for the following source code.
 
@@ -210,10 +217,13 @@ Generate the complete test file now:`;
     description: string,
     language: TestLanguage = 'python',
   ): Promise<string> {
-    const framework =
-      language === 'python'
-        ? 'Python unittest'
-        : 'JavaScript/Node.js with Jest';
+    const frameworkByLanguage: Record<TestLanguage, string> = {
+      python: 'Python unittest',
+      javascript: 'JavaScript/Node.js with Jest',
+      java: 'Java tests without external dependencies (plain java/javac)',
+      csharp: 'C#/.NET tests without external dependencies',
+    };
+    const framework = frameworkByLanguage[language];
 
     const prompt = `You are a senior developer. Generate unit tests based on the following assignment description.
 

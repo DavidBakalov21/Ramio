@@ -38,5 +38,5 @@ export class UpdateAssignmentDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  dueDate?: number | null; 
+  dueDate?: number | null;
 }

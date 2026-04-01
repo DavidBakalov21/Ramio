@@ -59,11 +59,17 @@ export function AddAssignmentModal({
     setGenerateError('');
     setGeneratingTests(true);
     try {
+      const languageMap: Record<AssignmentLanguage, 'python' | 'javascript' | 'java' | 'csharp'> = {
+        PYTHON: 'python',
+        NODE_JS: 'javascript',
+        JAVA: 'java',
+        DOTNET: 'csharp',
+      };
       const res = await api.post<{ tests: string }>(
         '/code-test/generate-tests-from-description',
         {
           description: trimmed,
-          language: language === 'PYTHON' ? 'python' : 'javascript',
+          language: languageMap[language],
         },
       );
       setTestCode(res.data.tests ?? '');

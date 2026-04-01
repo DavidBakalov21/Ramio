@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Assignment` MODIFY `language` ENUM('PYTHON', 'NODE_JS', 'JAVA', 'DOTNET') NOT NULL DEFAULT 'PYTHON';

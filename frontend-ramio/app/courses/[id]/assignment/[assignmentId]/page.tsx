@@ -8,6 +8,7 @@ import {
   getAssignmentLanguageLabel,
   getAssignmentLanguageFileExtension,
 } from '@/app/constants/assignmentLanguages';
+import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { User } from '@/app/interfaces/User';
 import { SubmissionDetail } from '@/app/interfaces/Submission';
 import { Navbar } from '@/app/components/Navbar';
@@ -19,6 +20,13 @@ type RunResult = {
   stdout: string;
   stderr: string;
   timedOut?: boolean;
+};
+
+const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
+  PYTHON: 'text/x-python',
+  NODE_JS: 'text/javascript',
+  JAVA: 'text/x-java-source',
+  DOTNET: 'text/plain',
 };
 
 export default function AssignmentSandboxPage() {
@@ -116,7 +124,7 @@ export default function AssignmentSandboxPage() {
       const ext = getAssignmentLanguageFileExtension(assignment.language);
       const filename = `solution.${ext}`;
       const file = new File([code], filename, {
-        type: ext === 'py' ? 'text/x-python' : 'text/javascript',
+        type: LANGUAGE_MIME_TYPE[assignment.language],
       });
       const formData = new FormData();
       formData.append('files', file);
@@ -373,7 +381,11 @@ export default function AssignmentSandboxPage() {
                       placeholder={
                         assignment.language === 'PYTHON'
                           ? '# Write your Python solution here\n# Use the function/class names expected by the tests'
-                          : '// Write your solution here'
+                          : assignment.language === 'NODE_JS'
+                            ? '// Write your JavaScript solution here'
+                            : assignment.language === 'JAVA'
+                              ? '// Write your Java solution here'
+                              : '// Write your C# solution here'
                       }
                       rows={16}
                       className="block w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"

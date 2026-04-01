@@ -21,6 +21,18 @@ export const ASSIGNMENT_LANGUAGE_MAP: Record<
     testCodeHint: 'Enter Node.js test code. It will be saved as test.js.',
     testCodePlaceholder: '// e.g. run tests or assertions',
   },
+  JAVA: {
+    label: 'Java',
+    fileExtension: 'java',
+    testCodeHint: 'Enter Java test code. It will be saved as test.java.',
+    testCodePlaceholder: '// e.g. class SolutionTest with checks in main()',
+  },
+  DOTNET: {
+    label: '.NET (C#)',
+    fileExtension: 'cs',
+    testCodeHint: 'Enter C# test code. It will be saved as test.cs.',
+    testCodePlaceholder: '// e.g. static checks and throw on failures',
+  },
 };
 
 export function getAssignmentLanguageLabel(language: AssignmentLanguage): string {

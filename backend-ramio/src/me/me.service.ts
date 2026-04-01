@@ -84,7 +84,11 @@ export class MeService {
       throw new BadRequestException('Avatar must be at most 3MB');
     }
 
-    const { url, key } = await this.storage.uploadFile(file, bucket, 'avatars/');
+    const { url, key } = await this.storage.uploadFile(
+      file,
+      bucket,
+      'avatars/',
+    );
     const userRecord = await this.prisma.user.findUnique({
       where: { cognitoSub },
       select: { id: true },

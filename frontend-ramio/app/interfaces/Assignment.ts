@@ -1,4 +1,4 @@
-export type AssignmentLanguage = 'PYTHON' | 'NODE_JS';
+export type AssignmentLanguage = 'PYTHON' | 'NODE_JS' | 'JAVA' | 'DOTNET';
 
 export interface Assignment {
   id: string;

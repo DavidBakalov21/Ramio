@@ -44,7 +44,9 @@ export class StripeController {
   ) {
     const rawBody = req.rawBody;
     if (!rawBody) {
-      throw new BadRequestException('Missing raw body for webhook verification');
+      throw new BadRequestException(
+        'Missing raw body for webhook verification',
+      );
     }
     return this.stripeService.handleWebhook(rawBody, signature);
   }

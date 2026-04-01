@@ -1,4 +1,12 @@
-import { IsString, IsOptional, MaxLength, MinLength, IsNumber, Min, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  MinLength,
+  IsNumber,
+  Min,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { AssignmentLanguage } from '@prisma/client';
 
