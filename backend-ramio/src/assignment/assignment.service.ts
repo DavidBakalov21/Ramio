@@ -15,6 +15,7 @@ import type { CreateAssignmentDto } from './dto/create-assignment.dto';
 import type { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import type { RunCodeResponseDto } from '../code-test/dto/run-code.dto';
 import type { AssessSubmissionDto } from './dto/assess-submission.dto';
+import type { SubmissionChatDto } from './dto/submission-chat.dto';
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
@@ -22,6 +23,12 @@ const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 @Injectable()
 export class AssignmentService {
   private readonly assignmentBucket: string;
+  /** Cached test stdout summary for graded-submission AI chat (avoid Docker on every turn). */
+  private readonly gradedChatTestCache = new Map<
+    string,
+    { summary: string; at: number }
+  >();
+  private static readonly GRADED_CHAT_TEST_CACHE_TTL_MS = 30 * 60 * 1000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -610,6 +617,147 @@ export class AssignmentService {
       feedback,
       suggestedPoints,
     };
+  }
+
+  async studentGradedSubmissionChat(
+    assignmentId: bigint,
+    studentId: bigint,
+    dto: SubmissionChatDto,
+  ): Promise<{ reply: string }> {
+    const messages = dto.messages ?? [];
+    if (!Array.isArray(messages) || messages.length === 0) {
+      throw new BadRequestException('messages is required and must not be empty');
+    }
+    if (messages.length > 40) {
+      throw new BadRequestException('Too many messages in one request');
+    }
+    const last = messages[messages.length - 1];
+    if (last.role !== 'user' || !last.content?.trim()) {
+      throw new BadRequestException('Last message must be a non-empty user message');
+    }
+    for (const m of messages) {
+      if (m.content && m.content.length > 12000) {
+        throw new BadRequestException('Message too long');
+      }
+      if (m.role !== 'user' && m.role !== 'assistant') {
+        throw new BadRequestException('Invalid message role');
+      }
+    }
+
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true, test: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.assertCanAccessCourse(assignment.courseId, studentId);
+
+    const submission = await this.prisma.assignmentSubmission.findUnique({
+      where: {
+        assignmentId_userId: { assignmentId, userId: studentId },
+      },
+      include: { solutionFiles: true, assignment: true },
+    });
+    if (!submission) {
+      throw new NotFoundException('No submission found for this assignment');
+    }
+    if (!submission.isChecked) {
+      throw new ForbiddenException(
+        'AI chat is only available after your submission has been graded',
+      );
+    }
+
+    let code = '';
+    const firstFile = submission.solutionFiles[0];
+    if (firstFile) {
+      try {
+        code = await this.storage.getFileContentAsText(
+          firstFile.key,
+          this.assignmentBucket,
+        );
+      } catch {
+        throw new BadRequestException('Could not read submission file');
+      }
+    }
+
+    const cacheKey = `${submission.id.toString()}:${studentId.toString()}`;
+    const cached = this.gradedChatTestCache.get(cacheKey);
+    const cacheValid =
+      cached &&
+      Date.now() - cached.at < AssignmentService.GRADED_CHAT_TEST_CACHE_TTL_MS;
+
+    let testSummary: string;
+    if (cacheValid) {
+      testSummary = cached!.summary;
+    } else {
+      testSummary = 'Tests were not run (no test file or unsupported language).';
+      if (assignment.language === AssignmentLanguage.PYTHON && assignment.test) {
+        try {
+          const testContent = await this.storage.getFileContentAsText(
+            assignment.test.key,
+            this.assignmentBucket,
+          );
+          const run = await this.codeTestService.runPythonTests(code, testContent);
+          testSummary = [
+            `Success: ${run.success}`,
+            `Exit code: ${run.exitCode}`,
+            run.timedOut ? 'Timed out: yes' : 'Timed out: no',
+            run.stdout ? `Stdout:\n${run.stdout}` : '',
+            run.stderr ? `Stderr:\n${run.stderr}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n');
+        } catch {
+          testSummary = 'Automated test run failed to execute.';
+        }
+      } else if (assignment.language === AssignmentLanguage.NODE_JS) {
+        testSummary =
+          'Node.js sandbox tests are not run server-side in this environment; rely on assignment description and teacher feedback.';
+      }
+      this.gradedChatTestCache.set(cacheKey, {
+        summary: testSummary,
+        at: Date.now(),
+      });
+    }
+
+    const langLabel =
+      assignment.language === AssignmentLanguage.PYTHON ? 'Python' : 'JavaScript / Node.js';
+
+    const system = `You are a supportive programming tutor helping a student reflect on their graded assignment.
+
+Context (use this to answer; do not invent facts not supported below):
+
+Assignment:
+- Title: ${assignment.title}
+- Description: ${assignment.description ?? '(none)'}
+- Language: ${langLabel}
+- Max points: ${assignment.points}
+
+Student's grade:
+- Points: ${submission.points} / ${assignment.points}
+- Teacher feedback (may be empty):
+"""
+${submission.teacherFeedback ?? '(none)'}
+"""
+
+Student's submitted code:
+"""
+${code || '(no code on file)'}
+"""
+
+Automated test run (same runner as in the course sandbox):
+"""
+${testSummary}
+"""
+
+Rules:
+- Be clear, encouraging, and educational.
+- Help the student understand mistakes and how to improve; do not just repeat the teacher's words.
+- If something is unknown from the context, say so.
+- Do not reveal hidden test source code verbatim; you may discuss behavior and outcomes shown in the test output.
+- Keep answers focused and not excessively long.`;
+
+    const reply = await this.bedrock.chatWithSystem(system, messages, 4096);
+    return { reply: reply.trim() };
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {

@@ -22,6 +22,7 @@ import { AssessSubmissionDto } from './dto/assess-submission.dto';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
+import { SubmissionChatDto } from './dto/submission-chat.dto';
 
 @Controller('assignment')
 export class AssignmentController {
@@ -93,6 +94,20 @@ export class AssignmentController {
     @User() user: PrismaUser,
   ) {
     return this.assignmentService.getSubmission(BigInt(id), user.id);
+  }
+
+  @Post(':id/submission/chat')
+  @Roles(UserRole.STUDENT)
+  studentSubmissionChat(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: SubmissionChatDto,
+  ) {
+    return this.assignmentService.studentGradedSubmissionChat(
+      BigInt(id),
+      user.id,
+      dto,
+    );
   }
 
   @Get(':id')
