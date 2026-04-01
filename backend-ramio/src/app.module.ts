@@ -12,6 +12,8 @@ import { StorageModule } from './storage/storage.module';
 import { CodeTestModule } from './code-test/code-test.module';
 import { CourseModule } from './course/course.module';
 import { AssignmentModule } from './assignment/assignment.module';
+import { StripeModule } from './stripe/stripe.module';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { AssignmentModule } from './assignment/assignment.module';
     CodeTestModule,
     CourseModule,
     AssignmentModule,
+    StripeModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [

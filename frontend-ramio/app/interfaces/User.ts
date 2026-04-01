@@ -1,9 +1,12 @@
+export type UserSubscriptionTier = 'FREE' | 'PRO' | 'PREMIUM';
+
 export interface User {
   id: number;
   email: string;
   role: 'STUDENT' | 'TEACHER' | null;
   username: string | null;
   profilePictureUrl: string | null;
+  subscriptionTier?: UserSubscriptionTier;
   aboutMe: string | null;
   birthdate: string | null;
   createdAt: string | Date;
