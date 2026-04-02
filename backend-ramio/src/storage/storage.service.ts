@@ -18,6 +18,15 @@ export class StorageService {
   ) {}
 
   private buildS3Url(bucket: string, key: string): string {
+    const cloudfrontDomainForBucket: Record<string, string> = {
+      'ramio-file-storage': 'diwh0so9m7r0w.cloudfront.net',
+      'ramio-images': 'd2nsgyhuot9era.cloudfront.net',
+    };
+    const cfDomain = cloudfrontDomainForBucket[bucket];
+    if (cfDomain) {
+      const safeKey = key.replace(/^\/+/, '');
+      return `https://${cfDomain}/${safeKey}`;
+    }
     const region = this.config.get<string>('S3_REGION') ?? 'eu-north-1';
     return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
   }
