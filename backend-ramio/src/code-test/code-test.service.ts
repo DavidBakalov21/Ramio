@@ -105,7 +105,22 @@ export class CodeTestService {
       command: [
         'sh',
         '-lc',
-        'mkdir -p /tmp/proj && cd /tmp/proj && dotnet new console --force >/tmp/dotnet-new.log 2>&1 && rm -f Program.cs && cp /workspace/Solution.cs /workspace/SolutionTests.cs ./ && dotnet run',
+        [
+          'set -e',
+          'export HOME=/tmp',
+          'export DOTNET_CLI_HOME=/tmp',
+          'export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1',
+          'export DOTNET_CLI_TELEMETRY_OPTOUT=1',
+          'export DOTNET_NOLOGO=1',
+          'export NUGET_PACKAGES=/tmp/nuget',
+          'mkdir -p /tmp/proj',
+          'cd /tmp/proj',
+          'dotnet new console --force >/tmp/dotnet-new.log 2>&1 || { cat /tmp/dotnet-new.log >&2; exit 1; }',
+          'rm -f Program.cs',
+          'cp /workspace/Solution.cs /workspace/SolutionTests.cs ./',
+          'dotnet build --nologo --verbosity quiet',
+          'dotnet /tmp/proj/bin/Debug/net8.0/proj.dll 2>&1',
+        ].join(' && '),
       ],
     });
   }
