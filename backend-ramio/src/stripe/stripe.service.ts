@@ -126,6 +126,26 @@ export class StripeService {
     return { url: session.url };
   }
 
+  private subscriptionPeriodEndDate(sub: Stripe.Subscription): Date {
+    const fromItem = sub.items?.data?.[0]?.current_period_end;
+    const legacy = (sub as { current_period_end?: number }).current_period_end;
+    const unix =
+      (typeof fromItem === 'number' && fromItem > 0
+        ? fromItem
+        : undefined) ??
+      (typeof legacy === 'number' && legacy > 0 ? legacy : undefined) ??
+      (typeof sub.ended_at === 'number' && sub.ended_at > 0
+        ? sub.ended_at
+        : undefined);
+    if (unix != null) {
+      return new Date(unix * 1000);
+    }
+    this.logger.warn(
+      `Stripe subscription ${sub.id}: missing current_period_end on items; using current time`,
+    );
+    return new Date();
+  }
+
   private async upsertSubscription(
     stripeSubscriptionId: string,
     stripeCustomerId: string,
@@ -146,6 +166,38 @@ export class StripeService {
       },
       update: { status, currentPeriodEnd, priceId, updatedAt: new Date() },
     });
+  }
+
+  private static readonly CANCEL_ELIGIBLE_STATUSES = new Set<
+    Stripe.Subscription.Status
+  >(['active', 'trialing', 'past_due', 'paused']);
+  private async cancelOtherDbSubscriptionsOnStripe(
+    stripe: Stripe,
+    stripeCustomerId: string,
+    keepSubscriptionId: string,
+  ): Promise<void> {
+    const rows = await this.prisma.userSubscription.findMany({
+      where: {
+        stripeCustomerId,
+        stripeSubscriptionId: { not: keepSubscriptionId },
+      },
+    });
+    for (const row of rows) {
+      try {
+        const live = await stripe.subscriptions.retrieve(row.stripeSubscriptionId);
+        if (!StripeService.CANCEL_ELIGIBLE_STATUSES.has(live.status)) {
+          continue;
+        }
+        await stripe.subscriptions.cancel(row.stripeSubscriptionId);
+        this.logger.log(
+          `Canceled previous subscription ${row.stripeSubscriptionId} for customer ${stripeCustomerId} (kept ${keepSubscriptionId})`,
+        );
+      } catch (err) {
+        this.logger.warn(
+          `Failed to cancel subscription ${row.stripeSubscriptionId} for customer ${stripeCustomerId}: ${err}`,
+        );
+      }
+    }
   }
 
   async handleWebhook(rawBody: Buffer, signature: string | undefined) {
@@ -195,15 +247,18 @@ export class StripeService {
               const stripe = this.getStripe();
               const sub = await stripe.subscriptions.retrieve(subId);
               const priceId = sub.items.data[0]?.price?.id ?? undefined;
-              const periodEnd = (sub as { current_period_end?: number })
-                .current_period_end;
               await this.upsertSubscription(
                 sub.id,
                 customerId,
                 BigInt(userId),
                 sub.status,
-                new Date((periodEnd ?? 0) * 1000),
+                this.subscriptionPeriodEndDate(sub),
                 priceId,
+              );
+              await this.cancelOtherDbSubscriptionsOnStripe(
+                stripe,
+                customerId,
+                sub.id,
               );
             }
           }
@@ -222,14 +277,12 @@ export class StripeService {
         });
         if (!user) break;
         const priceId = subscription.items.data[0]?.price?.id ?? undefined;
-        const periodEnd = (subscription as { current_period_end?: number })
-          .current_period_end;
         await this.upsertSubscription(
           subscription.id,
           customerId,
           user.id,
           subscription.status,
-          new Date((periodEnd ?? 0) * 1000),
+          this.subscriptionPeriodEndDate(subscription),
           priceId,
         );
         this.logger.log(
@@ -248,14 +301,12 @@ export class StripeService {
           where: { stripeCustomerId: customerId },
         });
         if (!user) break;
-        const periodEnd = (subscription as { current_period_end?: number })
-          .current_period_end;
         await this.upsertSubscription(
           subscription.id,
           customerId,
           user.id,
           'canceled',
-          new Date((periodEnd ?? 0) * 1000),
+          this.subscriptionPeriodEndDate(subscription),
         );
         this.logger.log(
           `customer.subscription.deleted id=${subscription.id} -> status=canceled`,
