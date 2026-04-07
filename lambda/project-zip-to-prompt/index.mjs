@@ -16,9 +16,28 @@ const IGNORE_LIST = [
   '.env',
 ];
 
-const ALLOWED_EXT = ['.js', '.jsx', '.ts', '.tsx', '.json', '.html', '.css', '.md'];
+// Include common source files for Python, Java, C#, and JavaScript projects.
+const ALLOWED_EXT = [
+  '.py',
+  '.java',
+  '.cs',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.ts',
+  '.tsx',
+  '.json',
+  '.html',
+  '.css',
+  '.cshtml',
+  '.pug',
+  '.jinja',
+  '.jinja2',
+  '.md',
+];
 
-const MAX_ZIP_BYTES = 40 * 1024 * 1024;
+const MAX_ZIP_BYTES = 60 * 1024 * 1024;
 const MAX_ZIP_ENTRIES_SCANNED = 400;
 const MAX_FILES_INCLUDED = 200;
 const MAX_SINGLE_FILE_BYTES = 512 * 1024;
