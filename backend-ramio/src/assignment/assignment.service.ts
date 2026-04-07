@@ -23,7 +23,6 @@ const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 @Injectable()
 export class AssignmentService {
   private readonly assignmentBucket: string;
-  /** Cached test stdout summary for graded-submission AI chat (avoid Docker on every turn). */
   private readonly gradedChatTestCache = new Map<
     string,
     { summary: string; at: number }

@@ -49,6 +49,7 @@ model User {
   assignmentSubmissions AssignmentSubmission[]
   pendingEnrollments PendingEnrollment[]
   subscriptions         UserSubscription[]
+  projectSubmissions ProjectSubmission[]
   @@map("user")
 }
 
@@ -91,6 +92,7 @@ model Course {
   assignments Assignment[]
   enrollments Enrollment[]
   pendingEnrollments PendingEnrollment[]
+  projects Project[]
 }
 
 model Enrollment {
@@ -117,6 +119,41 @@ model Assignment {
   course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   test        TestFile?
   submissions AssignmentSubmission[]
+}
+
+model Project {
+  id               BigInt    @id @default(autoincrement())
+  title            String
+  description      String?
+  points           Int       @default(100)
+  dueDate          DateTime?
+  assessmentPrompt String?   @db.LongText
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  courseId         BigInt
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions      ProjectSubmission[]
+}
+
+model ProjectSubmission {
+  id              BigInt    @id @default(autoincrement())
+  projectId       BigInt
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url             String
+  key             String
+  name            String
+  teacherFeedback String    @db.LongText
+  points          Int       @default(0)
+  isChecked       Boolean   @default(false)
+  checkedAt       DateTime?
+  userId          BigInt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completedAt     DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([projectId, userId])
+  @@map("project_submission")
 }
 
 model AssignmentSubmission {

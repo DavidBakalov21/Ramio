@@ -50,7 +50,7 @@ export class CourseService {
         take: safePageSize,
         include: {
           user: { select: { username: true, email: true } },
-          _count: { select: { enrollments: true, assignments: true } },
+          _count: { select: { enrollments: true, assignments: true, projects: true } },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
         },
@@ -62,6 +62,7 @@ export class CourseService {
       teacherName: c.user.username ?? c.user.email,
       enrollmentCount: c._count.enrollments,
       assignmentCount: c._count.assignments,
+      projectCount: c._count.projects,
       isTeacher: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
       hasPendingRequest: c.pendingEnrollments.length > 0,
@@ -100,7 +101,7 @@ export class CourseService {
         take: safePageSize,
         include: {
           user: { select: { username: true, email: true } },
-          _count: { select: { enrollments: true, assignments: true } },
+          _count: { select: { enrollments: true, assignments: true, projects: true } },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
         },
@@ -112,6 +113,7 @@ export class CourseService {
       teacherName: c.user.username ?? c.user.email,
       enrollmentCount: c._count.enrollments,
       assignmentCount: c._count.assignments,
+      projectCount: c._count.projects,
       isTeacher: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
       hasPendingRequest: c.pendingEnrollments.length > 0,
@@ -138,6 +140,7 @@ export class CourseService {
           select: {
             enrollments: true,
             assignments: true,
+            projects: true,
             pendingEnrollments: true,
           },
         },
@@ -156,6 +159,7 @@ export class CourseService {
       teacherName: course.user.username ?? course.user.email,
       enrollmentCount: course._count.enrollments,
       assignmentCount: course._count.assignments,
+      projectCount: course._count.projects,
       isTeacher,
       isEnrolled,
       hasPendingRequest: course.pendingEnrollments.length > 0,
@@ -194,7 +198,6 @@ export class CourseService {
     return this.toResponse(updated);
   }
 
-  /** Student requests to enroll; teacher must accept before student is added to course. */
   async requestEnroll(courseId: bigint, studentId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },

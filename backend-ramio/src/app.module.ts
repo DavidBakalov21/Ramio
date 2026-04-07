@@ -12,6 +12,7 @@ import { StorageModule } from './storage/storage.module';
 import { CodeTestModule } from './code-test/code-test.module';
 import { CourseModule } from './course/course.module';
 import { AssignmentModule } from './assignment/assignment.module';
+import { ProjectModule } from './project/project.module';
 import { StripeModule } from './stripe/stripe.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 
@@ -25,6 +26,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     CodeTestModule,
     CourseModule,
     AssignmentModule,
+    ProjectModule,
     StripeModule,
     SubscriptionModule,
   ],

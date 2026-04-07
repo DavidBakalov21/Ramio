@@ -78,9 +78,7 @@ export class BedrockService {
     return body.content?.[0]?.text ?? '';
   }
 
-  /**
-   * Multi-turn chat with a fixed system prompt (Claude on Bedrock Messages API).
-   */
+
   async chatWithSystem(
     system: string,
     messages: { role: 'user' | 'assistant'; content: string }[],
@@ -164,6 +162,67 @@ ${input.code}
 """`;
 
     const raw = await this.invoke(prompt, 2048);
+    const text = stripMarkdownCodeFences(raw);
+
+    const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
+    const suggestedPoints = pointsMatch ? Number(pointsMatch[1]) : undefined;
+    const feedbackMatch = text.match(
+      /FeedbackForTeacher:\s*([\s\S]*?)(?:SuggestedPoints:|$)/i,
+    );
+    const feedback = (feedbackMatch ? feedbackMatch[1] : text).trim();
+
+    return {
+      feedback,
+      suggestedPoints:
+        typeof suggestedPoints === 'number' && !Number.isNaN(suggestedPoints)
+          ? suggestedPoints
+          : undefined,
+    };
+  }
+
+  async generateProjectArchiveFeedback(input: {
+    projectTitle: string;
+    projectDescription?: string | null;
+    assessmentPrompt?: string | null;
+    maxPoints: number;
+    projectFilesXml: string;
+  }): Promise<{ feedback: string; suggestedPoints?: number }> {
+    const prompt = `You are an experienced teacher reviewing a student's project submission (source files extracted from their zip).
+
+Your task is to provide feedback FOR THE TEACHER, not for the student directly.
+
+Please:
+- Summarize what the project appears to do and how complete it looks relative to the assignment.
+- List concrete strengths (structure, clarity, correctness, good practices).
+- List concrete weaknesses, risks, or missing pieces.
+- Suggest how the teacher could coach the student or what to verify manually (you only see text files from the archive, not running code).
+
+IMPORTANT:
+- Do NOT address the student directly (no "you should...").
+- Speak about "the student" and "the submission".
+- Some files may be omitted from the archive extract; mention uncertainty where needed.
+
+Return your answer in this exact format:
+
+FeedbackForTeacher:
+<your analysis in plain text>
+
+SuggestedPoints:
+<integer between 0 and ${input.maxPoints}, or leave empty if you cannot decide>
+
+---
+Project:
+Title: ${input.projectTitle}
+Description: ${input.projectDescription ?? '(no description)'}
+Teacher assessment notes (may be empty):
+${input.assessmentPrompt ?? '(none)'}
+
+Max points: ${input.maxPoints}
+
+Extracted project files (paths and contents):
+${input.projectFilesXml}`;
+
+    const raw = await this.invoke(prompt, 4096);
     const text = stripMarkdownCodeFences(raw);
 
     const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
