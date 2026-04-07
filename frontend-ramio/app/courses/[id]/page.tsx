@@ -7,6 +7,7 @@ import { api } from '@/lib/axios';
 import { User } from '../../interfaces/User';
 import { Course, PendingEnrollmentRequest } from '../../interfaces/Course';
 import { AssignmentsSection } from '@/app/components/assignments';
+import { ProjectsSection } from '@/app/components/projects';
 import { PendingEnrollmentRequests } from '@/app/components/PendingEnrollmentRequests';
 import { StudentResultsTable } from '@/app/components/course/StudentResultsTable';
 import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
@@ -224,9 +225,15 @@ export default function CourseDetailPage() {
           <p className="text-xs text-slate-400">
             {course.teacherName} · {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
             assignments
+            {(course.projectCount ?? 0) > 0 && (
+              <>
+                {' · '}
+                {course.projectCount} projects
+              </>
+            )}
           </p>
 
-          {/* Tabs */}
+         
           <div className="mt-4 flex gap-2 border-b border-slate-200">
             <button
               type="button"
@@ -285,7 +292,10 @@ export default function CourseDetailPage() {
         </header>
 
         {activeTab === 'assignments' && (
-          <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
+          <>
+            <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
+            <ProjectsSection courseId={courseId} isTeacher={course.isTeacher} />
+          </>
         )}
 
         {activeTab === 'materials' && (

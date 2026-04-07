@@ -3,35 +3,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '@/lib/axios';
-import { SubmissionDetail } from '@/app/interfaces/Submission';
+import { ProjectSubmissionDetail } from '@/app/interfaces/Project';
 
-type RunResult = {
-  success: boolean;
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-  timedOut?: boolean;
-};
-
-interface AssessSubmissionModalProps {
+interface AssessProjectSubmissionModalProps {
   isOpen: boolean;
   submissionId: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export function AssessSubmissionModal({
+export function AssessProjectSubmissionModal({
   isOpen,
   submissionId,
   onClose,
   onSaved,
-}: AssessSubmissionModalProps) {
-  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
+}: AssessProjectSubmissionModalProps) {
+  const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [points, setPoints] = useState(0);
-  const [result, setResult] = useState<RunResult | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
@@ -41,11 +31,12 @@ export function AssessSubmissionModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<SubmissionDetail>(`/assignment/submission/${submissionId}`);
+      const res = await api.get<ProjectSubmissionDetail>(
+        `/project/submission/${submissionId}`,
+      );
       setSubmission(res.data);
       setFeedback(res.data.teacherFeedback ?? '');
       setPoints(res.data.points ?? 0);
-      setResult(null);
     } catch {
       setSubmission(null);
       setError('Failed to load submission');
@@ -56,7 +47,7 @@ export function AssessSubmissionModal({
 
   useEffect(() => {
     if (isOpen && submissionId) {
-      fetchSubmission();
+      void fetchSubmission();
     }
   }, [isOpen, submissionId, fetchSubmission]);
 
@@ -69,31 +60,12 @@ export function AssessSubmissionModal({
     return () => window.removeEventListener('keydown', onEscape);
   }, [isOpen, isSaving, onClose]);
 
-  const handleRunTests = async () => {
-    if (!submissionId) return;
-    setResult(null);
-    setError(null);
-    setIsRunning(true);
-    try {
-      const { data } = await api.post<RunResult>(`/assignment/submission/${submissionId}/run`);
-      setResult(data);
-    } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-          : null;
-      setError((msg as string) || 'Failed to run tests');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
   const handleSave = async () => {
     if (!submissionId) return;
     setError(null);
     setIsSaving(true);
     try {
-      await api.patch(`/assignment/submission/${submissionId}`, {
+      await api.patch(`/project/submission/${submissionId}`, {
         teacherFeedback: feedback,
         points,
         isChecked: true,
@@ -112,15 +84,16 @@ export function AssessSubmissionModal({
   };
 
   const handleGenerateAiFeedback = async () => {
-    if (!submissionId || !submission) return;
+    if (!submissionId || !submission?.project?.id) return;
     setError(null);
     setIsGeneratingAi(true);
     try {
       const { data } = await api.post<{
         feedback: string;
         suggestedPoints?: number;
+        warnings?: string[];
       }>(
-        `/assignment/${submission.assignment.id}/submission/${submission.id}/ai-feedback`,
+        `/project/${submission.project.id}/submission/${submissionId}/ai-feedback`,
       );
       if (data.feedback) {
         setFeedback(data.feedback);
@@ -134,8 +107,8 @@ export function AssessSubmissionModal({
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message
+          ? (err as { response?: { data?: { message?: string } } })?.response?.data
+              ?.message
           : null;
       setError((msg as string) || 'Failed to get AI feedback');
     } finally {
@@ -143,90 +116,71 @@ export function AssessSubmissionModal({
     }
   };
 
+  const isZipArchive =
+    !!submission?.name?.toLowerCase().endsWith('.zip');
+
   if (!isOpen) return null;
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="assess-submission-title"
+      aria-labelledby="assess-project-title"
     >
       <div
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
-          <h2 id="assess-submission-title" className="text-lg font-semibold text-slate-900">
-            Assess submission
+          <h2 id="assess-project-title" className="text-lg font-semibold text-slate-900">
+            Assess project submission
           </h2>
           {submission && (
             <p className="mt-1 text-sm text-slate-500">
               {submission.user.username || submission.user.email}
-              {submission.assignment && ` · ${submission.assignment.title}`}
+              {submission.project && ` · ${submission.project.title}`}
             </p>
           )}
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="space-y-4 p-6">
           {loading ? (
             <p className="text-sm text-slate-500">Loading submission…</p>
           ) : error && !submission ? (
             <p className="text-sm text-red-600">{error}</p>
           ) : submission ? (
             <>
-             
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">
-                  Student&apos;s solution
+                  Submitted archive
                 </label>
-                <pre className="max-h-48 overflow-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-800 whitespace-pre-wrap">
-                  {submission.solutionContent || '(No code submitted)'}
-                </pre>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
-                  Run tests
-                </label>
-                <button
-                  type="button"
-                  onClick={handleRunTests}
-                  disabled={isRunning || !submission.solutionContent?.trim()}
-                  className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                <a
+                  href={submission.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex text-sm font-medium text-violet-600 hover:underline"
                 >
-                  {isRunning ? 'Running…' : 'Run tests'}
-                </button>
-                {result && (
-                  <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                    <div
-                      className={`text-sm font-medium ${result.success ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {result.success ? 'All tests passed' : 'Tests failed'}
-                      {result.timedOut ? ' (timed out)' : ''}
-                    </div>
-                    {result.stdout && (
-                      <pre className="mt-1 max-h-32 overflow-auto font-mono text-xs text-slate-700">
-                        {result.stdout}
-                      </pre>
-                    )}
-                    {result.stderr && (
-                      <pre className="mt-1 max-h-32 overflow-auto font-mono text-xs text-red-700">
-                        {result.stderr}
-                      </pre>
-                    )}
-                  </div>
-                )}
+                  {submission.name}
+                </a>
               </div>
-
-            
+              {submission.project?.assessmentPrompt && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                    Your assessment notes
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-xs text-slate-700">
+                    {submission.project.assessmentPrompt}
+                  </p>
+                </div>
+              )}
               <div>
-                <label htmlFor="assess-feedback" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="assess-project-feedback" className="mb-1 block text-xs font-medium text-slate-600">
                   Feedback
                 </label>
                 <textarea
-                  id="assess-feedback"
+                  id="assess-project-feedback"
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   placeholder="Write feedback for the student…"
@@ -237,40 +191,37 @@ export function AssessSubmissionModal({
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={handleGenerateAiFeedback}
-                    disabled={isGeneratingAi || isSaving || !submission}
-                    className="rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => void handleGenerateAiFeedback()}
+                    disabled={isGeneratingAi || isSaving || !submission || !isZipArchive}
+                    className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isGeneratingAi ? 'Asking AI…' : 'Ask AI for feedback'}
+                    {isGeneratingAi ? 'Asking AI…' : 'Ask AI from zip contents'}
                   </button>
                   <p className="text-[11px] text-slate-400">
-                    AI suggests feedback; you can edit before saving.
+                    {isZipArchive
+                      ? 'Requires the ZIP parser Lambda (S3 read + text files only).'
+                      : 'AI extract works only for .zip submissions.'}
                   </p>
                 </div>
               </div>
-
-            
               <div>
-                <label htmlFor="assess-points" className="mb-1 block text-xs font-medium text-slate-600">
+                <label htmlFor="assess-project-points" className="mb-1 block text-xs font-medium text-slate-600">
                   Points
                 </label>
                 <input
-                  id="assess-points"
+                  id="assess-project-points"
                   type="number"
                   min={0}
-                  max={submission.assignment?.points ?? 1000}
+                  max={submission.project?.points ?? 1000}
                   value={points}
                   onChange={(e) => setPoints(Number(e.target.value) || 0)}
                   className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                   disabled={isSaving}
                 />
-                {submission.assignment && (
-                  <span className="ml-2 text-xs text-slate-500">
-                    / {submission.assignment.points} max
-                  </span>
+                {submission.project?.points != null && (
+                  <span className="ml-2 text-xs text-slate-500">/ {submission.project.points} max</span>
                 )}
               </div>
-
               {error && <p className="text-sm text-red-600">{error}</p>}
             </>
           ) : null}
@@ -287,7 +238,7 @@ export function AssessSubmissionModal({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => void handleSave()}
             disabled={isSaving || !submission}
             className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
           >

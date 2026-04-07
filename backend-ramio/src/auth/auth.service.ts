@@ -235,11 +235,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Resolve email from Cognito. For federated (e.g. Google) users, the pool
-   * Username is often the federated identifier (e.g. "Google_123"), not the sub UUID,
-   * so we try both cognitoSub and cognitoUsername if provided.
-   */
   async getEmailFromCognito(
     cognitoSub: string,
     cognitoUsername?: string | null,

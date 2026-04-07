@@ -8,6 +8,7 @@ export interface Course {
   teacherName: string;
   enrollmentCount: number;
   assignmentCount: number;
+  projectCount?: number;
   isTeacher: boolean;
   isEnrolled: boolean;
   hasPendingRequest?: boolean;
