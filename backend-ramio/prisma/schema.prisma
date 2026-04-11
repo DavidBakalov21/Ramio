@@ -30,6 +30,13 @@ enum AssignmentLanguage {
   DOTNET
 }
 
+enum ProjectLanguage {
+  DOTNET
+  PYTHON
+  JAVA
+  NODE_JS
+}
+
 model User {
   id                 BigInt   @id @default(autoincrement())
   cognitoSub         String   @unique
@@ -122,35 +129,42 @@ model Assignment {
 }
 
 model Project {
-  id               BigInt    @id @default(autoincrement())
+  id               BigInt          @id @default(autoincrement())
   title            String
   description      String?
-  points           Int       @default(100)
+  points           Int             @default(100)
+  language         ProjectLanguage @default(PYTHON)
   dueDate          DateTime?
-  assessmentPrompt String?   @db.LongText
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  assessmentPrompt String?         @db.LongText
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   courseId         BigInt
-  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course           Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
   submissions      ProjectSubmission[]
 }
 
 model ProjectSubmission {
-  id              BigInt    @id @default(autoincrement())
-  projectId       BigInt
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  url             String
-  key             String
-  name            String
-  teacherFeedback String    @db.LongText
-  points          Int       @default(0)
-  isChecked       Boolean   @default(false)
-  checkedAt       DateTime?
-  userId          BigInt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  completedAt     DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                 BigInt    @id @default(autoincrement())
+  projectId          BigInt
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url                String
+  key                String
+  name               String
+  teacherFeedback    String    @db.LongText
+  points             Int       @default(0)
+  isChecked          Boolean   @default(false)
+  checkedAt          DateTime?
+  userId             BigInt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completedAt        DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  codeBuildId        String?   @db.VarChar(512)
+  codeBuildStatus    String?   @db.VarChar(64)
+  codeBuildPhase     String?   @db.VarChar(128)
+  codeBuildLogsUrl   String?   @db.VarChar(1024)
+  codeBuildStartedAt DateTime?
+  codeBuildUpdatedAt DateTime?
 
   @@unique([projectId, userId])
   @@map("project_submission")

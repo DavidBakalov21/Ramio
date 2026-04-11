@@ -6,7 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProjectLanguage } from '@prisma/client';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { CodeBuildService } from '../codebuild/codebuild.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
@@ -46,6 +48,7 @@ export class ProjectService {
     private readonly storage: StorageService,
     private readonly config: ConfigService,
     private readonly bedrock: BedrockService,
+    private readonly codeBuild: CodeBuildService,
     private readonly projectZipToPrompt: ProjectZipToPromptService,
   ) {
     this.fileBucket =
@@ -62,6 +65,7 @@ export class ProjectService {
         title: dto.title,
         description: dto.description ?? null,
         points: dto.points ?? 100,
+        language: dto.language ?? ProjectLanguage.PYTHON,
         dueDate,
         assessmentPrompt: dto.assessmentPrompt ?? null,
         courseId: BigInt(dto.courseId),
@@ -138,6 +142,7 @@ export class ProjectService {
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.points !== undefined && { points: dto.points }),
+        ...(dto.language !== undefined && { language: dto.language }),
         ...(dueDate !== undefined && { dueDate }),
         ...(dto.assessmentPrompt !== undefined && {
           assessmentPrompt: dto.assessmentPrompt,
@@ -305,7 +310,11 @@ export class ProjectService {
     };
   }
 
-  async getSubmissionsByProject(projectId: bigint, teacherId: bigint) {
+  async getSubmissionsByProject(
+    projectId: bigint,
+    teacherId: bigint,
+    options?: { syncCodeBuild?: boolean },
+  ) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: { course: true },
@@ -316,11 +325,40 @@ export class ProjectService {
         'Only the course teacher can view submissions',
       );
     }
-    const submissions = await this.prisma.projectSubmission.findMany({
+    let submissions = await this.prisma.projectSubmission.findMany({
       where: { projectId },
       include: { user: true, project: true },
       orderBy: { completedAt: 'desc' },
     });
+
+    if (options?.syncCodeBuild) {
+      const now = new Date();
+      for (const s of submissions) {
+        if (!s.codeBuildId || s.codeBuildStatus !== 'IN_PROGRESS') continue;
+        try {
+          const remote = await this.codeBuild.getBuildStatus(s.codeBuildId);
+          if (remote) {
+            await this.prisma.projectSubmission.update({
+              where: { id: s.id },
+              data: {
+                codeBuildStatus: remote.status,
+                codeBuildPhase: remote.phase ?? null,
+                codeBuildLogsUrl: remote.logsUrl ?? s.codeBuildLogsUrl,
+                codeBuildUpdatedAt: now,
+              },
+            });
+          }
+        } catch {
+          /* CodeBuild unavailable or permission error */
+        }
+      }
+      submissions = await this.prisma.projectSubmission.findMany({
+        where: { projectId },
+        include: { user: true, project: true },
+        orderBy: { completedAt: 'desc' },
+      });
+    }
+
     return submissions.map((s) => ({
       ...this.toSubmissionResponse(s),
       teacherFeedback: s.teacherFeedback,
@@ -459,6 +497,137 @@ export class ProjectService {
     };
   }
 
+  async startCodeBuildForSubmission(
+    projectId: bigint,
+    submissionId: bigint,
+    teacherId: bigint,
+  ) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.projectId !== projectId) {
+      throw new BadRequestException('Submission does not belong to this project');
+    }
+    if (submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can run CodeBuild for this submission',
+      );
+    }
+
+    const name = submission.name.toLowerCase();
+    if (!name.endsWith('.zip')) {
+      throw new BadRequestException(
+        'CodeBuild uses an S3 ZIP source. Only .zip submissions can run tests this way.',
+      );
+    }
+
+    if (submission.codeBuildStatus === 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'A CodeBuild run is already in progress for this submission.',
+      );
+    }
+
+    const started = await this.codeBuild.startBuildWithS3ZipSource(
+      this.fileBucket,
+      submission.key,
+      submission.project.language,
+    );
+    const now = new Date();
+    await this.prisma.projectSubmission.update({
+      where: { id: submissionId },
+      data: {
+        codeBuildId: started.buildId,
+        codeBuildStatus: started.status,
+        codeBuildPhase: started.phase ?? null,
+        codeBuildLogsUrl: started.logsUrl ?? null,
+        codeBuildStartedAt: now,
+        codeBuildUpdatedAt: now,
+      },
+    });
+
+    return {
+      codeBuildId: started.buildId,
+      codeBuildStatus: started.status,
+      codeBuildPhase: started.phase ?? null,
+      codeBuildLogsUrl: started.logsUrl ?? null,
+      codeBuildStartedAt: now.toISOString(),
+      codeBuildUpdatedAt: now.toISOString(),
+    };
+  }
+
+  async refreshCodeBuildStatusForSubmission(
+    projectId: bigint,
+    submissionId: bigint,
+    teacherId: bigint,
+  ) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.projectId !== projectId) {
+      throw new BadRequestException('Submission does not belong to this project');
+    }
+    if (submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can view CodeBuild status for this submission',
+      );
+    }
+
+    if (!submission.codeBuildId) {
+      return {
+        codeBuildId: null,
+        codeBuildStatus: null,
+        codeBuildPhase: null,
+        codeBuildLogsUrl: null,
+        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildUpdatedAt: submission.codeBuildUpdatedAt?.toISOString() ?? null,
+      };
+    }
+
+    const remote = await this.codeBuild.getBuildStatus(submission.codeBuildId);
+    const now = new Date();
+    if (!remote) {
+      await this.prisma.projectSubmission.update({
+        where: { id: submissionId },
+        data: {
+          codeBuildStatus: 'UNKNOWN',
+          codeBuildPhase: null,
+          codeBuildUpdatedAt: now,
+        },
+      });
+      return {
+        codeBuildId: submission.codeBuildId,
+        codeBuildStatus: 'UNKNOWN',
+        codeBuildPhase: null,
+        codeBuildLogsUrl: submission.codeBuildLogsUrl,
+        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildUpdatedAt: now.toISOString(),
+      };
+    }
+
+    await this.prisma.projectSubmission.update({
+      where: { id: submissionId },
+      data: {
+        codeBuildStatus: remote.status,
+        codeBuildPhase: remote.phase ?? null,
+        codeBuildLogsUrl: remote.logsUrl ?? submission.codeBuildLogsUrl,
+        codeBuildUpdatedAt: now,
+      },
+    });
+
+    return {
+      codeBuildId: remote.buildId,
+      codeBuildStatus: remote.status,
+      codeBuildPhase: remote.phase ?? null,
+      codeBuildLogsUrl: remote.logsUrl ?? null,
+      codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+      codeBuildUpdatedAt: now.toISOString(),
+    };
+  }
+
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -490,6 +659,7 @@ export class ProjectService {
     title: string;
     description: string | null;
     points: number;
+    language: ProjectLanguage;
     dueDate: Date | null;
     assessmentPrompt: string | null;
     createdAt: Date;
@@ -501,6 +671,7 @@ export class ProjectService {
       title: p.title,
       description: p.description,
       points: p.points,
+      language: p.language,
       dueDate: p.dueDate?.toISOString() ?? null,
       assessmentPrompt: p.assessmentPrompt,
       createdAt: p.createdAt,
@@ -518,6 +689,12 @@ export class ProjectService {
     key: string;
     name: string;
     project: { id: bigint; title: string };
+    codeBuildId?: string | null;
+    codeBuildStatus?: string | null;
+    codeBuildPhase?: string | null;
+    codeBuildLogsUrl?: string | null;
+    codeBuildStartedAt?: Date | null;
+    codeBuildUpdatedAt?: Date | null;
   }) {
     return {
       id: s.id.toString(),
@@ -531,6 +708,12 @@ export class ProjectService {
         id: s.project.id.toString(),
         title: s.project.title,
       },
+      codeBuildId: s.codeBuildId ?? null,
+      codeBuildStatus: s.codeBuildStatus ?? null,
+      codeBuildPhase: s.codeBuildPhase ?? null,
+      codeBuildLogsUrl: s.codeBuildLogsUrl ?? null,
+      codeBuildStartedAt: s.codeBuildStartedAt?.toISOString() ?? null,
+      codeBuildUpdatedAt: s.codeBuildUpdatedAt?.toISOString() ?? null,
     };
   }
 }

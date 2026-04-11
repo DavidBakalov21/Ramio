@@ -5,8 +5,10 @@ import {
   MinLength,
   IsNumber,
   Min,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProjectLanguage } from '@prisma/client';
 
 export class CreateProjectDto {
   @IsString()
@@ -35,6 +37,10 @@ export class CreateProjectDto {
   @IsString()
   @MaxLength(20000)
   assessmentPrompt?: string;
+
+  @IsOptional()
+  @IsEnum(ProjectLanguage)
+  language?: ProjectLanguage;
 
   @IsNumber()
   @Min(1)

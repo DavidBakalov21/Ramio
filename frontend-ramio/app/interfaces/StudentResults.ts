@@ -1,5 +1,16 @@
+export type ResultCell = {
+  points: number;
+  maxPoints: number;
+  isChecked: boolean;
+} | null;
+
 export interface StudentResultsResponse {
   assignments: {
+    id: string;
+    title: string;
+    maxPoints: number;
+  }[];
+  projects: {
     id: string;
     title: string;
     maxPoints: number;
@@ -8,11 +19,8 @@ export interface StudentResultsResponse {
     userId: string;
     username: string | null;
     email: string;
-    assignmentResults: ({
-      points: number;
-      maxPoints: number;
-      isChecked: boolean;
-    } | null)[];
+    assignmentResults: ResultCell[];
+    projectResults: ResultCell[];
     totalEarned: number;
     totalMax: number;
   }[];

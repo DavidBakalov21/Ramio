@@ -93,6 +93,7 @@ export function ProjectsSection({ courseId, isTeacher }: ProjectsSectionProps) {
           title: data.title,
           description: data.description || undefined,
           points: data.points,
+          language: data.language,
           dueDate: dueDateSeconds,
           assessmentPrompt: data.assessmentPrompt || undefined,
           courseId: Number(courseId),
@@ -126,6 +127,7 @@ export function ProjectsSection({ courseId, isTeacher }: ProjectsSectionProps) {
           title: data.title,
           description: data.description || undefined,
           points: data.points,
+          language: data.language,
           dueDate: dueDateSeconds,
           assessmentPrompt: data.assessmentPrompt || null,
         });

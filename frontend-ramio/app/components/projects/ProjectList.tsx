@@ -1,6 +1,6 @@
 'use client';
 
-import { CourseProject } from '@/app/interfaces/Project';
+import { CourseProject, PROJECT_LANGUAGE_OPTIONS } from '@/app/interfaces/Project';
 
 interface ProjectListProps {
   projects: CourseProject[];
@@ -31,7 +31,10 @@ export function ProjectList({
 
   return (
     <ul className="space-y-2">
-      {projects.map((p) => (
+      {projects.map((p) => {
+        const langLabel =
+          PROJECT_LANGUAGE_OPTIONS.find((o) => o.value === p.language)?.label ?? p.language;
+        return (
         <li
           key={p.id}
           role={isClickable ? 'button' : undefined}
@@ -82,6 +85,9 @@ export function ProjectList({
                 <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                   Project
                 </span>
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
+                  {langLabel}
+                </span>
               </div>
               {p.description && (
                 <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{p.description}</p>
@@ -116,7 +122,8 @@ export function ProjectList({
             </span>
           )}
         </li>
-      ))}
+      );
+      })}
     </ul>
   );
 }

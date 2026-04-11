@@ -1,6 +1,9 @@
 'use client';
 
-import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
+import {
+  type ResultCell,
+  type StudentResultsResponse,
+} from '@/app/interfaces/StudentResults';
 
 interface StudentResultsTableProps {
   data: StudentResultsResponse | null;
@@ -24,7 +27,21 @@ export function StudentResultsTable({ data, loading }: StudentResultsTableProps)
     );
   }
 
-  const { assignments, students } = data;
+  const { assignments, projects, students } = data;
+  const projectsList = projects ?? [];
+
+  const renderCell = (r: ResultCell) =>
+    r ? (
+      <span
+        className={r.isChecked ? 'text-slate-900' : 'text-amber-700'}
+        title={r.isChecked ? 'Assessed' : 'Not yet assessed'}
+      >
+        {r.points}
+        {!r.isChecked && <span className="ml-0.5 text-amber-500">*</span>}
+      </span>
+    ) : (
+      <span className="text-slate-400">—</span>
+    );
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
@@ -46,6 +63,22 @@ export function StudentResultsTable({ data, loading }: StudentResultsTableProps)
                 </span>
               </th>
             ))}
+            {projectsList.map((p, idx) => (
+              <th
+                key={p.id}
+                className={`px-3 py-3 font-medium text-slate-700 ${
+                  idx === 0 ? 'border-l-2 border-l-amber-300/80' : ''
+                }`}
+                title={`${p.title} (project)`}
+              >
+                <span className="block truncate max-w-[120px]" title={p.title}>
+                  {p.title}
+                </span>
+                <span className="text-xs font-normal text-amber-700/90">
+                  project · /{p.maxPoints}
+                </span>
+              </th>
+            ))}
             <th className="px-4 py-3 font-semibold text-slate-900">Total</th>
           </tr>
         </thead>
@@ -55,6 +88,7 @@ export function StudentResultsTable({ data, loading }: StudentResultsTableProps)
               s.totalMax > 0
                 ? Math.round((s.totalEarned / s.totalMax) * 100)
                 : 0;
+            const projectResults = s.projectResults ?? [];
             return (
               <tr
                 key={s.userId}
@@ -74,23 +108,20 @@ export function StudentResultsTable({ data, loading }: StudentResultsTableProps)
                   const r = s.assignmentResults?.[idx] ?? null;
                   return (
                     <td key={a.id} className="px-3 py-3 text-slate-700">
-                      {r ? (
-                        <span
-                          className={
-                            r.isChecked
-                              ? 'text-slate-900'
-                              : 'text-amber-700'
-                          }
-                          title={r.isChecked ? 'Assessed' : 'Not yet assessed'}
-                        >
-                          {r.points}
-                          {!r.isChecked && (
-                            <span className="ml-0.5 text-amber-500">*</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
+                      {renderCell(r)}
+                    </td>
+                  );
+                })}
+                {projectsList.map((p, idx) => {
+                  const r = projectResults[idx] ?? null;
+                  return (
+                    <td
+                      key={p.id}
+                      className={`px-3 py-3 text-slate-700 ${
+                        idx === 0 ? 'border-l-2 border-l-amber-200/90' : ''
+                      }`}
+                    >
+                      {renderCell(r)}
                     </td>
                   );
                 })}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
-import { CourseProject } from '@/app/interfaces/Project';
+import { CourseProject, PROJECT_LANGUAGE_OPTIONS } from '@/app/interfaces/Project';
 import { ProjectSubmissionDetail } from '@/app/interfaces/Project';
 import { User } from '@/app/interfaces/User';
 import { Navbar } from '@/app/components/Navbar';
@@ -176,6 +176,10 @@ export default function ProjectUploadPage() {
                   <h1 className="text-xl font-semibold text-slate-900">{project.title}</h1>
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                     Project
+                  </span>
+                  <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
+                    {PROJECT_LANGUAGE_OPTIONS.find((o) => o.value === project.language)?.label ??
+                      project.language}
                   </span>
                 </div>
                 {project.description && (
