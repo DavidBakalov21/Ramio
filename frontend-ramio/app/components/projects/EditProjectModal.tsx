@@ -305,6 +305,23 @@ export function EditProjectModal({
                     s.codeBuildStatus === 'IN_PROGRESS' && s.codeBuildPhase
                       ? `${s.codeBuildStatus} · ${s.codeBuildPhase}`
                       : s.codeBuildStatus ?? '—';
+                  const passed = s.codeBuildTestsPassed;
+                  const failed = s.codeBuildTestsFailed;
+                  const skipped = s.codeBuildTestsSkipped;
+                  const hasTestCounts =
+                    typeof passed === 'number' ||
+                    typeof failed === 'number' ||
+                    typeof skipped === 'number';
+                  const testSummary =
+                    hasTestCounts && s.codeBuildStatus !== 'IN_PROGRESS'
+                      ? (() => {
+                          const p = typeof passed === 'number' ? passed : 0;
+                          const f = typeof failed === 'number' ? failed : 0;
+                          const sk = typeof skipped === 'number' ? skipped : 0;
+                          const total = p + f + sk;
+                          return `Successful: ${p} · Failed: ${f} · Total: ${total}`;
+                        })()
+                      : null;
                   return (
                     <li
                       key={s.id}
@@ -319,18 +336,16 @@ export function EditProjectModal({
                         </p>
                         <p className="mt-1 text-[11px] text-slate-400">
                           CodeBuild: {cbLabel}
-                          {s.codeBuildLogsUrl && s.codeBuildStatus !== 'IN_PROGRESS' ? (
-                            <>
-                              {' · '}
-                              <a
-                                href={s.codeBuildLogsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium text-violet-600 hover:underline"
-                              >
-                                Open in AWS
-                              </a>
-                            </>
+                          {testSummary ? (
+                            <span className="text-slate-500"> — {testSummary}</span>
+                          ) : null}
+                          {s.codeBuildTestMetricsAt &&
+                          s.codeBuildStatus !== 'IN_PROGRESS' &&
+                          !testSummary ? (
+                            <span className="text-slate-400">
+                              {' '}
+                              — test summary not detected in logs
+                            </span>
                           ) : null}
                         </p>
                       </div>

@@ -40,6 +40,10 @@ export interface ProjectSubmissionListItem {
   codeBuildLogsUrl?: string | null;
   codeBuildStartedAt?: string | null;
   codeBuildUpdatedAt?: string | null;
+  codeBuildTestsPassed?: number | null;
+  codeBuildTestsFailed?: number | null;
+  codeBuildTestsSkipped?: number | null;
+  codeBuildTestMetricsAt?: string | null;
   user: {
     id: string;
     username: string | null;

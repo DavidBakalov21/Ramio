@@ -27,6 +27,7 @@ const DEFAULT_CODEBUILD_PROJECT_BY_LANGUAGE: Partial<
 > = {
   PYTHON: 'PythonProject',
   NODE_JS: 'NodeJSProject',
+  JAVA: 'JavaProject',
 };
 
 export interface CodeBuildStartResult {
