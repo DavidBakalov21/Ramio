@@ -25,6 +25,7 @@ const CODEBUILD_PROJECT_ENV_BY_LANGUAGE: Record<ProjectLanguage, string> = {
 const DEFAULT_CODEBUILD_PROJECT_BY_LANGUAGE: Partial<
   Record<ProjectLanguage, string>
 > = {
+  DOTNET: 'DotNetProject',
   PYTHON: 'PythonProject',
   NODE_JS: 'NodeJSProject',
   JAVA: 'JavaProject',
