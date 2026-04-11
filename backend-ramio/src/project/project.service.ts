@@ -6,7 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProjectLanguage } from '@prisma/client';
 import { BedrockService } from '../bedrock/bedrock.service';
+import {
+  CodeBuildService,
+  isTerminalCodeBuildStatus,
+} from '../codebuild/codebuild.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
@@ -16,6 +21,9 @@ import type { AssessSubmissionDto } from '../assignment/dto/assess-submission.dt
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
+
+/** Space out CloudWatch reads when parsing never yields counts (avoids hammering Logs). */
+const CODEBUILD_METRICS_RETRY_MS = 30_000;
 
 function assertArchiveUpload(file: Express.Multer.File): void {
   const raw = file.originalname ?? '';
@@ -46,6 +54,7 @@ export class ProjectService {
     private readonly storage: StorageService,
     private readonly config: ConfigService,
     private readonly bedrock: BedrockService,
+    private readonly codeBuild: CodeBuildService,
     private readonly projectZipToPrompt: ProjectZipToPromptService,
   ) {
     this.fileBucket =
@@ -62,6 +71,7 @@ export class ProjectService {
         title: dto.title,
         description: dto.description ?? null,
         points: dto.points ?? 100,
+        language: dto.language ?? ProjectLanguage.PYTHON,
         dueDate,
         assessmentPrompt: dto.assessmentPrompt ?? null,
         courseId: BigInt(dto.courseId),
@@ -138,6 +148,7 @@ export class ProjectService {
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.points !== undefined && { points: dto.points }),
+        ...(dto.language !== undefined && { language: dto.language }),
         ...(dueDate !== undefined && { dueDate }),
         ...(dto.assessmentPrompt !== undefined && {
           assessmentPrompt: dto.assessmentPrompt,
@@ -305,7 +316,11 @@ export class ProjectService {
     };
   }
 
-  async getSubmissionsByProject(projectId: bigint, teacherId: bigint) {
+  async getSubmissionsByProject(
+    projectId: bigint,
+    teacherId: bigint,
+    options?: { syncCodeBuild?: boolean },
+  ) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: { course: true },
@@ -316,11 +331,83 @@ export class ProjectService {
         'Only the course teacher can view submissions',
       );
     }
-    const submissions = await this.prisma.projectSubmission.findMany({
+    let submissions = await this.prisma.projectSubmission.findMany({
       where: { projectId },
       include: { user: true, project: true },
       orderBy: { completedAt: 'desc' },
     });
+
+    if (options?.syncCodeBuild) {
+      const now = new Date();
+      const nowMs = now.getTime();
+      for (const s of submissions) {
+        if (!s.codeBuildId) continue;
+        const hasTestCounts =
+          s.codeBuildTestsPassed != null ||
+          s.codeBuildTestsFailed != null ||
+          s.codeBuildTestsSkipped != null;
+        const metricsRetryDue =
+          !s.codeBuildTestMetricsAt ||
+          nowMs - s.codeBuildTestMetricsAt.getTime() >=
+            CODEBUILD_METRICS_RETRY_MS;
+        if (isTerminalCodeBuildStatus(s.codeBuildStatus) && hasTestCounts) {
+          continue;
+        }
+        if (
+          isTerminalCodeBuildStatus(s.codeBuildStatus) &&
+          !hasTestCounts &&
+          !metricsRetryDue
+        ) {
+          continue;
+        }
+        try {
+          const build = await this.codeBuild.getBuildRecord(s.codeBuildId);
+          if (!build?.buildStatus) continue;
+          const logsUrl =
+            this.codeBuild.getConsoleUrlForBuild(build) ?? s.codeBuildLogsUrl;
+          const data: {
+            codeBuildStatus: string;
+            codeBuildPhase: string | null;
+            codeBuildLogsUrl: string | null;
+            codeBuildUpdatedAt: Date;
+            codeBuildTestsPassed?: number | null;
+            codeBuildTestsFailed?: number | null;
+            codeBuildTestsSkipped?: number | null;
+            codeBuildTestMetricsAt?: Date | null;
+          } = {
+            codeBuildStatus: build.buildStatus,
+            codeBuildPhase: build.currentPhase ?? null,
+            codeBuildLogsUrl: logsUrl ?? null,
+            codeBuildUpdatedAt: now,
+          };
+          if (
+            isTerminalCodeBuildStatus(build.buildStatus) &&
+            !hasTestCounts &&
+            metricsRetryDue
+          ) {
+            const m = await this.codeBuild.tryExtractTestMetricsFromBuild(build);
+            if (m) {
+              data.codeBuildTestsPassed = m.passed;
+              data.codeBuildTestsFailed = m.failed;
+              data.codeBuildTestsSkipped = m.skipped;
+            }
+            data.codeBuildTestMetricsAt = now;
+          }
+          await this.prisma.projectSubmission.update({
+            where: { id: s.id },
+            data,
+          });
+        } catch {
+          /* CodeBuild / CloudWatch unavailable or permission error */
+        }
+      }
+      submissions = await this.prisma.projectSubmission.findMany({
+        where: { projectId },
+        include: { user: true, project: true },
+        orderBy: { completedAt: 'desc' },
+      });
+    }
+
     return submissions.map((s) => ({
       ...this.toSubmissionResponse(s),
       teacherFeedback: s.teacherFeedback,
@@ -459,6 +546,191 @@ export class ProjectService {
     };
   }
 
+  async startCodeBuildForSubmission(
+    projectId: bigint,
+    submissionId: bigint,
+    teacherId: bigint,
+  ) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.projectId !== projectId) {
+      throw new BadRequestException('Submission does not belong to this project');
+    }
+    if (submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can run CodeBuild for this submission',
+      );
+    }
+
+    const name = submission.name.toLowerCase();
+    if (!name.endsWith('.zip')) {
+      throw new BadRequestException(
+        'CodeBuild uses an S3 ZIP source. Only .zip submissions can run tests this way.',
+      );
+    }
+
+    if (submission.codeBuildStatus === 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'A CodeBuild run is already in progress for this submission.',
+      );
+    }
+
+    const started = await this.codeBuild.startBuildWithS3ZipSource(
+      this.fileBucket,
+      submission.key,
+      submission.project.language,
+    );
+    const now = new Date();
+    await this.prisma.projectSubmission.update({
+      where: { id: submissionId },
+      data: {
+        codeBuildId: started.buildId,
+        codeBuildStatus: started.status,
+        codeBuildPhase: started.phase ?? null,
+        codeBuildLogsUrl: started.logsUrl ?? null,
+        codeBuildStartedAt: now,
+        codeBuildUpdatedAt: now,
+        codeBuildTestsPassed: null,
+        codeBuildTestsFailed: null,
+        codeBuildTestsSkipped: null,
+        codeBuildTestMetricsAt: null,
+      },
+    });
+
+    return {
+      codeBuildId: started.buildId,
+      codeBuildStatus: started.status,
+      codeBuildPhase: started.phase ?? null,
+      codeBuildLogsUrl: started.logsUrl ?? null,
+      codeBuildStartedAt: now.toISOString(),
+      codeBuildUpdatedAt: now.toISOString(),
+      codeBuildTestsPassed: null,
+      codeBuildTestsFailed: null,
+      codeBuildTestsSkipped: null,
+      codeBuildTestMetricsAt: null,
+    };
+  }
+
+  async refreshCodeBuildStatusForSubmission(
+    projectId: bigint,
+    submissionId: bigint,
+    teacherId: bigint,
+  ) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.projectId !== projectId) {
+      throw new BadRequestException('Submission does not belong to this project');
+    }
+    if (submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can view CodeBuild status for this submission',
+      );
+    }
+
+    if (!submission.codeBuildId) {
+      return {
+        codeBuildId: null,
+        codeBuildStatus: null,
+        codeBuildPhase: null,
+        codeBuildLogsUrl: null,
+        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildUpdatedAt: submission.codeBuildUpdatedAt?.toISOString() ?? null,
+        codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
+        codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
+        codeBuildTestsSkipped: submission.codeBuildTestsSkipped ?? null,
+        codeBuildTestMetricsAt:
+          submission.codeBuildTestMetricsAt?.toISOString() ?? null,
+      };
+    }
+
+    const build = await this.codeBuild.getBuildRecord(submission.codeBuildId);
+    const now = new Date();
+    if (!build?.buildStatus) {
+      await this.prisma.projectSubmission.update({
+        where: { id: submissionId },
+        data: {
+          codeBuildStatus: 'UNKNOWN',
+          codeBuildPhase: null,
+          codeBuildUpdatedAt: now,
+        },
+      });
+      return {
+        codeBuildId: submission.codeBuildId,
+        codeBuildStatus: 'UNKNOWN',
+        codeBuildPhase: null,
+        codeBuildLogsUrl: submission.codeBuildLogsUrl,
+        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildUpdatedAt: now.toISOString(),
+        codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
+        codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
+        codeBuildTestsSkipped: submission.codeBuildTestsSkipped ?? null,
+        codeBuildTestMetricsAt:
+          submission.codeBuildTestMetricsAt?.toISOString() ?? null,
+      };
+    }
+
+    const logsUrl =
+      this.codeBuild.getConsoleUrlForBuild(build) ??
+      submission.codeBuildLogsUrl;
+    const data: {
+      codeBuildStatus: string;
+      codeBuildPhase: string | null;
+      codeBuildLogsUrl: string | null;
+      codeBuildUpdatedAt: Date;
+      codeBuildTestsPassed?: number | null;
+      codeBuildTestsFailed?: number | null;
+      codeBuildTestsSkipped?: number | null;
+      codeBuildTestMetricsAt?: Date | null;
+    } = {
+      codeBuildStatus: build.buildStatus,
+      codeBuildPhase: build.currentPhase ?? null,
+      codeBuildLogsUrl: logsUrl ?? null,
+      codeBuildUpdatedAt: now,
+    };
+    const hasTestCounts =
+      submission.codeBuildTestsPassed != null ||
+      submission.codeBuildTestsFailed != null ||
+      submission.codeBuildTestsSkipped != null;
+    if (isTerminalCodeBuildStatus(build.buildStatus) && !hasTestCounts) {
+      const m = await this.codeBuild.tryExtractTestMetricsFromBuild(build);
+      if (m) {
+        data.codeBuildTestsPassed = m.passed;
+        data.codeBuildTestsFailed = m.failed;
+        data.codeBuildTestsSkipped = m.skipped;
+      }
+      data.codeBuildTestMetricsAt = now;
+    }
+
+    await this.prisma.projectSubmission.update({
+      where: { id: submissionId },
+      data,
+    });
+
+    const updated = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+    });
+
+    return {
+      codeBuildId: build.id ?? submission.codeBuildId,
+      codeBuildStatus: build.buildStatus,
+      codeBuildPhase: build.currentPhase ?? null,
+      codeBuildLogsUrl: logsUrl ?? null,
+      codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+      codeBuildUpdatedAt: now.toISOString(),
+      codeBuildTestsPassed: updated?.codeBuildTestsPassed ?? null,
+      codeBuildTestsFailed: updated?.codeBuildTestsFailed ?? null,
+      codeBuildTestsSkipped: updated?.codeBuildTestsSkipped ?? null,
+      codeBuildTestMetricsAt:
+        updated?.codeBuildTestMetricsAt?.toISOString() ?? null,
+    };
+  }
+
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -490,6 +762,7 @@ export class ProjectService {
     title: string;
     description: string | null;
     points: number;
+    language: ProjectLanguage;
     dueDate: Date | null;
     assessmentPrompt: string | null;
     createdAt: Date;
@@ -501,6 +774,7 @@ export class ProjectService {
       title: p.title,
       description: p.description,
       points: p.points,
+      language: p.language,
       dueDate: p.dueDate?.toISOString() ?? null,
       assessmentPrompt: p.assessmentPrompt,
       createdAt: p.createdAt,
@@ -518,6 +792,16 @@ export class ProjectService {
     key: string;
     name: string;
     project: { id: bigint; title: string };
+    codeBuildId?: string | null;
+    codeBuildStatus?: string | null;
+    codeBuildPhase?: string | null;
+    codeBuildLogsUrl?: string | null;
+    codeBuildStartedAt?: Date | null;
+    codeBuildUpdatedAt?: Date | null;
+    codeBuildTestsPassed?: number | null;
+    codeBuildTestsFailed?: number | null;
+    codeBuildTestsSkipped?: number | null;
+    codeBuildTestMetricsAt?: Date | null;
   }) {
     return {
       id: s.id.toString(),
@@ -531,6 +815,16 @@ export class ProjectService {
         id: s.project.id.toString(),
         title: s.project.title,
       },
+      codeBuildId: s.codeBuildId ?? null,
+      codeBuildStatus: s.codeBuildStatus ?? null,
+      codeBuildPhase: s.codeBuildPhase ?? null,
+      codeBuildLogsUrl: s.codeBuildLogsUrl ?? null,
+      codeBuildStartedAt: s.codeBuildStartedAt?.toISOString() ?? null,
+      codeBuildUpdatedAt: s.codeBuildUpdatedAt?.toISOString() ?? null,
+      codeBuildTestsPassed: s.codeBuildTestsPassed ?? null,
+      codeBuildTestsFailed: s.codeBuildTestsFailed ?? null,
+      codeBuildTestsSkipped: s.codeBuildTestsSkipped ?? null,
+      codeBuildTestMetricsAt: s.codeBuildTestMetricsAt?.toISOString() ?? null,
     };
   }
 }

@@ -3,13 +3,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '@/lib/axios';
-import { CourseProject, ProjectSubmissionListItem } from '@/app/interfaces/Project';
+import {
+  CourseProject,
+  PROJECT_LANGUAGE_OPTIONS,
+  ProjectSubmissionListItem,
+  type ProjectLanguage,
+} from '@/app/interfaces/Project';
+import { useToast } from '@/app/components/utility/toast';
 import { AssessProjectSubmissionModal } from './AssessProjectSubmissionModal';
 
 export interface EditProjectFormData {
   title: string;
   description: string;
   points: number;
+  language: ProjectLanguage;
   dueDate: string;
   assessmentPrompt: string;
 }
@@ -33,9 +40,11 @@ export function EditProjectModal({
   isSubmitting,
   error,
 }: EditProjectModalProps) {
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState(100);
+  const [language, setLanguage] = useState<ProjectLanguage>('PYTHON');
   const [dueDate, setDueDate] = useState('');
   const [assessmentPrompt, setAssessmentPrompt] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -44,12 +53,14 @@ export function EditProjectModal({
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [assessModalOpen, setAssessModalOpen] = useState(false);
   const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(null);
+  const [codeBuildLoadingId, setCodeBuildLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && project) {
       setTitle(project.title);
       setDescription(project.description ?? '');
       setPoints(project.points);
+      setLanguage(project.language ?? 'PYTHON');
       setDueDate(project.dueDate ? new Date(project.dueDate).toISOString().slice(0, 10) : '');
       setAssessmentPrompt(project.assessmentPrompt ?? '');
       setValidationError('');
@@ -60,7 +71,7 @@ export function EditProjectModal({
         setSubmissionsLoading(true);
         try {
           const res = await api.get<ProjectSubmissionListItem[]>(
-            `/project/${project.id}/submissions`,
+            `/project/${project.id}/submissions?syncCodeBuild=1`,
           );
           setSubmissions(res.data);
         } catch {
@@ -72,6 +83,23 @@ export function EditProjectModal({
       void fetchSubmissions();
     }
   }, [isOpen, project]);
+
+  const hasCodeBuildInProgress = submissions.some(
+    (s) => s.codeBuildStatus === 'IN_PROGRESS',
+  );
+
+  useEffect(() => {
+    if (!isOpen || !project || !hasCodeBuildInProgress) return;
+    const id = setInterval(() => {
+      void api
+        .get<ProjectSubmissionListItem[]>(
+          `/project/${project.id}/submissions?syncCodeBuild=1`,
+        )
+        .then((res) => setSubmissions(res.data))
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(id);
+  }, [isOpen, project?.id, hasCodeBuildInProgress]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -94,6 +122,7 @@ export function EditProjectModal({
       title: trimmedTitle,
       description: description.trim(),
       points: points >= 0 ? points : 100,
+      language,
       dueDate,
       assessmentPrompt: assessmentPrompt.trim(),
     });
@@ -106,11 +135,35 @@ export function EditProjectModal({
 
   const handleAssessSaved = useCallback(() => {
     if (project) {
-      void api.get<ProjectSubmissionListItem[]>(`/project/${project.id}/submissions`).then((res) => {
-        setSubmissions(res.data);
-      });
+      void api
+        .get<ProjectSubmissionListItem[]>(
+          `/project/${project.id}/submissions?syncCodeBuild=1`,
+        )
+        .then((res) => {
+          setSubmissions(res.data);
+        });
     }
   }, [project]);
+
+  const handleRunCodeBuild = async (submissionId: string) => {
+    if (!project) return;
+    setCodeBuildLoadingId(submissionId);
+    try {
+      await api.post(`/project/${project.id}/submission/${submissionId}/codebuild-run`);
+      const res = await api.get<ProjectSubmissionListItem[]>(
+        `/project/${project.id}/submissions?syncCodeBuild=1`,
+      );
+      setSubmissions(res.data);
+      showToast('CodeBuild run started.', 'success');
+    } catch (err: unknown) {
+      const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data?.message;
+      const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Could not start CodeBuild';
+      showToast(msg, 'error');
+    } finally {
+      setCodeBuildLoadingId(null);
+    }
+  };
 
   const handleDelete = async () => {
     if (!project || !onDelete) return;
@@ -176,6 +229,24 @@ export function EditProjectModal({
               disabled={isSubmitting}
             />
           </div>
+          <div>
+            <label htmlFor="edit-project-language" className="mb-1 block text-xs font-medium text-slate-600">
+              Language / CodeBuild stack
+            </label>
+            <select
+              id="edit-project-language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as ProjectLanguage)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              disabled={isSubmitting}
+            >
+              {PROJECT_LANGUAGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="edit-project-points" className="mb-1 block text-xs font-medium text-slate-600">
@@ -228,29 +299,91 @@ export function EditProjectModal({
               <p className="text-xs text-slate-500">No submissions yet.</p>
             ) : (
               <ul className="max-h-40 space-y-2 overflow-y-auto">
-                {submissions.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {s.user.username || s.user.email}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {s.isChecked ? `${s.points} pts · Checked` : 'Not assessed yet'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => openAssessModal(s.id)}
-                      disabled={isSubmitting}
-                      className="shrink-0 rounded-full bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-700 disabled:opacity-60"
+                {submissions.map((s) => {
+                  const isZip = s.name.toLowerCase().endsWith('.zip');
+                  const cbLabel =
+                    s.codeBuildStatus === 'IN_PROGRESS' && s.codeBuildPhase
+                      ? `${s.codeBuildStatus} · ${s.codeBuildPhase}`
+                      : s.codeBuildStatus ?? '—';
+                  const passed = s.codeBuildTestsPassed;
+                  const failed = s.codeBuildTestsFailed;
+                  const skipped = s.codeBuildTestsSkipped;
+                  const hasTestCounts =
+                    typeof passed === 'number' ||
+                    typeof failed === 'number' ||
+                    typeof skipped === 'number';
+                  const testSummary =
+                    hasTestCounts && s.codeBuildStatus !== 'IN_PROGRESS'
+                      ? (() => {
+                          const p = typeof passed === 'number' ? passed : 0;
+                          const f = typeof failed === 'number' ? failed : 0;
+                          const sk = typeof skipped === 'number' ? skipped : 0;
+                          const total = p + f + sk;
+                          return `Successful: ${p} · Failed: ${f} · Total: ${total}`;
+                        })()
+                      : null;
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      Assess
-                    </button>
-                  </li>
-                ))}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {s.user.username || s.user.email}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {s.isChecked ? `${s.points} pts · Checked` : 'Not assessed yet'}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          CodeBuild: {cbLabel}
+                          {testSummary ? (
+                            <span className="text-slate-500"> — {testSummary}</span>
+                          ) : null}
+                          {s.codeBuildTestMetricsAt &&
+                          s.codeBuildStatus !== 'IN_PROGRESS' &&
+                          !testSummary ? (
+                            <span className="text-slate-400">
+                              {' '}
+                              — test summary not detected in logs
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => void handleRunCodeBuild(s.id)}
+                          disabled={
+                            isSubmitting ||
+                            codeBuildLoadingId === s.id ||
+                            !isZip ||
+                            s.codeBuildStatus === 'IN_PROGRESS'
+                          }
+                          className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          title={
+                            !isZip
+                              ? 'CodeBuild uses S3 ZIP source; submission must be .zip'
+                              : undefined
+                          }
+                        >
+                          {codeBuildLoadingId === s.id
+                            ? 'Starting…'
+                            : s.codeBuildStatus === 'IN_PROGRESS'
+                              ? 'Running…'
+                              : 'Run tests'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openAssessModal(s.id)}
+                          disabled={isSubmitting}
+                          className="rounded-full bg-amber-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-amber-700 disabled:opacity-60"
+                        >
+                          Assess
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

@@ -3,10 +3,13 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { PROJECT_LANGUAGE_OPTIONS, type ProjectLanguage } from '@/app/interfaces/Project';
+
 export interface AddProjectFormData {
   title: string;
   description: string;
   points: number;
+  language: ProjectLanguage;
   dueDate: string;
   assessmentPrompt: string;
 }
@@ -29,6 +32,7 @@ export function AddProjectModal({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState(100);
+  const [language, setLanguage] = useState<ProjectLanguage>('PYTHON');
   const [dueDate, setDueDate] = useState('');
   const [assessmentPrompt, setAssessmentPrompt] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -38,6 +42,7 @@ export function AddProjectModal({
       setTitle('');
       setDescription('');
       setPoints(100);
+      setLanguage('PYTHON');
       setDueDate('');
       setAssessmentPrompt('');
       setValidationError('');
@@ -65,6 +70,7 @@ export function AddProjectModal({
       title: trimmedTitle,
       description: description.trim(),
       points: points >= 0 ? points : 100,
+      language,
       dueDate,
       assessmentPrompt: assessmentPrompt.trim(),
     });
@@ -121,6 +127,27 @@ export function AddProjectModal({
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}
             />
+          </div>
+          <div>
+            <label htmlFor="add-project-language" className="mb-1 block text-xs font-medium text-slate-600">
+              Language / CodeBuild stack
+            </label>
+            <select
+              id="add-project-language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as ProjectLanguage)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              disabled={isSubmitting}
+            >
+              {PROJECT_LANGUAGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Chooses which AWS CodeBuild project runs for &quot;Run tests&quot; (see CODEBUILD_PROJECT_* env vars).
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

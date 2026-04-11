@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -70,8 +71,25 @@ export class ProjectController {
   getSubmissionsByProject(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
+    @Query('syncCodeBuild') syncCodeBuild?: string,
   ) {
-    return this.projectService.getSubmissionsByProject(BigInt(id), user.id);
+    return this.projectService.getSubmissionsByProject(BigInt(id), user.id, {
+      syncCodeBuild: syncCodeBuild === '1' || syncCodeBuild === 'true',
+    });
+  }
+
+  @Get(':id/submission/:submissionId/codebuild-status')
+  @Roles(UserRole.TEACHER)
+  getCodeBuildStatusForSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.refreshCodeBuildStatusForSubmission(
+      BigInt(id),
+      BigInt(submissionId),
+      user.id,
+    );
   }
 
   @Get(':id/submission')
@@ -119,6 +137,20 @@ export class ProjectController {
     @User() user: PrismaUser,
   ) {
     return this.projectService.getAiFeedbackForProjectSubmission(
+      BigInt(id),
+      BigInt(submissionId),
+      user.id,
+    );
+  }
+
+  @Post(':id/submission/:submissionId/codebuild-run')
+  @Roles(UserRole.TEACHER)
+  runCodeBuildForSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.startCodeBuildForSubmission(
       BigInt(id),
       BigInt(submissionId),
       user.id,

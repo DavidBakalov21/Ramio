@@ -6,8 +6,10 @@ import {
   IsNumber,
   Min,
   ValidateIf,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProjectLanguage } from '@prisma/client';
 
 export class UpdateProjectDto {
   @IsOptional()
@@ -38,4 +40,8 @@ export class UpdateProjectDto {
   @IsString()
   @MaxLength(20000)
   assessmentPrompt?: string | null;
+
+  @IsOptional()
+  @IsEnum(ProjectLanguage)
+  language?: ProjectLanguage;
 }

@@ -341,6 +341,10 @@ export class CourseService {
           orderBy: { createdAt: 'asc' },
           select: { id: true, title: true, points: true },
         },
+        projects: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, title: true, points: true },
+        },
         enrollments: {
           include: {
             user: { select: { id: true, username: true, email: true } },
@@ -355,16 +359,13 @@ export class CourseService {
       );
     }
 
-    const assignmentIds = course.assignments.map((a) => a.id);
-    const assignmentMap = new Map(
-      course.assignments.map((a) => [a.id.toString(), a]),
-    );
-    const totalMax = course.assignments.reduce((sum, a) => sum + a.points, 0);
+    const enrollmentUserIds = course.enrollments.map((e) => e.userId);
 
+    const assignmentIds = course.assignments.map((a) => a.id);
     const submissions = await this.prisma.assignmentSubmission.findMany({
       where: {
         assignmentId: { in: assignmentIds },
-        userId: { in: course.enrollments.map((e) => e.userId) },
+        userId: { in: enrollmentUserIds },
       },
       select: {
         assignmentId: true,
@@ -385,6 +386,41 @@ export class CourseService {
       });
     }
 
+    const projectIds = course.projects.map((p) => p.id);
+    const projectSubmissions = await this.prisma.projectSubmission.findMany({
+      where: {
+        projectId: { in: projectIds },
+        userId: { in: enrollmentUserIds },
+      },
+      select: {
+        projectId: true,
+        userId: true,
+        points: true,
+        isChecked: true,
+      },
+    });
+
+    const projectSubmissionMap = new Map<
+      string,
+      { points: number; isChecked: boolean }
+    >();
+    for (const s of projectSubmissions) {
+      projectSubmissionMap.set(`${s.userId}-${s.projectId}`, {
+        points: s.points,
+        isChecked: s.isChecked,
+      });
+    }
+
+    const totalMaxAssignments = course.assignments.reduce(
+      (sum, a) => sum + a.points,
+      0,
+    );
+    const totalMaxProjects = course.projects.reduce(
+      (sum, p) => sum + p.points,
+      0,
+    );
+    const totalMax = totalMaxAssignments + totalMaxProjects;
+
     const students = course.enrollments.map((e) => {
       const assignmentResults = course.assignments.map((a) => {
         const sub = submissionMap.get(`${e.userId}-${a.id}`);
@@ -396,15 +432,25 @@ export class CourseService {
             }
           : null;
       });
-      const totalEarned = assignmentResults.reduce(
-        (sum, r) => sum + (r?.points ?? 0),
-        0,
-      );
+      const projectResults = course.projects.map((p) => {
+        const sub = projectSubmissionMap.get(`${e.userId}-${p.id}`);
+        return sub
+          ? {
+              points: sub.points,
+              maxPoints: p.points,
+              isChecked: sub.isChecked,
+            }
+          : null;
+      });
+      const totalEarned =
+        assignmentResults.reduce((sum, r) => sum + (r?.points ?? 0), 0) +
+        projectResults.reduce((sum, r) => sum + (r?.points ?? 0), 0);
       return {
         userId: e.user.id.toString(),
         username: e.user.username ?? null,
         email: e.user.email,
         assignmentResults,
+        projectResults,
         totalEarned,
         totalMax,
       };
@@ -415,6 +461,11 @@ export class CourseService {
         id: a.id.toString(),
         title: a.title,
         maxPoints: a.points,
+      })),
+      projects: course.projects.map((p) => ({
+        id: p.id.toString(),
+        title: p.title,
+        maxPoints: p.points,
       })),
       students: students.sort((a, b) =>
         (a.username ?? a.email).localeCompare(b.username ?? b.email),
