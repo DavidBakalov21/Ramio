@@ -61,6 +61,18 @@ export function parseTestCountsFromBuildLog(log: string): {
     };
   }
 
+  /** Node.js `node --test` / TAP-style summary (often with a leading `1..N` plan line). */
+  const tapPass = text.match(/#\s+pass\s+(\d+)\b/);
+  const tapFail = text.match(/#\s+fail\s+(\d+)\b/);
+  if (tapPass && tapFail) {
+    const tapSkipped = text.match(/#\s+skipped\s+(\d+)\b/);
+    return {
+      passed: Number(tapPass[1]),
+      failed: Number(tapFail[1]),
+      skipped: tapSkipped ? Number(tapSkipped[1]) : 0,
+    };
+  }
+
   const pytestLine = text.match(
     /=+\s*([\s\S]*?)\s+in\s+[\d.]+s\s*=+/,
   );

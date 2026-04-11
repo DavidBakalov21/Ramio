@@ -38,4 +38,23 @@ describe('parseTestCountsFromBuildLog', () => {
       skipped: 0,
     });
   });
+
+  it('parses Node.js node --test TAP summary', () => {
+    const log = `[Container] ... 
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 90.58142
+`;
+    expect(parseTestCountsFromBuildLog(log)).toEqual({
+      passed: 9,
+      failed: 0,
+      skipped: 0,
+    });
+  });
 });
