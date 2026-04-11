@@ -8,7 +8,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ProjectLanguage } from '@prisma/client';
 import { BedrockService } from '../bedrock/bedrock.service';
-import { CodeBuildService } from '../codebuild/codebuild.service';
+import {
+  CodeBuildService,
+  isTerminalCodeBuildStatus,
+} from '../codebuild/codebuild.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
@@ -18,6 +21,9 @@ import type { AssessSubmissionDto } from '../assignment/dto/assess-submission.dt
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
+
+/** Space out CloudWatch reads when parsing never yields counts (avoids hammering Logs). */
+const CODEBUILD_METRICS_RETRY_MS = 30_000;
 
 function assertArchiveUpload(file: Express.Multer.File): void {
   const raw = file.originalname ?? '';
@@ -333,23 +339,66 @@ export class ProjectService {
 
     if (options?.syncCodeBuild) {
       const now = new Date();
+      const nowMs = now.getTime();
       for (const s of submissions) {
-        if (!s.codeBuildId || s.codeBuildStatus !== 'IN_PROGRESS') continue;
+        if (!s.codeBuildId) continue;
+        const hasTestCounts =
+          s.codeBuildTestsPassed != null ||
+          s.codeBuildTestsFailed != null ||
+          s.codeBuildTestsSkipped != null;
+        const metricsRetryDue =
+          !s.codeBuildTestMetricsAt ||
+          nowMs - s.codeBuildTestMetricsAt.getTime() >=
+            CODEBUILD_METRICS_RETRY_MS;
+        if (isTerminalCodeBuildStatus(s.codeBuildStatus) && hasTestCounts) {
+          continue;
+        }
+        if (
+          isTerminalCodeBuildStatus(s.codeBuildStatus) &&
+          !hasTestCounts &&
+          !metricsRetryDue
+        ) {
+          continue;
+        }
         try {
-          const remote = await this.codeBuild.getBuildStatus(s.codeBuildId);
-          if (remote) {
-            await this.prisma.projectSubmission.update({
-              where: { id: s.id },
-              data: {
-                codeBuildStatus: remote.status,
-                codeBuildPhase: remote.phase ?? null,
-                codeBuildLogsUrl: remote.logsUrl ?? s.codeBuildLogsUrl,
-                codeBuildUpdatedAt: now,
-              },
-            });
+          const build = await this.codeBuild.getBuildRecord(s.codeBuildId);
+          if (!build?.buildStatus) continue;
+          const logsUrl =
+            this.codeBuild.getConsoleUrlForBuild(build) ?? s.codeBuildLogsUrl;
+          const data: {
+            codeBuildStatus: string;
+            codeBuildPhase: string | null;
+            codeBuildLogsUrl: string | null;
+            codeBuildUpdatedAt: Date;
+            codeBuildTestsPassed?: number | null;
+            codeBuildTestsFailed?: number | null;
+            codeBuildTestsSkipped?: number | null;
+            codeBuildTestMetricsAt?: Date | null;
+          } = {
+            codeBuildStatus: build.buildStatus,
+            codeBuildPhase: build.currentPhase ?? null,
+            codeBuildLogsUrl: logsUrl ?? null,
+            codeBuildUpdatedAt: now,
+          };
+          if (
+            isTerminalCodeBuildStatus(build.buildStatus) &&
+            !hasTestCounts &&
+            metricsRetryDue
+          ) {
+            const m = await this.codeBuild.tryExtractTestMetricsFromBuild(build);
+            if (m) {
+              data.codeBuildTestsPassed = m.passed;
+              data.codeBuildTestsFailed = m.failed;
+              data.codeBuildTestsSkipped = m.skipped;
+            }
+            data.codeBuildTestMetricsAt = now;
           }
+          await this.prisma.projectSubmission.update({
+            where: { id: s.id },
+            data,
+          });
         } catch {
-          /* CodeBuild unavailable or permission error */
+          /* CodeBuild / CloudWatch unavailable or permission error */
         }
       }
       submissions = await this.prisma.projectSubmission.findMany({
@@ -544,6 +593,10 @@ export class ProjectService {
         codeBuildLogsUrl: started.logsUrl ?? null,
         codeBuildStartedAt: now,
         codeBuildUpdatedAt: now,
+        codeBuildTestsPassed: null,
+        codeBuildTestsFailed: null,
+        codeBuildTestsSkipped: null,
+        codeBuildTestMetricsAt: null,
       },
     });
 
@@ -554,6 +607,10 @@ export class ProjectService {
       codeBuildLogsUrl: started.logsUrl ?? null,
       codeBuildStartedAt: now.toISOString(),
       codeBuildUpdatedAt: now.toISOString(),
+      codeBuildTestsPassed: null,
+      codeBuildTestsFailed: null,
+      codeBuildTestsSkipped: null,
+      codeBuildTestMetricsAt: null,
     };
   }
 
@@ -584,12 +641,17 @@ export class ProjectService {
         codeBuildLogsUrl: null,
         codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
         codeBuildUpdatedAt: submission.codeBuildUpdatedAt?.toISOString() ?? null,
+        codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
+        codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
+        codeBuildTestsSkipped: submission.codeBuildTestsSkipped ?? null,
+        codeBuildTestMetricsAt:
+          submission.codeBuildTestMetricsAt?.toISOString() ?? null,
       };
     }
 
-    const remote = await this.codeBuild.getBuildStatus(submission.codeBuildId);
+    const build = await this.codeBuild.getBuildRecord(submission.codeBuildId);
     const now = new Date();
-    if (!remote) {
+    if (!build?.buildStatus) {
       await this.prisma.projectSubmission.update({
         where: { id: submissionId },
         data: {
@@ -605,26 +667,67 @@ export class ProjectService {
         codeBuildLogsUrl: submission.codeBuildLogsUrl,
         codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
         codeBuildUpdatedAt: now.toISOString(),
+        codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
+        codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
+        codeBuildTestsSkipped: submission.codeBuildTestsSkipped ?? null,
+        codeBuildTestMetricsAt:
+          submission.codeBuildTestMetricsAt?.toISOString() ?? null,
       };
+    }
+
+    const logsUrl =
+      this.codeBuild.getConsoleUrlForBuild(build) ??
+      submission.codeBuildLogsUrl;
+    const data: {
+      codeBuildStatus: string;
+      codeBuildPhase: string | null;
+      codeBuildLogsUrl: string | null;
+      codeBuildUpdatedAt: Date;
+      codeBuildTestsPassed?: number | null;
+      codeBuildTestsFailed?: number | null;
+      codeBuildTestsSkipped?: number | null;
+      codeBuildTestMetricsAt?: Date | null;
+    } = {
+      codeBuildStatus: build.buildStatus,
+      codeBuildPhase: build.currentPhase ?? null,
+      codeBuildLogsUrl: logsUrl ?? null,
+      codeBuildUpdatedAt: now,
+    };
+    const hasTestCounts =
+      submission.codeBuildTestsPassed != null ||
+      submission.codeBuildTestsFailed != null ||
+      submission.codeBuildTestsSkipped != null;
+    if (isTerminalCodeBuildStatus(build.buildStatus) && !hasTestCounts) {
+      const m = await this.codeBuild.tryExtractTestMetricsFromBuild(build);
+      if (m) {
+        data.codeBuildTestsPassed = m.passed;
+        data.codeBuildTestsFailed = m.failed;
+        data.codeBuildTestsSkipped = m.skipped;
+      }
+      data.codeBuildTestMetricsAt = now;
     }
 
     await this.prisma.projectSubmission.update({
       where: { id: submissionId },
-      data: {
-        codeBuildStatus: remote.status,
-        codeBuildPhase: remote.phase ?? null,
-        codeBuildLogsUrl: remote.logsUrl ?? submission.codeBuildLogsUrl,
-        codeBuildUpdatedAt: now,
-      },
+      data,
+    });
+
+    const updated = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
     });
 
     return {
-      codeBuildId: remote.buildId,
-      codeBuildStatus: remote.status,
-      codeBuildPhase: remote.phase ?? null,
-      codeBuildLogsUrl: remote.logsUrl ?? null,
+      codeBuildId: build.id ?? submission.codeBuildId,
+      codeBuildStatus: build.buildStatus,
+      codeBuildPhase: build.currentPhase ?? null,
+      codeBuildLogsUrl: logsUrl ?? null,
       codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
       codeBuildUpdatedAt: now.toISOString(),
+      codeBuildTestsPassed: updated?.codeBuildTestsPassed ?? null,
+      codeBuildTestsFailed: updated?.codeBuildTestsFailed ?? null,
+      codeBuildTestsSkipped: updated?.codeBuildTestsSkipped ?? null,
+      codeBuildTestMetricsAt:
+        updated?.codeBuildTestMetricsAt?.toISOString() ?? null,
     };
   }
 
@@ -695,6 +798,10 @@ export class ProjectService {
     codeBuildLogsUrl?: string | null;
     codeBuildStartedAt?: Date | null;
     codeBuildUpdatedAt?: Date | null;
+    codeBuildTestsPassed?: number | null;
+    codeBuildTestsFailed?: number | null;
+    codeBuildTestsSkipped?: number | null;
+    codeBuildTestMetricsAt?: Date | null;
   }) {
     return {
       id: s.id.toString(),
@@ -714,6 +821,10 @@ export class ProjectService {
       codeBuildLogsUrl: s.codeBuildLogsUrl ?? null,
       codeBuildStartedAt: s.codeBuildStartedAt?.toISOString() ?? null,
       codeBuildUpdatedAt: s.codeBuildUpdatedAt?.toISOString() ?? null,
+      codeBuildTestsPassed: s.codeBuildTestsPassed ?? null,
+      codeBuildTestsFailed: s.codeBuildTestsFailed ?? null,
+      codeBuildTestsSkipped: s.codeBuildTestsSkipped ?? null,
+      codeBuildTestMetricsAt: s.codeBuildTestMetricsAt?.toISOString() ?? null,
     };
   }
 }

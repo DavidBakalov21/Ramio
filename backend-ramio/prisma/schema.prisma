@@ -165,6 +165,10 @@ model ProjectSubmission {
   codeBuildLogsUrl   String?   @db.VarChar(1024)
   codeBuildStartedAt DateTime?
   codeBuildUpdatedAt DateTime?
+  codeBuildTestsPassed  Int?
+  codeBuildTestsFailed  Int?
+  codeBuildTestsSkipped Int?
+  codeBuildTestMetricsAt DateTime?
 
   @@unique([projectId, userId])
   @@map("project_submission")

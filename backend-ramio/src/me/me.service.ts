@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import type { UpdateProfileDto } from './dto/update-profile.dto';
+
+const AVATAR_S3_BUCKET = 'ramio-file-storage';
 
 type UserWithProfile = {
   id: bigint;
@@ -21,7 +22,6 @@ export class MeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly config: ConfigService,
   ) {}
 
   private toResponse(user: UserWithProfile) {
@@ -69,10 +69,6 @@ export class MeService {
   }
 
   async uploadAvatar(cognitoSub: string, file: Express.Multer.File) {
-    const bucket =
-      this.config.get<string>('S3_BUCKET_AVATARS') ??
-      this.config.get<string>('S3_BUCKET') ??
-      'ramio-file-storage';
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -86,7 +82,7 @@ export class MeService {
 
     const { url, key } = await this.storage.uploadFile(
       file,
-      bucket,
+      AVATAR_S3_BUCKET,
       'avatars/',
     );
     const userRecord = await this.prisma.user.findUnique({
