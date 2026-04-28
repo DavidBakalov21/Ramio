@@ -1,0 +1,80 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "backend-ramio/**"
+      - ".github/workflows/deploy-backend-ec2.yml"
+      - "frontend-ramio/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-north-1
+      REPO_URL: ${{ secrets.DEPLOY_REPO_URL }}
+      APP_DIR: /home/ubuntu/Ramio
+      BRANCH: master
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Trigger deployment on EC2 through SSM
+        id: start
+        run: |
+          set -euo pipefail
+          COMMANDS_JSON=$(cat <<'EOF'
+          [
+            "set -euo pipefail",
+            "if [ ! -d \"${APP_DIR}/.git\" ]; then git clone --depth 1 --branch ${BRANCH} \"${REPO_URL}\" \"${APP_DIR}\"; fi",
+            "cd \"${APP_DIR}\"",
+            "git fetch origin ${BRANCH}",
+            "git reset --hard origin/${BRANCH}",
+            "cd backend-ramio",
+            "npm ci",
+            "npx prisma generate",
+            "npx prisma migrate deploy",
+            "npm run build",
+            "if ! command -v pm2 >/dev/null 2>&1; then sudo npm install -g pm2; fi",
+            "if pm2 describe ramio-backend >/dev/null 2>&1; then pm2 restart ramio-backend --update-env; else pm2 start npm --name ramio-backend -- run start:prod; fi",
+            "pm2 save"
+          ]
+          EOF
+          )
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy backend from GitHub Actions" \
+            --parameters "commands=${COMMANDS_JSON}" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "command_id=${COMMAND_ID}" >> "$GITHUB_OUTPUT"
+          echo "Started SSM command: ${COMMAND_ID}"
+
+      - name: Wait for SSM command
+        run: |
+          set -euo pipefail
+          aws ssm wait command-executed \
+            --command-id "${{ steps.start.outputs.command_id }}" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}"
+
+      - name: Print command output
+        run: |
+          set -euo pipefail
+          aws ssm get-command-invocation \
+            --command-id "${{ steps.start.outputs.command_id }}" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query "{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}" \
+            --output json

@@ -1,0 +1,81 @@
+services:
+  backend1:
+    user: "1000:1000"
+    build:
+      context: ./backend-ramio
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend-ramio/.env
+    shm_size: "1gb"
+    ports:
+      - "127.0.0.1:3333:3333"
+    restart: unless-stopped
+
+  backend2:
+    user: "1000:1000"
+    build:
+      context: ./backend-ramio
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend-ramio/.env
+    shm_size: "1gb"
+    ports:
+      - "127.0.0.1:3334:3333"
+    restart: unless-stopped
+
+  backend3:
+    user: "1000:1000"
+    build:
+      context: ./backend-ramio
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend-ramio/.env
+    shm_size: "1gb"
+    ports:
+      - "127.0.0.1:3335:3333"
+    restart: unless-stopped
+
+  frontend1:
+    user: "1000:1000"
+    build:
+      context: ./frontend-ramio
+      dockerfile: Dockerfile
+    args:
+      NEXT_PUBLIC_API_URL: "https://<domain>/api"
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  frontend2:
+    user: "1000:1000"
+    build:
+      context: ./frontend-ramio
+      dockerfile: Dockerfile
+    args:
+      NEXT_PUBLIC_API_URL: "https://<domain>/api"
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    ports:
+      - "127.0.0.1:3001:3000"
+    restart: unless-stopped
+
+  frontend3:
+    user: "1000:1000"
+    build:
+      context: ./frontend-ramio
+      dockerfile: Dockerfile
+    args:
+      NEXT_PUBLIC_API_URL: "https://<domain>/api"
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    ports:
+      - "127.0.0.1:3002:3000"
+    restart: unless-stopped

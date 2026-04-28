@@ -1,0 +1,8 @@
+{
+  "availability-zones:account=791070656024:region=eu-north-1": [
+    "eu-north-1a",
+    "eu-north-1b",
+    "eu-north-1c"
+  ],
+  "ssm:account=791070656024:parameterName=/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id:region=eu-north-1": "ami-0a9fcb094d2746240"
+}
