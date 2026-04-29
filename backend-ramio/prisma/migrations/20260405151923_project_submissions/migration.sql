@@ -40,4 +40,4 @@ ALTER TABLE `Project` ADD CONSTRAINT `Project_courseId_fkey` FOREIGN KEY (`cours
 ALTER TABLE `project_submission` ADD CONSTRAINT `project_submission_projectId_fkey` FOREIGN KEY (`projectId`) REFERENCES `Project`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `project_submission` ADD CONSTRAINT `project_submission_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `project_submission` ADD CONSTRAINT `project_submission_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

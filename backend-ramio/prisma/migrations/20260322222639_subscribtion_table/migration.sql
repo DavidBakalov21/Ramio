@@ -1,8 +1,8 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `stripeCustomerId` VARCHAR(191) NULL;
+ALTER TABLE `User` ADD COLUMN `stripeCustomerId` VARCHAR(191) NULL;
 
 -- CreateIndex
-CREATE UNIQUE INDEX `user_stripeCustomerId_key` ON `user`(`stripeCustomerId`);
+CREATE UNIQUE INDEX `User_stripeCustomerId_key` ON `User`(`stripeCustomerId`);
 
 -- CreateTable
 CREATE TABLE `UserSubscription` (
@@ -23,4 +23,4 @@ CREATE TABLE `UserSubscription` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `UserSubscription` ADD CONSTRAINT `UserSubscription_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `user`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `UserSubscription` ADD CONSTRAINT `UserSubscription_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
