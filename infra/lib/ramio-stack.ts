@@ -64,12 +64,6 @@ export class RamioStack extends cdk.Stack {
         ec2.Port.tcp(3306),
         'MySQL from developer machine CIDR',
       );
-    } else {
-      dbSg.addIngressRule(
-        ec2.Peer.anyIpv4(),
-        ec2.Port.tcp(3306),
-        'MySQL from anywhere (temporary)',
-      );
     }
 
     apiSg.addIngressRule(
@@ -119,12 +113,21 @@ export class RamioStack extends cdk.Stack {
       detailedMonitoring: false,
     });
 
+    const appElasticIp = new ec2.CfnEIP(this, 'AppElasticIp', {
+      domain: 'vpc',
+    });
+
+    new ec2.CfnEIPAssociation(this, 'AppElasticIpAssociation', {
+      allocationId: appElasticIp.attrAllocationId,
+      instanceId: instance.instanceId,
+    });
+
     const db = new rds.DatabaseInstance(this, 'Mysql', {
       engine: rds.DatabaseInstanceEngine.mysql({
         version: rds.MysqlEngineVersion.VER_8_0_45,
       }),
       vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
         ec2.InstanceSize.MICRO,
@@ -137,7 +140,7 @@ export class RamioStack extends cdk.Stack {
       maxAllocatedStorage: 20,
       storageType: rds.StorageType.GP3,
       securityGroups: [dbSg],
-      publiclyAccessible: true,
+      publiclyAccessible: false,
       multiAz: false,
       autoMinorVersionUpgrade: true,
       backupRetention: cdk.Duration.days(1),
@@ -161,7 +164,11 @@ export class RamioStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'Ec2InstanceId', { value: instance.instanceId });
     new cdk.CfnOutput(this, 'Ec2PublicIp', {
       value: instance.instancePublicIp,
-      description: 'SSM Session Manager recommended; SSH as user `ubuntu` if enabled',
+      description: 'Instance public IP attribute (may be empty when using Elastic IP)',
+    });
+    new cdk.CfnOutput(this, 'Ec2ElasticIp', {
+      value: appElasticIp.ref,
+      description: 'Static public IP for EC2 instance',
     });
   }
 }
