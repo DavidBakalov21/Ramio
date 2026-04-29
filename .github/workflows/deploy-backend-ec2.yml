@@ -49,13 +49,13 @@ jobs:
               "systemctl enable docker nginx || true",
               "systemctl start docker",
               "docker info",
-              ("sudo -u ubuntu bash -lc \"cd \\\"" + $app + "\\\" && docker compose pull > /tmp/ramio-compose-pull.log 2>&1 || true; tail -40 /tmp/ramio-compose-pull.log || true\""),
-              ("sudo -u ubuntu bash -lc \"cd \\\"" + $app + "\\\" && docker compose up -d --build --remove-orphans > /tmp/ramio-compose-up.log 2>&1; ec=$?; tail -200 /tmp/ramio-compose-up.log; exit $ec\""),
+              ("sudo -u ubuntu bash -lc '" + "cd \\\"" + $app + "\\\" && docker compose pull > /tmp/ramio-compose-pull.log 2>&1 || true; tail -40 /tmp/ramio-compose-pull.log || true" + "'"),
+              ("sudo -u ubuntu bash -lc '" + "cd \\\"" + $app + "\\\" && docker compose up -d --build --remove-orphans > /tmp/ramio-compose-up.log 2>&1; ec=$?; tail -200 /tmp/ramio-compose-up.log; exit $ec" + "'"),
               ("install -m 644 \"" + $app + "/nginx/default.conf\" /etc/nginx/sites-available/default"),
               "ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default",
               "nginx -t",
               "systemctl reload nginx",
-              ("sudo -u ubuntu bash -lc \"cd \\\"" + $app + "\\\" && docker compose ps\"")
+              ("sudo -u ubuntu bash -lc '" + "cd \\\"" + $app + "\\\" && docker compose ps" + "'")
             ]')"
 
           COMMAND_ID=$(aws ssm send-command \
@@ -107,6 +107,18 @@ jobs:
                 ;;
               Failed|Cancelled|TimedOut|ExecutionTimedOut|Undeliverable|Terminated)
                 echo "SSM finished: ${status} (${elapsed}s)" >&2
+                echo "---- SSM stdout (last 24k) ----" >&2
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$instance_id" \
+                  --query StandardOutputContent \
+                  --output text 2>/dev/null | tail -c 24000 >&2 || true
+                echo "---- SSM stderr (last 24k) ----" >&2
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$instance_id" \
+                  --query StandardErrorContent \
+                  --output text 2>/dev/null | tail -c 24000 >&2 || true
                 exit 1
                 ;;
               Pending|InProgress|Delayed|Cancelling)
@@ -125,6 +137,7 @@ jobs:
           done
 
       - name: Print command output
+        if: always() && steps.start.outputs.command_id != ''
         run: |
           set -euo pipefail
           aws ssm get-command-invocation \
