@@ -1,11 +1,11 @@
 /*
   Warnings:
 
-  - You are about to drop the column `profilePictureUrl` on the `user` table. All the data in the column will be lost.
+  - You are about to drop the column `profilePictureUrl` on the `User` table. All the data in the column will be lost.
 
 */
 -- AlterTable
-ALTER TABLE `user` DROP COLUMN `profilePictureUrl`,
+ALTER TABLE `User` DROP COLUMN `profilePictureUrl`,
     ADD COLUMN `aboutMe` LONGTEXT NULL,
     ADD COLUMN `birthdate` DATETIME(3) NULL;
 
