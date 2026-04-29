@@ -36,11 +36,13 @@ jobs:
           # Load nvm if present. Use absolute paths only—no $HOME/$PATH here: SSM runs under /bin/sh with
           # set -u and often HOME unset, so $HOME inside bash -lc "..." is expanded by the outer shell before sudo.
           PRELUDE='export NVM_DIR=/home/ubuntu/.nvm; [ -s /home/ubuntu/.nvm/nvm.sh ] && . /home/ubuntu/.nvm/nvm.sh; export PATH=/usr/local/bin:/usr/bin:/bin'
+          ENV_LOADER='set -a; [ -f /home/ubuntu/Ramio/backend-ramio/.env ] && . /home/ubuntu/Ramio/backend-ramio/.env; set +a'
           COMMANDS_JSON="$(jq -n \
             --arg app "${APP_DIR}" \
             --arg branch "${BRANCH}" \
             --arg repo "${REPO_URL}" \
             --arg prelude "${PRELUDE}" \
+            --arg envload "${ENV_LOADER}" \
             '[
               "set -eu",
               ("sudo -u ubuntu test -d \"" + $app + "/.git\" || sudo -u ubuntu git clone --depth 1 --branch " + $branch + " \"" + $repo + "\" \"" + $app + "\""),
@@ -48,10 +50,10 @@ jobs:
               "if ! command -v npm >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get update && apt-get install -y nodejs; fi",
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npm ci\""),
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npx prisma generate\""),
-              ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npx prisma migrate deploy\""),
+              ("sudo -u ubuntu bash -lc \"" + $prelude + "; " + $envload + "; cd \\\"" + $app + "/backend-ramio\\\" && [ -n \\\"\\$DATABASE_URL\\\" ] && npx prisma migrate deploy\""),
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npm run build\""),
               ("if ! sudo -u ubuntu bash -lc \"" + $prelude + "; command -v pm2 >/dev/null 2>&1\"; then sudo npm install -g pm2; fi"),
-              ("sudo -u ubuntu bash -lc \"" + $prelude + "; if pm2 describe ramio-backend >/dev/null 2>&1; then pm2 restart ramio-backend --update-env; else pm2 start npm --name ramio-backend -- run start:prod; fi\""),
+              ("sudo -u ubuntu bash -lc \"" + $prelude + "; " + $envload + "; if pm2 describe ramio-backend >/dev/null 2>&1; then pm2 restart ramio-backend --update-env; else pm2 start npm --name ramio-backend -- run start:prod; fi\""),
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; pm2 save\"")
             ]')"
 
