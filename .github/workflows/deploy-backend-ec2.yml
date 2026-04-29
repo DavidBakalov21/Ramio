@@ -34,38 +34,35 @@ jobs:
           role-to-assume: ${{ secrets.AWS_GITHUB_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Trigger deployment on EC2 through SSM
-        id: start
-        run: |
-          set -euo pipefail
-          COMMANDS_JSON="$(jq -n \
-            --arg app "${APP_DIR}" \
-            --arg branch "${BRANCH}" \
-            --arg repo "${REPO_URL}" \
-            -f .github/scripts/ssm-deploy-start.jq)"
-
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Start background deploy on EC2" \
-            --timeout-seconds 600 \
-            --parameters "commands=${COMMANDS_JSON}" \
-            --query "Command.CommandId" \
-            --output text)
-
-          echo "command_id=${COMMAND_ID}" >> "$GITHUB_OUTPUT"
-          echo "Started SSM bootstrap: ${COMMAND_ID}"
-
-      - name: Wait for bootstrap SSM + poll deploy status
+      - name: Deploy on EC2 (SSM sync, launch, poll)
+        id: deploy
         run: |
           set -uo pipefail
           instance_id="${{ secrets.EC2_INSTANCE_ID }}"
           app_dir="${APP_DIR}"
 
+          dump_invocation() {
+            local cid="$1"
+            local label="$2"
+            echo "---- ${label} stderr ----" >&2
+            aws ssm get-command-invocation \
+              --command-id "$cid" \
+              --instance-id "$instance_id" \
+              --query StandardErrorContent \
+              --output text 2>/dev/null | tail -c 32000 >&2 || true
+            echo "---- ${label} stdout ----" >&2
+            aws ssm get-command-invocation \
+              --command-id "$cid" \
+              --instance-id "$instance_id" \
+              --query StandardOutputContent \
+              --output text 2>/dev/null | tail -c 32000 >&2 || true
+          }
+
           wait_one_ssm() {
             local cid="$1"
+            local max_attempts="${2:-180}"
             local i=0
-            while [ "$i" -lt 180 ]; do
+            while [ "$i" -lt "$max_attempts" ]; do
               set +e
               st="$(aws ssm get-command-invocation \
                 --command-id "$cid" \
@@ -94,9 +91,56 @@ jobs:
             return 1
           }
 
-          echo "Waiting for bootstrap command..."
-          wait_one_ssm "${{ steps.start.outputs.command_id }}" || exit 1
+          set -euo pipefail
+          SYNC_JSON="$(jq -n \
+            --arg app "${APP_DIR}" \
+            --arg branch "${BRANCH}" \
+            --arg repo "${REPO_URL}" \
+            -f .github/scripts/ssm-deploy-sync.jq)"
+          sync_id="$(aws ssm send-command \
+            --instance-ids "$instance_id" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Ramio: git sync on EC2" \
+            --timeout-seconds 3600 \
+            --parameters "commands=${SYNC_JSON}" \
+            --query Command.CommandId \
+            --output text)"
+          echo "sync_id=${sync_id}" >> "$GITHUB_OUTPUT"
 
+          set +e
+          echo "Waiting for git sync SSM (up to ~1h)..."
+          wait_one_ssm "$sync_id" 1800
+          sync_rc=$?
+          set -e
+          if [ "$sync_rc" -ne 0 ]; then
+            dump_invocation "$sync_id" "git sync"
+            exit 1
+          fi
+
+          LAUNCH_JSON="$(jq -n \
+            --arg app "${APP_DIR}" \
+            -f .github/scripts/ssm-deploy-launch.jq)"
+          launch_id="$(aws ssm send-command \
+            --instance-ids "$instance_id" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Ramio: start background deploy" \
+            --timeout-seconds 300 \
+            --parameters "commands=${LAUNCH_JSON}" \
+            --query Command.CommandId \
+            --output text)"
+          echo "launch_id=${launch_id}" >> "$GITHUB_OUTPUT"
+
+          set +e
+          echo "Waiting for launch SSM..."
+          wait_one_ssm "$launch_id" 300
+          launch_rc=$?
+          set -e
+          if [ "$launch_rc" -ne 0 ]; then
+            dump_invocation "$launch_id" "launch"
+            exit 1
+          fi
+
+          set +u
           deadline=$(( $(date +%s) + 7200 ))
           echo "Polling ${app_dir}/.deploy-status until SUCCESS or FAILED..."
 
@@ -113,7 +157,7 @@ jobs:
               --query Command.CommandId \
               --output text)"
 
-            wait_one_ssm "$poll_id" || exit 1
+            wait_one_ssm "$poll_id" 120 || exit 1
 
             body="$(aws ssm get-command-invocation \
               --command-id "$poll_id" \
@@ -140,12 +184,22 @@ jobs:
           echo "Timed out waiting for ${app_dir}/.deploy-status" >&2
           exit 1
 
-      - name: Print SSM bootstrap output
-        if: always() && steps.start.outputs.command_id != ''
+      - name: Print SSM git sync output
+        if: always() && steps.deploy.outputs.sync_id != ''
         run: |
           set -euo pipefail
           aws ssm get-command-invocation \
-            --command-id "${{ steps.start.outputs.command_id }}" \
+            --command-id "${{ steps.deploy.outputs.sync_id }}" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query "{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}" \
+            --output json
+
+      - name: Print SSM launch output
+        if: always() && steps.deploy.outputs.launch_id != ''
+        run: |
+          set -euo pipefail
+          aws ssm get-command-invocation \
+            --command-id "${{ steps.deploy.outputs.launch_id }}" \
             --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
             --query "{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}" \
             --output json
