@@ -42,87 +42,105 @@ jobs:
             --arg app "${APP_DIR}" \
             --arg branch "${BRANCH}" \
             --arg repo "${REPO_URL}" \
-            -f .github/scripts/ssm-deploy-commands.jq)"
+            -f .github/scripts/ssm-deploy-start.jq)"
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
-            --comment "Deploy full app from GitHub Actions" \
-            --timeout-seconds 7200 \
+            --comment "Start background deploy on EC2" \
+            --timeout-seconds 600 \
             --parameters "commands=${COMMANDS_JSON}" \
             --query "Command.CommandId" \
             --output text)
 
           echo "command_id=${COMMAND_ID}" >> "$GITHUB_OUTPUT"
-          echo "Started SSM command: ${COMMAND_ID}"
+          echo "Started SSM bootstrap: ${COMMAND_ID}"
 
-      - name: Wait for SSM command
+      - name: Wait for bootstrap SSM + poll deploy status
         run: |
           set -uo pipefail
-          # Match send-command --timeout-seconds (7200). Do not use `set -e` here:
-          # get-command-invocation often errors briefly right after send-command.
-          start_ts="$(date +%s)"
-          timeout_sec=7200
-          command_id="${{ steps.start.outputs.command_id }}"
           instance_id="${{ secrets.EC2_INSTANCE_ID }}"
-          while true; do
-            now="$(date +%s)"
-            elapsed=$((now - start_ts))
-            if [ "$elapsed" -ge "$timeout_sec" ]; then
-              echo "Timed out waiting for SSM after ${timeout_sec}s" >&2
-              exit 1
-            fi
-            set +e
-            status="$(aws ssm get-command-invocation \
-              --command-id "$command_id" \
+          app_dir="${APP_DIR}"
+
+          wait_one_ssm() {
+            local cid="$1"
+            local i=0
+            while [ "$i" -lt 180 ]; do
+              set +e
+              st="$(aws ssm get-command-invocation \
+                --command-id "$cid" \
+                --instance-id "$instance_id" \
+                --query Status \
+                --output text 2>/dev/null)"
+              aws_ec=$?
+              set -u
+              if [ "$aws_ec" -ne 0 ]; then
+                sleep 2
+                i=$((i + 1))
+                continue
+              fi
+              st="$(echo "$st" | tr -d '\r')"
+              case "$st" in
+                Success) return 0 ;;
+                Failed|Cancelled|TimedOut|ExecutionTimedOut|Undeliverable|Terminated)
+                  echo "SSM command ${cid} ended: ${st}" >&2
+                  return 1
+                  ;;
+              esac
+              sleep 2
+              i=$((i + 1))
+            done
+            echo "Timed out waiting for SSM command ${cid}" >&2
+            return 1
+          }
+
+          echo "Waiting for bootstrap command..."
+          wait_one_ssm "${{ steps.start.outputs.command_id }}" || exit 1
+
+          deadline=$(( $(date +%s) + 7200 ))
+          echo "Polling ${app_dir}/.deploy-status until SUCCESS or FAILED..."
+
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            poll_commands="$(jq -n \
+              --arg cmd "sudo cat ${app_dir}/.deploy-status 2>/dev/null || echo MISSING" \
+              '[ $cmd ]')"
+            poll_id="$(aws ssm send-command \
+              --instance-ids "$instance_id" \
+              --document-name "AWS-RunShellScript" \
+              --timeout-seconds 120 \
+              --parameters "commands=${poll_commands}" \
+              --comment "Poll Ramio deploy status" \
+              --query Command.CommandId \
+              --output text)"
+
+            wait_one_ssm "$poll_id" || exit 1
+
+            body="$(aws ssm get-command-invocation \
+              --command-id "$poll_id" \
               --instance-id "$instance_id" \
-              --query Status \
-              --output text 2>/dev/null)"
-            aws_ec=$?
-            set -u
-            if [ "$aws_ec" -ne 0 ]; then
-              echo "SSM poll not ready yet (${elapsed}s), aws exit ${aws_ec}" >&2
-              sleep 5
-              continue
-            fi
-            status="$(echo "$status" | tr -d '\r')"
-            case "$status" in
-              Success)
-                echo "SSM finished: Success (${elapsed}s)"
+              --query StandardOutputContent \
+              --output text 2>/dev/null | tr -d '\r\n')"
+
+            case "$body" in
+              SUCCESS)
+                echo "Deploy status on instance: SUCCESS"
                 exit 0
                 ;;
-              Failed|Cancelled|TimedOut|ExecutionTimedOut|Undeliverable|Terminated)
-                echo "SSM finished: ${status} (${elapsed}s)" >&2
-                echo "---- SSM stdout (last 24k) ----" >&2
-                aws ssm get-command-invocation \
-                  --command-id "$command_id" \
-                  --instance-id "$instance_id" \
-                  --query StandardOutputContent \
-                  --output text 2>/dev/null | tail -c 24000 >&2 || true
-                echo "---- SSM stderr (last 24k) ----" >&2
-                aws ssm get-command-invocation \
-                  --command-id "$command_id" \
-                  --instance-id "$instance_id" \
-                  --query StandardErrorContent \
-                  --output text 2>/dev/null | tail -c 24000 >&2 || true
+              FAILED)
+                echo "Deploy status on instance: FAILED" >&2
                 exit 1
                 ;;
-              Pending|InProgress|Delayed|Cancelling)
-                echo "SSM status: ${status} (${elapsed}s)"
-                sleep 15
-                ;;
-              "")
-                echo "SSM empty status, retrying (${elapsed}s)" >&2
-                sleep 5
-                ;;
               *)
-                echo "SSM status (unexpected): ${status} (${elapsed}s)"
+                echo "Deploy status: ${body:-MISSING} ($(date -u +%H:%M:%SZ))"
                 sleep 15
                 ;;
             esac
           done
 
-      - name: Print command output
+          echo "Timed out waiting for ${app_dir}/.deploy-status" >&2
+          exit 1
+
+      - name: Print SSM bootstrap output
         if: always() && steps.start.outputs.command_id != ''
         run: |
           set -euo pipefail
@@ -130,4 +148,30 @@ jobs:
             --command-id "${{ steps.start.outputs.command_id }}" \
             --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
             --query "{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}" \
+            --output json
+
+      - name: Print EC2 deploy log tail
+        if: always()
+        run: |
+          set -euo pipefail
+          log_commands="$(jq -n \
+            --arg cmd 'sudo tail -n 500 /tmp/ramio-deploy.log 2>/dev/null || echo no-deploy-log' \
+            '[ $cmd ]')"
+          cid="$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --timeout-seconds 120 \
+            --parameters "commands=${log_commands}" \
+            --comment "Fetch Ramio deploy log" \
+            --query Command.CommandId \
+            --output text)"
+          for i in $(seq 1 90); do
+            st="$(aws ssm get-command-invocation --command-id "$cid" --instance-id "${{ secrets.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)"
+            case "$st" in Success|Failed|Cancelled|TimedOut|ExecutionTimedOut) break ;; esac
+            sleep 2
+          done
+          aws ssm get-command-invocation \
+            --command-id "$cid" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query "{status:Status,stdout:StandardOutputContent}" \
             --output json
