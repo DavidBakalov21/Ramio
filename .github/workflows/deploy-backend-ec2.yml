@@ -45,6 +45,7 @@ jobs:
               "set -eu",
               ("sudo -u ubuntu test -d \"" + $app + "/.git\" || sudo -u ubuntu git clone --depth 1 --branch " + $branch + " \"" + $repo + "\" \"" + $app + "\""),
               ("sudo -u ubuntu bash -lc \"cd \\\"" + $app + "\\\" && git fetch origin " + $branch + " && git reset --hard origin/" + $branch + "\""),
+              "if ! command -v npm >/dev/null 2>&1; then curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get update && apt-get install -y nodejs; fi",
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npm ci\""),
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npx prisma generate\""),
               ("sudo -u ubuntu bash -lc \"" + $prelude + "; cd \\\"" + $app + "/backend-ramio\\\" && npx prisma migrate deploy\""),
