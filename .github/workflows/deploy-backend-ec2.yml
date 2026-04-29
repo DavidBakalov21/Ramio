@@ -35,7 +35,7 @@ jobs:
           set -euo pipefail
           COMMANDS_JSON=$(cat <<'EOF'
           [
-            "set -euo pipefail",
+            "set -eu",
             "if [ ! -d \"${APP_DIR}/.git\" ]; then git clone --depth 1 --branch ${BRANCH} \"${REPO_URL}\" \"${APP_DIR}\"; fi",
             "cd \"${APP_DIR}\"",
             "git fetch origin ${BRANCH}",
