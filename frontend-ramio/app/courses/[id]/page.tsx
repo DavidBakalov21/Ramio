@@ -12,6 +12,7 @@ import { PendingEnrollmentRequests } from '@/app/components/PendingEnrollmentReq
 import { StudentResultsTable } from '@/app/components/course/StudentResultsTable';
 import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 import { Navbar } from '@/app/components/Navbar';
+import { MaterialsSection } from '@/app/components/materials/MaterialsSection';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -208,7 +209,7 @@ export default function CourseDetailPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="relative flex w-full max-w-4xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+        className="relative flex w-full max-w-6xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
       >
         <header className="mb-6 flex w-full flex-col gap-2">
           <button
@@ -299,23 +300,7 @@ export default function CourseDetailPage() {
         )}
 
         {activeTab === 'materials' && (
-          <section className="mb-8 flex w-full flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">Lecture materials</h2>
-              {course.isTeacher && (
-                <button
-                  type="button"
-                  className="rounded-full border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
-                >
-                  Add
-                </button>
-              )}
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
-              No lecture materials yet.
-              {course.isTeacher && ' Use "Add" to upload slides or links (coming soon).'}
-            </div>
-          </section>
+          <MaterialsSection courseId={courseId} isTeacher={course.isTeacher} />
         )}
 
         {activeTab === 'results' && course.isTeacher && (

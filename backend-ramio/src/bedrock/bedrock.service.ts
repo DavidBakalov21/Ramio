@@ -137,6 +137,13 @@ Please:
 - Suggest how the teacher could explain these issues or coach the student in the next lesson.
 - Optionally suggest a numeric score from 0 to ${input.maxPoints}.
 
+Tone and scoring (learning context — keep facts, soften judgment):
+- This is coursework, not a production security audit. Be fair and proportionate.
+- If the brief is simple and the solution clearly satisfies it (especially if behavior is correct), suggested points should reflect that: do not suggest middling scores (e.g. 60–80) just because the code is minimal or not "elegant."
+- Small issues (naming, formatting, minor style, slightly messy structure) are worth mentioning briefly as improvements, framed as normal for the level — not as reasons to slash the grade.
+- Reserve clearly lower suggested scores for substantive gaps: wrong behavior, missing requirements, serious misunderstandings, or many failing tests if tests are relevant.
+- When something is imperfect but acceptable for the assignment, say so explicitly (e.g. that it is a minor nit or acceptable at this stage).
+
 IMPORTANT:
 - Do NOT address the student directly (no "you should...").
 - Speak about "the student" and "the solution".
@@ -186,7 +193,39 @@ ${input.code}
     assessmentPrompt?: string | null;
     maxPoints: number;
     projectFilesXml: string;
+    automatedTestSummary?: {
+      buildStatus: string | null;
+      passed: number | null;
+      failed: number | null;
+      skipped: number | null;
+    } | null;
   }): Promise<{ feedback: string; suggestedPoints?: number }> {
+    const testBlock = (() => {
+      const s = input.automatedTestSummary;
+      if (!s) {
+        return `Automated tests (CodeBuild):
+No teacher-triggered CodeBuild run is recorded for this submission yet (or it was never started). Base functional judgment mainly on the extracted source files; do not assume automated tests passed.`;
+      }
+      const parts = [
+        `Last recorded CodeBuild status: ${s.buildStatus ?? 'unknown'}`,
+      ];
+      const hasCounts =
+        s.passed != null || s.failed != null || s.skipped != null;
+      if (hasCounts) {
+        parts.push(
+          `Parsed test counts from build logs: passed=${s.passed ?? 'unknown'}, failed=${s.failed ?? 'unknown'}, skipped=${s.skipped ?? 'unknown'}`,
+        );
+        parts.push(
+          'Use these counts together with the source: strong pass rates support a higher suggested score when the work matches the assignment; many failures warrant a lower score and specific gaps — but stay proportionate for a classroom (do not punish minor polish issues). If passed is high but the code looks weak, mention that tests may be shallow or incomplete.',
+        );
+      } else {
+        parts.push(
+          'Test pass/fail/skip counts were not parsed from the build logs (build may still be running, logs unreadable, or the build did not emit a recognized summary). Mention this uncertainty; do not invent numbers.',
+        );
+      }
+      return `Automated tests (CodeBuild — same archive the student submitted):\n${parts.map((p) => `- ${p}`).join('\n')}`;
+    })();
+
     const prompt = `You are an experienced teacher reviewing a student's project submission (source files extracted from their zip).
 
 Your task is to provide feedback FOR THE TEACHER, not for the student directly.
@@ -196,11 +235,35 @@ Please:
 - List concrete strengths (structure, clarity, correctness, good practices).
 - List concrete weaknesses, risks, or missing pieces.
 - Suggest how the teacher could coach the student or what to verify manually (you only see text files from the archive, not running code).
+- If you suggest points below max, explicitly state what point deductions were applied and why.
+
+Tone and scoring (learning context — keep facts like tests, soften judgment):
+- This is coursework, not a startup code review. Be encouraging and proportionate: students should not feel demolished for imperfect but acceptable work.
+- If the scope is small or the assignment is introductory and the submission meets the stated goal, suggested points should be high — not mid-range solely because the app is not polished, "clean architecture," or feature-rich.
+- Mention minor issues (style, structure, small smells, missing niceties) as optional improvements or "fine for now" unless they actually block learning goals or correctness.
+- Reserve clearly lower suggested scores for substantive problems: missing requirements, broken behavior, major misunderstandings, or automated tests showing many failures when tests are available.
+- When noting a flaw, balance it: e.g. that it is a small issue and acceptable at this level unless the rubric demands perfection.
+- Evaluate in proportion to project complexity. For simple tasks (for example, a tiny calculator with one required test), do not penalize heavily for missing enterprise-level practices.
+- Treat weaknesses as either:
+  - "Scoring-impacting" only when they violate explicit requirements from the assignment description or teacher assessment notes, or cause incorrect behavior.
+  - "Non-impacting improvement suggestions" otherwise.
+- Do NOT reduce suggested points for non-impacting issues unless the teacher explicitly requested those criteria in assessment notes/description.
+- If requirements are satisfied and tests align with the required scope, suggested points should be near full marks.
+- Include a short "Deduction rationale" section in feedback:
+  - For each deduction, provide: issue, violated requirement (or "teacher rubric"), and deducted points.
+  - If no deductions were applied, explicitly say "No point deductions."
+- SuggestedPoints (the numeric field below) must be an integer. If your internal calculation is fractional, round using this rule:
+  - decimal part >= 0.5 -> round up
+  - decimal part < 0.5 -> round down
+- Ensure consistency: the final integer SuggestedPoints must match the deduction rationale after applying the rounding rule.
+- If automated test summary indicates zero tests, and assignment description/teacher notes do not explicitly require tests, do NOT deduct points for missing tests.
 
 IMPORTANT:
 - Do NOT address the student directly (no "you should...").
 - Speak about "the student" and "the submission".
 - Some files may be omitted from the archive extract; mention uncertainty where needed.
+
+${testBlock}
 
 Return your answer in this exact format:
 
