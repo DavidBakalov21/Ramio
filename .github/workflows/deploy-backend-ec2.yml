@@ -33,8 +33,9 @@ jobs:
         id: start
         run: |
           set -euo pipefail
-          # Load nvm if present (non-login SSM shell often lacks PATH); keep $ unexpanded on runner.
-          PRELUDE='export NVM_DIR=$HOME/.nvm; [ -s $NVM_DIR/nvm.sh ] && . $NVM_DIR/nvm.sh; export PATH=/usr/local/bin:$PATH'
+          # Load nvm if present. Use absolute paths only—no $HOME/$PATH here: SSM runs under /bin/sh with
+          # set -u and often HOME unset, so $HOME inside bash -lc "..." is expanded by the outer shell before sudo.
+          PRELUDE='export NVM_DIR=/home/ubuntu/.nvm; [ -s /home/ubuntu/.nvm/nvm.sh ] && . /home/ubuntu/.nvm/nvm.sh; export PATH=/usr/local/bin:/usr/bin:/bin'
           COMMANDS_JSON="$(jq -n \
             --arg app "${APP_DIR}" \
             --arg branch "${BRANCH}" \
