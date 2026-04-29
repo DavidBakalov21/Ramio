@@ -45,7 +45,7 @@ jobs:
               ("sudo -u ubuntu test -d \"" + $app + "/.git\" || sudo -u ubuntu git clone --depth 1 --branch " + $branch + " \"" + $repo + "\" \"" + $app + "\""),
               ("sudo -u ubuntu bash -lc \"cd \\\"" + $app + "\\\" && git fetch origin " + $branch + " && git reset --hard origin/" + $branch + "\""),
               "apt-get update -y",
-              "apt-get install -y nginx docker.io docker-compose-plugin",
+              "apt-get install -y nginx docker.io docker-compose-v2",
               "systemctl enable docker nginx || true",
               "systemctl start docker",
               "docker info",
