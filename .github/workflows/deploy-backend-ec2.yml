@@ -72,23 +72,57 @@ jobs:
 
       - name: Wait for SSM command
         run: |
-          set -euo pipefail
-          # aws ssm wait command-executed only polls ~100s; builds can take longer.
-          deadline=$((SECONDS + 7000))
-          while [ $SECONDS -lt "$deadline" ]; do
+          set -uo pipefail
+          # Match send-command --timeout-seconds (7200). Do not use `set -e` here:
+          # get-command-invocation often errors briefly right after send-command.
+          start_ts="$(date +%s)"
+          timeout_sec=7200
+          command_id="${{ steps.start.outputs.command_id }}"
+          instance_id="${{ secrets.EC2_INSTANCE_ID }}"
+          while true; do
+            now="$(date +%s)"
+            elapsed=$((now - start_ts))
+            if [ "$elapsed" -ge "$timeout_sec" ]; then
+              echo "Timed out waiting for SSM after ${timeout_sec}s" >&2
+              exit 1
+            fi
+            set +e
             status="$(aws ssm get-command-invocation \
-              --command-id "${{ steps.start.outputs.command_id }}" \
-              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --command-id "$command_id" \
+              --instance-id "$instance_id" \
               --query Status \
-              --output text)"
+              --output text 2>/dev/null)"
+            aws_ec=$?
+            set -u
+            if [ "$aws_ec" -ne 0 ]; then
+              echo "SSM poll not ready yet (${elapsed}s), aws exit ${aws_ec}" >&2
+              sleep 5
+              continue
+            fi
+            status="$(echo "$status" | tr -d '\r')"
             case "$status" in
-              Success) exit 0 ;;
-              Failed|Cancelled|TimedOut|ExecutionTimedOut) exit 1 ;;
-              *) sleep 15 ;;
+              Success)
+                echo "SSM finished: Success (${elapsed}s)"
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|ExecutionTimedOut|Undeliverable|Terminated)
+                echo "SSM finished: ${status} (${elapsed}s)" >&2
+                exit 1
+                ;;
+              Pending|InProgress|Delayed|Cancelling)
+                echo "SSM status: ${status} (${elapsed}s)"
+                sleep 15
+                ;;
+              "")
+                echo "SSM empty status, retrying (${elapsed}s)" >&2
+                sleep 5
+                ;;
+              *)
+                echo "SSM status (unexpected): ${status} (${elapsed}s)"
+                sleep 15
+                ;;
             esac
           done
-          echo "Timed out waiting for SSM after ~7000s" >&2
-          exit 1
 
       - name: Print command output
         run: |
