@@ -1,6 +1,7 @@
 services:
   backend1:
     user: "1000:1000"
+    image: ramio-backend:local
     build:
       context: ./backend-ramio
       dockerfile: Dockerfile
@@ -13,9 +14,7 @@ services:
 
   backend2:
     user: "1000:1000"
-    build:
-      context: ./backend-ramio
-      dockerfile: Dockerfile
+    image: ramio-backend:local
     env_file:
       - ./backend-ramio/.env
     shm_size: "1gb"
@@ -25,9 +24,7 @@ services:
 
   backend3:
     user: "1000:1000"
-    build:
-      context: ./backend-ramio
-      dockerfile: Dockerfile
+    image: ramio-backend:local
     env_file:
       - ./backend-ramio/.env
     shm_size: "1gb"
@@ -37,6 +34,7 @@ services:
 
   frontend1:
     user: "1000:1000"
+    image: ramio-frontend:local
     build:
       context: ./frontend-ramio
       dockerfile: Dockerfile
@@ -52,11 +50,7 @@ services:
 
   frontend2:
     user: "1000:1000"
-    build:
-      context: ./frontend-ramio
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://51.21.4.219/api}"
+    image: ramio-frontend:local
     depends_on:
       - backend1
       - backend2
@@ -67,11 +61,7 @@ services:
 
   frontend3:
     user: "1000:1000"
-    build:
-      context: ./frontend-ramio
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://51.21.4.219/api}"
+    image: ramio-frontend:local
     depends_on:
       - backend1
       - backend2
