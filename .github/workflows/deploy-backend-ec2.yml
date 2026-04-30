@@ -146,7 +146,7 @@ jobs:
 
           while [ "$(date +%s)" -lt "$deadline" ]; do
             poll_commands="$(jq -n \
-              --arg cmd "sudo cat ${app_dir}/.deploy-status 2>/dev/null || echo MISSING" \
+              --arg cmd "cat ${app_dir}/.deploy-status 2>/dev/null || echo MISSING" \
               '[ $cmd ]')"
             poll_id="$(aws ssm send-command \
               --instance-ids "$instance_id" \
@@ -157,7 +157,11 @@ jobs:
               --query Command.CommandId \
               --output text)"
 
-            wait_one_ssm "$poll_id" 120 || exit 1
+            if ! wait_one_ssm "$poll_id" 120; then
+              echo "Poll SSM command failed once, retrying..." >&2
+              sleep 5
+              continue
+            fi
 
             body="$(aws ssm get-command-invocation \
               --command-id "$poll_id" \
@@ -173,6 +177,10 @@ jobs:
               FAILED)
                 echo "Deploy status on instance: FAILED" >&2
                 exit 1
+                ;;
+              STARTING)
+                echo "Deploy status: STARTING ($(date -u +%H:%M:%SZ))"
+                sleep 15
                 ;;
               *)
                 echo "Deploy status: ${body:-MISSING} ($(date -u +%H:%M:%SZ))"
