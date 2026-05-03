@@ -4,42 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { Assignment } from '@/app/interfaces/Assignment';
-import {
-  getAssignmentLanguageFileExtension,
-} from '@/app/constants/assignmentLanguages';
-import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
-import { useToast } from '@/app/components/utility/toast';
 import { AssignmentList } from './AssignmentList';
-import { AddAssignmentModal, AddAssignmentFormData } from './AddAssignmentModal';
-import {
-  EditAssignmentModal,
-  EditAssignmentFormData,
-} from './EditAssignmentModal';
 
 interface AssignmentsSectionProps {
   courseId: string;
   isTeacher: boolean;
 }
 
-const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
-  PYTHON: 'text/x-python',
-  NODE_JS: 'text/javascript',
-  JAVA: 'text/x-java-source',
-  DOTNET: 'text/plain',
-};
-
 export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionProps) {
   const router = useRouter();
-  const { showToast } = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [editSubmitting, setEditSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchAssignments = useCallback(async () => {
     setLoading(true);
@@ -57,137 +32,6 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
     fetchAssignments();
   }, [fetchAssignments]);
 
-  const closeModal = useCallback(() => {
-    if (submitting) return;
-    setModalOpen(false);
-    setError(null);
-  }, [submitting]);
-
-  const openEditModal = useCallback((assignment: Assignment) => {
-    setSelectedAssignment(assignment);
-    setEditModalOpen(true);
-    setEditError(null);
-  }, []);
-
-  const closeEditModal = useCallback(() => {
-    if (editSubmitting) return;
-    setEditModalOpen(false);
-    setSelectedAssignment(null);
-    setEditError(null);
-  }, [editSubmitting]);
-
-  const handleDelete = useCallback(
-    async (assignmentId: string) => {
-      setEditError(null);
-      try {
-        await api.delete(`/assignment/${assignmentId}`);
-        await fetchAssignments();
-        closeEditModal();
-        showToast('Assignment deleted.', 'success');
-      } catch (err: unknown) {
-        const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
-          ?.data?.message;
-        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to delete';
-        setEditError(msg);
-        showToast(msg, 'error');
-      }
-    },
-    [fetchAssignments, closeEditModal, showToast],
-  );
-
-  const handleCreate = useCallback(
-    async (data: AddAssignmentFormData) => {
-      setError(null);
-      setSubmitting(true);
-      try {
-        const createRes = await api.post<Assignment>('/assignment', {
-          title: data.title,
-          description: data.description || undefined,
-          points: data.points,
-          language: data.language,
-          courseId: Number(courseId),
-        });
-        const newId = createRes.data.id;
-        if (data.testCode) {
-          const ext = getAssignmentLanguageFileExtension(data.language);
-          const file = new File([data.testCode], `test.${ext}`, {
-            type: LANGUAGE_MIME_TYPE[data.language],
-          });
-          const formData = new FormData();
-          formData.append('file', file);
-          await api.post(`/assignment/${newId}/test-file`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-        }
-        await fetchAssignments();
-        setModalOpen(false);
-        showToast('Assignment created.', 'success');
-      } catch (err: unknown) {
-        const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
-          ?.data?.message;
-        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to create assignment';
-        setError(msg);
-        showToast(msg, 'error');
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [courseId, fetchAssignments, showToast],
-  );
-
-  const handleEdit = useCallback(
-    async (data: EditAssignmentFormData) => {
-      if (!selectedAssignment) return;
-      setEditError(null);
-      setEditSubmitting(true);
-      try {
-        const dueDateSeconds = data.dueDate
-          ? Math.floor(new Date(data.dueDate).getTime() / 1000)
-          : null;
-        await api.patch(`/assignment/${selectedAssignment.id}`, {
-          title: data.title,
-          description: data.description || undefined,
-          points: data.points,
-          language: data.language,
-          dueDate: dueDateSeconds,
-        });
-        if (data.newTestFile) {
-          const formData = new FormData();
-          formData.append('file', data.newTestFile);
-          await api.post(
-            `/assignment/${selectedAssignment.id}/test-file`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } },
-          );
-        } else if (data.newTestCode) {
-          const ext = getAssignmentLanguageFileExtension(data.language);
-          const file = new File([data.newTestCode], `test.${ext}`, {
-            type: LANGUAGE_MIME_TYPE[data.language],
-          });
-          const formData = new FormData();
-          formData.append('file', file);
-          await api.post(
-            `/assignment/${selectedAssignment.id}/test-file`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } },
-          );
-        }
-        await fetchAssignments();
-        closeEditModal();
-        showToast('Assignment updated.', 'success');
-      } catch (err: unknown) {
-        const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
-          ?.data?.message;
-        const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Failed to save';
-        setEditError(msg);
-        showToast(msg, 'error');
-      } finally {
-        setEditSubmitting(false);
-      }
-    },
-    [selectedAssignment, fetchAssignments, closeEditModal, showToast],
-  );
-
   return (
     <section className="mb-8 flex w-full flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
@@ -195,7 +39,7 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         {isTeacher && (
           <button
             type="button"
-            onClick={() => setModalOpen(true)}
+            onClick={() => router.push(`/courses/${courseId}/assignment/new`)}
             className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
           >
             Add
@@ -218,27 +62,9 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         }
         isTeacher={isTeacher}
         onAssignmentClick={(assignment) => {
-          if (isTeacher) openEditModal(assignment);
+          if (isTeacher) router.push(`/courses/${courseId}/assignment/${assignment.id}/edit`);
           else router.push(`/courses/${courseId}/assignment/${assignment.id}`);
         }}
-      />
-
-      <EditAssignmentModal
-        isOpen={editModalOpen}
-        assignment={selectedAssignment}
-        onClose={closeEditModal}
-        onSubmit={handleEdit}
-        onDelete={isTeacher ? handleDelete : undefined}
-        isSubmitting={editSubmitting}
-        error={editError}
-      />
-
-      <AddAssignmentModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        onSubmit={handleCreate}
-        isSubmitting={submitting}
-        error={error}
       />
     </section>
   );

@@ -117,14 +117,25 @@ export function parseTestCountsFromBuildLog(log: string): {
     }
   }
 
-  const dotnet = text.match(
-    /Failed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+)/i,
+  const dotnetFailedOrPassed = text.match(
+    /(Failed|Passed)!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+)(?:,\s+Skipped:\s+(\d+))?/i,
   );
-  if (dotnet) {
+  if (dotnetFailedOrPassed) {
     return {
-      passed: Number(dotnet[2]),
-      failed: Number(dotnet[1]),
-      skipped: 0,
+      passed: Number(dotnetFailedOrPassed[3]),
+      failed: Number(dotnetFailedOrPassed[2]),
+      skipped: dotnetFailedOrPassed[4] ? Number(dotnetFailedOrPassed[4]) : 0,
+    };
+  }
+
+  const dotnetTotals = text.match(
+    /Total tests:\s*(\d+)\s*[\r\n]+(?:\s*)?Passed:\s*(\d+)\s*[\r\n]+(?:\s*)?Failed:\s*(\d+)\s*[\r\n]+(?:\s*)?Skipped:\s*(\d+)/i,
+  );
+  if (dotnetTotals) {
+    return {
+      passed: Number(dotnetTotals[2]),
+      failed: Number(dotnetTotals[3]),
+      skipped: Number(dotnetTotals[4]),
     };
   }
 

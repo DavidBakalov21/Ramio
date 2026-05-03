@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -47,6 +48,7 @@ function assertArchiveUpload(file: Express.Multer.File): void {
 
 @Injectable()
 export class ProjectService {
+  private readonly logger = new Logger(ProjectService.name);
   private readonly fileBucket: string;
 
   constructor(
@@ -521,6 +523,39 @@ export class ProjectService {
       );
     }
 
+    try {
+      await this.refreshCodeBuildStatusForSubmission(
+        projectId,
+        submissionId,
+        teacherId,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `CodeBuild refresh before AI feedback failed (submission ${submissionId}): ${String(err)}`,
+      );
+    }
+
+    const submissionWithMetrics = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      select: {
+        codeBuildId: true,
+        codeBuildStatus: true,
+        codeBuildTestsPassed: true,
+        codeBuildTestsFailed: true,
+        codeBuildTestsSkipped: true,
+      },
+    });
+
+    const automatedTestSummary =
+      submissionWithMetrics?.codeBuildId != null
+        ? {
+            buildStatus: submissionWithMetrics.codeBuildStatus ?? null,
+            passed: submissionWithMetrics.codeBuildTestsPassed ?? null,
+            failed: submissionWithMetrics.codeBuildTestsFailed ?? null,
+            skipped: submissionWithMetrics.codeBuildTestsSkipped ?? null,
+          }
+        : null;
+
     const { projectFilesXml, warnings } =
       await this.projectZipToPrompt.buildProjectFilesXmlFromS3(
         this.fileBucket,
@@ -537,6 +572,7 @@ export class ProjectService {
           (warnings.length
             ? `Parser notes: ${warnings.join('; ')}\n\n`
             : '') + projectFilesXml,
+        automatedTestSummary,
       });
 
     return {

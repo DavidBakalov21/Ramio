@@ -37,6 +37,13 @@ enum ProjectLanguage {
   NODE_JS
 }
 
+enum CourseMaterialType {
+  PDF
+  VIDEO
+  FILE
+  LINK
+}
+
 model User {
   id                 BigInt   @id @default(autoincrement())
   cognitoSub         String   @unique
@@ -100,6 +107,24 @@ model Course {
   enrollments Enrollment[]
   pendingEnrollments PendingEnrollment[]
   projects Project[]
+  materials CourseMaterial[]
+}
+
+model CourseMaterial {
+  id        BigInt             @id @default(autoincrement())
+  courseId  BigInt
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  type      CourseMaterialType
+  title     String
+  url       String
+  key       String?
+  name      String?
+  mimeType  String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([courseId])
+  @@map("course_material")
 }
 
 model Enrollment {
