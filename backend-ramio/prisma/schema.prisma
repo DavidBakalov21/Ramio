@@ -64,7 +64,6 @@ model User {
   pendingEnrollments PendingEnrollment[]
   subscriptions         UserSubscription[]
   projectSubmissions ProjectSubmission[]
-  @@map("user")
 }
 
 model UserSubscription {
