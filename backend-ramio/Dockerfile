@@ -17,6 +17,21 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3333
 
+# Docker CLI only: CodeTestService spawns `docker run` against the host daemon (socket mount).
+# Match bookworm; supports amd64 + arm64 static bundles from Docker.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl \
+  && ARCH=$(dpkg --print-architecture) \
+  && case "$ARCH" in \
+       amd64) DARCH=x86_64 ;; \
+       arm64) DARCH=aarch64 ;; \
+       *) echo "unsupported arch: $ARCH" >&2; exit 1 ;; \
+     esac \
+  && curl -fsSL "https://download.docker.com/linux/static/stable/${DARCH}/docker-27.4.1.tgz" \
+    | tar xz --strip-components=1 -C /usr/local/bin docker/docker \
+  && chmod +x /usr/local/bin/docker \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma

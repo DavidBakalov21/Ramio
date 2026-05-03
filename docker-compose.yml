@@ -1,3 +1,11 @@
+# Code runners: backend spawns `docker run`. On EC2/Compose you need:
+# 1) Docker CLI in the backend image (see backend-ramio/Dockerfile)
+# 2) Host Docker socket in the container
+# 3) Host bind-mount for temp workspaces so the daemon can mount the same paths (see TMPDIR)
+#
+# On the host (once):   sudo mkdir -p /opt/ramio-runner-work && sudo chown 1000:1000 /opt/ramio-runner-work
+# Docker socket group:  getent group docker | cut -d: -f3   → set DOCKER_GID in .env if not 988
+
 services:
   backend1:
     user: "1000:1000"
@@ -7,6 +15,13 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./backend-ramio/.env
+    environment:
+      TMPDIR: /opt/ramio-runner-work
+    group_add:
+      - "${DOCKER_GID:-988}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3333:3333"
@@ -17,6 +32,13 @@ services:
     image: ramio-backend:local
     env_file:
       - ./backend-ramio/.env
+    environment:
+      TMPDIR: /opt/ramio-runner-work
+    group_add:
+      - "${DOCKER_GID:-988}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3334:3333"
@@ -27,6 +49,13 @@ services:
     image: ramio-backend:local
     env_file:
       - ./backend-ramio/.env
+    environment:
+      TMPDIR: /opt/ramio-runner-work
+    group_add:
+      - "${DOCKER_GID:-988}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3335:3333"
