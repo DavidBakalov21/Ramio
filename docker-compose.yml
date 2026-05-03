@@ -1,9 +1,10 @@
-# Code runners: backend spawns `docker run`. On EC2/Compose you need:
+# Code runners: backend spawns `docker run` on the *host* daemon. On EC2/Compose you need:
 # 1) Docker CLI in the backend image (see backend-ramio/Dockerfile)
 # 2) Host Docker socket in the container
 # 3) Named volume for runner temp dirs (docker-entrypoint.sh chowns to uid 1000 on start).
-#
-# Docker socket GID on host: getent group docker | cut -d: -f3 → set DOCKER_GID in .env if not 988
+# 4) Runner images on the host (not on Docker Hub). One-time build from repo root:
+#      docker compose --profile runners build
+#    Optional: DOCKER_GID in .env if socket stat in entrypoint cannot run (unusual).
 #
 # To use a host path instead of the named volume (e.g. huge disk), bind-mount that path and
 # chown it once on the host: sudo mkdir -p /path && sudo chown 1000:1000 /path
@@ -59,6 +60,35 @@ services:
     ports:
       - "127.0.0.1:3335:3333"
     restart: unless-stopped
+
+  # Build-only (profile runners): tags must match CodeTestService defaults / RUNNER_*_IMAGE env.
+  runner-python:
+    profiles: ["runners"]
+    image: runner-python:3.12
+    build:
+      context: .
+      dockerfile: runners/python/Dockerfile.python
+
+  runner-node:
+    profiles: ["runners"]
+    image: runner-node:20
+    build:
+      context: .
+      dockerfile: runners/node/Dockerfile.node
+
+  runner-java:
+    profiles: ["runners"]
+    image: runner-java:21
+    build:
+      context: .
+      dockerfile: runners/java/Dockerfile.java
+
+  runner-dotnet:
+    profiles: ["runners"]
+    image: runner-dotnet:8.0
+    build:
+      context: .
+      dockerfile: runners/dotnet/Dockerfile.dotnet
 
   frontend1:
     user: "1000:1000"
