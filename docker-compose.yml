@@ -39,7 +39,7 @@ services:
       context: ./frontend-ramio
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://51.21.4.219/api}"
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-https://ramio-lms.com/api}"
     depends_on:
       - backend1
       - backend2
