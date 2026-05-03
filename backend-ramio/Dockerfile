@@ -20,7 +20,7 @@ ENV PORT=3333
 # Docker CLI only: CodeTestService spawns `docker run` against the host daemon (socket mount).
 # Match bookworm; supports amd64 + arm64 static bundles from Docker.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl \
+  && apt-get install -y --no-install-recommends ca-certificates curl util-linux \
   && ARCH=$(dpkg --print-architecture) \
   && case "$ARCH" in \
        amd64) DARCH=x86_64 ;; \
@@ -36,6 +36,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 3333
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]
