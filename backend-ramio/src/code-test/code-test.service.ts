@@ -48,9 +48,14 @@ export class CodeTestService {
       solutionFile,
       testFile,
       image: this.pythonImage,
-      // Load the single module we write (test_solution.py). CWD is /workspace so
-      // `import solution` / `from solution import …` in tests resolve reliably.
-      command: ['python', '-B', '-m', 'unittest', '-v', 'test_solution'],
+      // discover + -t/-s puts workspace on the path so `import solution` works.
+      // -p test_solution.py matches only our file (avoids ambiguous `unittest test_solution`
+      // failing with ModuleNotFoundError in some images). PYTHONPATH is belt-and-suspenders.
+      command: [
+        'sh',
+        '-lc',
+        'export PYTHONPATH=/workspace && cd /workspace && exec python -B -m unittest discover -s /workspace -t /workspace -p test_solution.py -v',
+      ],
     });
     return this.withPythonSolutionImportHint(
       this.withPythonUnittestNoTestsHint(result),
@@ -152,20 +157,29 @@ export class CodeTestService {
     return result;
   }
 
-  /** When tests do `from solution import …`, a script that only prints has no importable symbol. */
+  /**
+   * When tests fail importing a symbol from the student's solution module — not when the
+   * runner fails to load test_solution.py (ModuleNotFoundError: test_solution).
+   */
   private withPythonSolutionImportHint(
     result: RunCodeResponseDto,
   ): RunCodeResponseDto {
     if (result.success) return result;
     const err = result.stderr;
-    if (
-      !/\bImportError\b|\bcannot import name\b|\bModuleNotFoundError\b/.test(
-        err,
-      )
-    ) {
-      return result;
-    }
     if (err.includes('Ramio: Automated tests import symbols')) return result;
+
+    const testModuleLoadFailed =
+      /Failed to import test module:\s*test_solution\b/.test(err) ||
+      /No module named ['"]test_solution['"]/.test(err);
+    if (testModuleLoadFailed) return result;
+
+    const studentSolutionImportIssue =
+      /cannot import name .+ from ['"]solution['"]/.test(err) ||
+      /No module named ['"]solution['"]/.test(err) ||
+      (/ImportError:\s*cannot import name/.test(err) && /\bsolution\b/.test(err));
+
+    if (!studentSolutionImportIssue) return result;
+
     return {
       ...result,
       stderr: `${err.trimEnd()}\n\nRamio: Automated tests import symbols from your submitted module (solution.py). Define the missing function or class (and spelling must match). Output from print(...) alone does not create an importable name.\n`,
