@@ -18,6 +18,18 @@ function stripMarkdownCodeFences(text: string): string {
   return match ? match[1].trim() : trimmed;
 }
 
+/** Injected into LLM prompts so generated Python matches CodeTestService.runPythonTests (unittest discover only). */
+function pythonUnittestRamioConstraints(): string {
+  return `
+Python / Ramio runner (mandatory for Python test output):
+- The test file content is saved as test_solution.py next to solution.py and executed with:
+  python -B -m unittest discover -s <workspace> -t <workspace> -p "test*.py" -v
+- Only stdlib unittest discovery runs. Pytest is not used; module-level "def test_*" functions (pytest style) are NOT collected — you will get "Ran 0 tests".
+- You MUST use import unittest and one or more classes: class TestSomething(unittest.TestCase): with instance methods whose names start with test_ (e.g. def test_foo(self):).
+- Import the student's code from the solution module (solution.py), e.g. import solution or from solution import ... as required by the assignment.
+- Do not import pytest or write pytest-only tests.`;
+}
+
 function toInferenceProfileId(modelId: string, region: string): string {
   if (
     modelId.startsWith('us.') ||
@@ -323,6 +335,7 @@ Requirements:
 - Output ONLY the test code, no explanations or markdown code fences.
 - Tests should be meaningful: cover main behaviors, edge cases, and important branches.
 - Keep the test file self-contained and runnable.
+${language === 'python' ? pythonUnittestRamioConstraints() : ''}
 
 Source code (${language}):
 
@@ -355,6 +368,7 @@ Requirements:
 - Tests should match what the description asks students to implement: assert the expected behavior.
 - Keep the test file self-contained and runnable (imports, test runner).
 - Assume the student will implement a solution that your tests will run against (e.g. solution.py or a module they provide).
+${language === 'python' ? pythonUnittestRamioConstraints() : ''}
 
 Assignment description:
 
