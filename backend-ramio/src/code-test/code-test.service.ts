@@ -9,6 +9,23 @@ import type { TestLanguage } from '../bedrock/bedrock.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { stripModelCodeOutput } from '../lib/strip-model-code.js';
 
+/**
+ * Docker Desktop on Windows often mounts an empty `/workspace` when the host
+ * path uses backslashes. Normalize so `Solution.cs` / `SolutionTests.cs` (and
+ * other runners) are visible inside the container.
+ *
+ * If the API runs in a container but talks to the **host** Docker socket, this
+ * path must exist on that host (not only inside the API container); that
+ * mismatch also yields missing files under `/workspace`.
+ */
+function dockerHostBindSource(hostPath: string): string {
+  const resolved = path.resolve(hostPath);
+  if (process.platform === 'win32') {
+    return resolved.replace(/\\/g, '/');
+  }
+  return resolved;
+}
+
 @Injectable()
 export class CodeTestService {
   private readonly pythonImage: string;
@@ -271,7 +288,7 @@ export class CodeTestService {
         '--cap-drop',
         'ALL',
         '-v',
-        `${workspaceDir}:/workspace:ro`,
+        `${dockerHostBindSource(workspaceDir)}:/workspace:ro`,
         '-w',
         '/workspace',
         image,
