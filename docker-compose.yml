@@ -2,9 +2,9 @@
 # 1) Docker CLI in the backend image (see backend-ramio/Dockerfile)
 # 2) Host Docker socket in the container
 # 3) Named volume for runner temp dirs (docker-entrypoint.sh chowns to uid 1000 on start).
-# 4) Runner images on the host (not on Docker Hub). One-time build from repo root:
-#      docker compose --profile runners build
-#    Optional: DOCKER_GID in .env if socket stat in entrypoint cannot run (unusual).
+# 4) Runner images: Python/Java/.NET default to public Hub images (no local build).
+#    Node (Jest) still expects runner-node:20 — build once: docker compose --profile runners build runner-node
+#    Optional overrides: RUNNER_PYTHON_IMAGE, RUNNER_NODE_IMAGE, etc. in backend .env
 #
 # To use a host path instead of the named volume (e.g. huge disk), bind-mount that path and
 # chown it once on the host: sudo mkdir -p /path && sudo chown 1000:1000 /path
@@ -61,7 +61,7 @@ services:
       - "127.0.0.1:3335:3333"
     restart: unless-stopped
 
-  # Build-only (profile runners): tags must match CodeTestService defaults / RUNNER_*_IMAGE env.
+  # Optional local runners (non-root user in image). Default app images are public pulls; Node needs Jest here.
   runner-python:
     profiles: ["runners"]
     image: runner-python:3.12
