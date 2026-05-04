@@ -46,8 +46,22 @@ export class CodeTestService {
       solutionFile,
       testFile,
       image: this.pythonImage,
-      // Load the module we always write as test_solution.py (stdlib unittest only).
-      command: ['python', '-B', '-m', 'unittest', 'test_solution', '-v'],
+      // discover + -t sets sys.path so `from solution import …` works (plain
+      // `unittest test_solution` can fail with ModuleNotFoundError in slim images).
+      command: [
+        'python',
+        '-B',
+        '-m',
+        'unittest',
+        'discover',
+        '-s',
+        '/workspace',
+        '-t',
+        '/workspace',
+        '-p',
+        'test*.py',
+        '-v',
+      ],
     });
     return this.withPythonUnittestNoTestsHint(result);
   }
