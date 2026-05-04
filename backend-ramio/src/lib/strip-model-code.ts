@@ -1,9 +1,20 @@
 /**
  * LLMs often wrap code in markdown fences or add a short preamble.
- * The whole-buffer fence regex alone misses that; this extracts the first fenced block if present.
+ * Avoid treating ``` inside real Python (e.g. strings) as a fence: if the file
+ * already begins like Python, return as-is.
  */
 export function stripModelCodeOutput(text: string): string {
-  const trimmed = text.trim();
+  const trimmed = text.trim().replace(/^\uFEFF/, '');
+  const firstNonEmpty =
+    trimmed.split(/\r?\n/).find((l) => l.trim().length > 0) ?? '';
+  const head = firstNonEmpty.trim();
+  const looksLikePythonStart =
+    /^(import |from |#|class |@|async def |def |"""|''')/.test(head);
+
+  if (looksLikePythonStart) {
+    return trimmed;
+  }
+
   const wholeFileFence = trimmed.match(
     /^```(?:[\w.-]+)?\s*\n?([\s\S]*?)\n?```$/,
   );

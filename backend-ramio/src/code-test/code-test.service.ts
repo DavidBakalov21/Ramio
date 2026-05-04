@@ -48,22 +48,9 @@ export class CodeTestService {
       solutionFile,
       testFile,
       image: this.pythonImage,
-      // discover + -t sets sys.path so `from solution import …` works (plain
-      // `unittest test_solution` can fail with ModuleNotFoundError in slim images).
-      command: [
-        'python',
-        '-B',
-        '-m',
-        'unittest',
-        'discover',
-        '-s',
-        '/workspace',
-        '-t',
-        '/workspace',
-        '-p',
-        'test*.py',
-        '-v',
-      ],
+      // Load the single module we write (test_solution.py). CWD is /workspace so
+      // `import solution` / `from solution import …` in tests resolve reliably.
+      command: ['python', '-B', '-m', 'unittest', '-v', 'test_solution'],
     });
     return this.withPythonSolutionImportHint(
       this.withPythonUnittestNoTestsHint(result),
