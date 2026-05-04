@@ -7,6 +7,7 @@ import * as path from 'node:path';
 import type { RunCodeResponseDto } from './dto/run-code.dto';
 import type { TestLanguage } from '../bedrock/bedrock.service';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { stripModelCodeOutput } from '../lib/strip-model-code.js';
 
 @Injectable()
 export class CodeTestService {
@@ -38,11 +39,12 @@ export class CodeTestService {
     code: string,
     tests: string,
   ): Promise<RunCodeResponseDto> {
+    const normalizedTests = stripModelCodeOutput(tests);
     const solutionFile = 'solution.py';
     const testFile = 'test_solution.py';
     const result = await this.runLanguageTests({
       code,
-      tests,
+      tests: normalizedTests,
       solutionFile,
       testFile,
       image: this.pythonImage,
@@ -63,7 +65,9 @@ export class CodeTestService {
         '-v',
       ],
     });
-    return this.withPythonUnittestNoTestsHint(result);
+    return this.withPythonSolutionImportHint(
+      this.withPythonUnittestNoTestsHint(result),
+    );
   }
 
   async runNodeTests(code: string, tests: string): Promise<RunCodeResponseDto> {
@@ -159,6 +163,26 @@ export class CodeTestService {
       };
     }
     return result;
+  }
+
+  /** When tests do `from solution import …`, a script that only prints has no importable symbol. */
+  private withPythonSolutionImportHint(
+    result: RunCodeResponseDto,
+  ): RunCodeResponseDto {
+    if (result.success) return result;
+    const err = result.stderr;
+    if (
+      !/\bImportError\b|\bcannot import name\b|\bModuleNotFoundError\b/.test(
+        err,
+      )
+    ) {
+      return result;
+    }
+    if (err.includes('Ramio: Automated tests import symbols')) return result;
+    return {
+      ...result,
+      stderr: `${err.trimEnd()}\n\nRamio: Automated tests import symbols from your submitted module (solution.py). Define the missing function or class (and spelling must match). Output from print(...) alone does not create an importable name.\n`,
+    };
   }
 
   private async runLanguageTests(input: {

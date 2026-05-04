@@ -374,6 +374,15 @@ export default function AssignmentSandboxPage() {
                     >
                       Your solution
                     </label>
+                    {assignment.language === 'PYTHON' && (
+                      <p className="text-xs text-slate-500">
+                        Your editor is run as <span className="font-mono">solution.py</span>. Tests
+                        use <span className="font-mono">import solution</span> or{' '}
+                        <span className="font-mono">from solution import …</span> — implement those
+                        names; a bare <span className="font-mono">print(...)</span> line is not enough
+                        if the tests expect a function or class.
+                      </p>
+                    )}
                     <textarea
                       id="sandbox-code"
                       value={code}
