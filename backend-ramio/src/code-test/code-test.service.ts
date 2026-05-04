@@ -40,14 +40,16 @@ export class CodeTestService {
   ): Promise<RunCodeResponseDto> {
     const solutionFile = 'solution.py';
     const testFile = 'test_solution.py';
-    return this.runLanguageTests({
+    const result = await this.runLanguageTests({
       code,
       tests,
       solutionFile,
       testFile,
       image: this.pythonImage,
-      command: ['python', '-B', '-m', 'unittest', '-v'],
+      // Load the module we always write as test_solution.py (stdlib unittest only).
+      command: ['python', '-B', '-m', 'unittest', 'test_solution', '-v'],
     });
+    return this.withPythonUnittestNoTestsHint(result);
   }
 
   async runNodeTests(code: string, tests: string): Promise<RunCodeResponseDto> {
@@ -128,6 +130,23 @@ export class CodeTestService {
     });
   }
 
+  private withPythonUnittestNoTestsHint(
+    result: RunCodeResponseDto,
+  ): RunCodeResponseDto {
+    if (result.success) return result;
+    if (
+      result.exitCode === 5 ||
+      result.stderr.includes('NO TESTS RAN') ||
+      result.stderr.includes('Ran 0 tests')
+    ) {
+      return {
+        ...result,
+        stderr: `${result.stderr.trimEnd()}\n\nRamio: No unittest tests ran. The assignment test file must define unittest.TestCase subclasses with methods named test_* (stdlib unittest only; pytest-style files are not executed).\n`,
+      };
+    }
+    return result;
+  }
+
   private async runLanguageTests(input: {
     code: string;
     tests: string;
@@ -137,6 +156,17 @@ export class CodeTestService {
     command: string[];
     extraFiles?: Record<string, string>;
   }): Promise<RunCodeResponseDto> {
+    if (!input.tests.trim()) {
+      return {
+        success: false,
+        exitCode: -1,
+        stdout: '',
+        stderr:
+          'This assignment has an empty test file. Upload a non-empty test file before running tests.',
+        timedOut: false,
+      };
+    }
+
     const workspaceDir = await fs.mkdtemp(
       path.join(os.tmpdir(), 'ramio-runner-'),
     );
