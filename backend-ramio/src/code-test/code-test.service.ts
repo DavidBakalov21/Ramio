@@ -148,7 +148,7 @@ export class CodeTestService {
           // Point at the packages baked into the image; no network restore needed.
           'export NUGET_PACKAGES=/nuget-cache',
           // Copy the pre-restored xUnit template; packages are already resolved.
-          'cp -r /opt/xunit-template /tmp/proj',
+          'cp -r /opt/proj /tmp/proj',
           'cp /workspace/Solution.cs /workspace/SolutionTests.cs /tmp/proj/',
           'cd /tmp/proj',
           'dotnet test --nologo --verbosity normal --no-restore 2>&1',
