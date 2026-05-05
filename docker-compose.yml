@@ -5,10 +5,10 @@
 #    resolve the path when it spawns runner containers. Create it once on the host:
 #      sudo mkdir -p /opt/ramio-runner-work && sudo chown 1000:1000 /opt/ramio-runner-work
 #    docker-entrypoint.sh chowns the dir on every start as a safety net.
-# 4) Runner images: Python/Java/.NET default to public Hub images (no local build).
-#    Node (Jest) still expects runner-node:20 — build once:
-#      docker compose --profile runners build runner-node
-#    Optional overrides: RUNNER_PYTHON_IMAGE, RUNNER_NODE_IMAGE, etc. in backend .env
+# 4) Runner images: Python/Java use public Hub images (no local build needed).
+#    .NET (xUnit cache) and Node (Jest) require custom images — build once on the server:
+#      docker compose --profile runners build runner-dotnet runner-node
+#    Optional overrides: RUNNER_PYTHON_IMAGE, RUNNER_DOTNET_IMAGE, etc. in backend .env
 
 services:
   backend1:
