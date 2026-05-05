@@ -228,19 +228,24 @@ export class CodeTestService {
     );
 
     try {
+      // mkdtemp creates dirs with mode 0700; runner containers use a different UID (10001)
+      // so both the directory and all files must be world-readable.
+      await fs.chmod(workspaceDir, 0o755);
+
+      const writeOpts = { encoding: 'utf-8' as const, mode: 0o644 };
       await fs.writeFile(
         path.join(workspaceDir, input.solutionFile),
         input.code,
-        'utf-8',
+        writeOpts,
       );
       await fs.writeFile(
         path.join(workspaceDir, input.testFile),
         input.tests,
-        'utf-8',
+        writeOpts,
       );
       if (input.extraFiles) {
         for (const [name, content] of Object.entries(input.extraFiles)) {
-          await fs.writeFile(path.join(workspaceDir, name), content, 'utf-8');
+          await fs.writeFile(path.join(workspaceDir, name), content, writeOpts);
         }
       }
 
