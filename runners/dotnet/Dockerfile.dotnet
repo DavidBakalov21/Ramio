@@ -4,11 +4,9 @@ RUN useradd -m -u 10001 runner
 
 # Pre-create an xUnit project and restore all packages into /nuget-cache so that
 # runner containers can build student submissions fully offline (--network none).
-# At runtime we copy this template, drop in Solution.cs + SolutionTests.cs, and
+# At runtime we copy this project, drop in Solution.cs + SolutionTests.cs, and
 # run `dotnet test --no-restore` — no network access required.
 ENV NUGET_PACKAGES=/nuget-cache
-# Use a directory named "proj" and omit -n so dotnet new creates the .csproj
-# directly inside /opt/proj (not in a nested subdirectory).
 RUN mkdir -p /nuget-cache /opt/proj \
     && cd /opt/proj \
     && dotnet new xunit --force \
