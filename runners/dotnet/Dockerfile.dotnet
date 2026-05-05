@@ -10,6 +10,7 @@ ENV NUGET_PACKAGES=/nuget-cache
 RUN mkdir -p /nuget-cache /opt/xunit-template \
     && cd /opt/xunit-template \
     && dotnet new xunit --force -n runner \
+    && cd runner \
     && dotnet restore \
     && rm -f UnitTest1.cs \
     && chmod -R 755 /nuget-cache /opt/xunit-template
