@@ -38,15 +38,16 @@ export class CodeTestService {
     private readonly config: ConfigService,
     private readonly bedrockService: BedrockService,
   ) {
-    // Defaults use public images so hosts need no local `docker build` (except Node + Jest).
+    // Python and Java default to public images (no local build required).
+    // .NET and Node require custom images with pre-cached packages — build once:
+    //   docker compose --profile runners build runner-dotnet runner-node
     this.pythonImage =
       this.config.get<string>('RUNNER_PYTHON_IMAGE') ?? 'python:3.12-slim';
     this.javaImage =
       this.config.get<string>('RUNNER_JAVA_IMAGE') ??
       'eclipse-temurin:21-jdk';
     this.dotnetImage =
-      this.config.get<string>('RUNNER_DOTNET_IMAGE') ??
-      'mcr.microsoft.com/dotnet/sdk:8.0';
+      this.config.get<string>('RUNNER_DOTNET_IMAGE') ?? 'runner-dotnet:8.0';
     this.nodeImage =
       this.config.get<string>('RUNNER_NODE_IMAGE') ?? 'runner-node:20';
     this.timeoutMs = this.config.get<number>('RUNNER_TIMEOUT_MS') ?? 30_000;
