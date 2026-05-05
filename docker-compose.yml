@@ -1,16 +1,14 @@
 # Code runners: backend spawns `docker run` on the *host* daemon. On EC2/Compose you need:
 # 1) Docker CLI in the backend image (see backend-ramio/Dockerfile)
 # 2) Host Docker socket in the container
-# 3) Named volume for runner temp dirs (docker-entrypoint.sh chowns to uid 1000 on start).
+# 3) A *host bind-mount* (not a named volume) for runner temp dirs so the host daemon can
+#    resolve the path when it spawns runner containers. Create it once on the host:
+#      sudo mkdir -p /opt/ramio-runner-work && sudo chown 1000:1000 /opt/ramio-runner-work
+#    docker-entrypoint.sh chowns the dir on every start as a safety net.
 # 4) Runner images: Python/Java/.NET default to public Hub images (no local build).
-#    Node (Jest) still expects runner-node:20 — build once: docker compose --profile runners build runner-node
+#    Node (Jest) still expects runner-node:20 — build once:
+#      docker compose --profile runners build runner-node
 #    Optional overrides: RUNNER_PYTHON_IMAGE, RUNNER_NODE_IMAGE, etc. in backend .env
-#
-# To use a host path instead of the named volume (e.g. huge disk), bind-mount that path and
-# chown it once on the host: sudo mkdir -p /path && sudo chown 1000:1000 /path
-
-volumes:
-  ramio-runner-work:
 
 services:
   backend1:
@@ -25,7 +23,7 @@ services:
       DOCKER_GID: "${DOCKER_GID:-988}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ramio-runner-work:/opt/ramio-runner-work
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3333:3333"
@@ -40,7 +38,7 @@ services:
       DOCKER_GID: "${DOCKER_GID:-988}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ramio-runner-work:/opt/ramio-runner-work
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3334:3333"
@@ -55,7 +53,7 @@ services:
       DOCKER_GID: "${DOCKER_GID:-988}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ramio-runner-work:/opt/ramio-runner-work
+      - /opt/ramio-runner-work:/opt/ramio-runner-work
     shm_size: "1gb"
     ports:
       - "127.0.0.1:3335:3333"

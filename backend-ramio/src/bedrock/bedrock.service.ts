@@ -5,6 +5,7 @@ import {
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import { AssignmentLanguage } from '@prisma/client';
+import { stripModelCodeOutput } from '../lib/strip-model-code.js';
 
 export type TestLanguage = 'python' | 'javascript' | 'java' | 'csharp';
 
@@ -12,10 +13,25 @@ interface InvokeResponseBody {
   content?: Array<{ text: string }>;
 }
 
-function stripMarkdownCodeFences(text: string): string {
-  const trimmed = text.trim();
-  const match = trimmed.match(/^```(?:\w+)?\s*\n?([\s\S]*?)\n?```$/);
-  return match ? match[1].trim() : trimmed;
+/** Injected into LLM prompts so generated Python matches CodeTestService.runPythonTests (unittest discover only). */
+function pythonUnittestRamioConstraints(): string {
+  return `
+Python / Ramio runner (mandatory for Python test output):
+- The test file content is saved as test_solution.py next to solution.py and executed with:
+  python -B -m unittest discover -s <workspace> -t <workspace> -p "test*.py" -v
+- Only stdlib unittest discovery runs. Pytest is not used; module-level "def test_*" functions (pytest style) are NOT collected — you will get "Ran 0 tests".
+- You MUST use import unittest and one or more classes: class TestSomething(unittest.TestCase): with instance methods whose names start with test_ (e.g. def test_foo(self):).
+- Import the student's code from the solution module (solution.py), e.g. import solution or from solution import ... as required by the assignment.
+- Do not import pytest or write pytest-only tests.
+- Define every unittest.TestCase subclass at module top level. Do NOT define TestCase classes only inside "if __name__ == '__main__':" — discovery loads the module with __name__ != "__main__", so tests defined only under that guard will not exist and unittest will report 0 tests.
+- Use this structure (replace assertions with checks that match the assignment; add more test_* methods as needed):
+
+import unittest
+import solution
+
+class TestSolution(unittest.TestCase):
+    def test_solution_module_is_importable(self):
+        self.assertIsNotNone(solution)`;
 }
 
 function toInferenceProfileId(modelId: string, region: string): string {
@@ -169,7 +185,7 @@ ${input.code}
 """`;
 
     const raw = await this.invoke(prompt, 2048);
-    const text = stripMarkdownCodeFences(raw);
+    const text = stripModelCodeOutput(raw);
 
     const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
     const suggestedPoints = pointsMatch ? Number(pointsMatch[1]) : undefined;
@@ -286,7 +302,7 @@ Extracted project files (paths and contents):
 ${input.projectFilesXml}`;
 
     const raw = await this.invoke(prompt, 4096);
-    const text = stripMarkdownCodeFences(raw);
+    const text = stripModelCodeOutput(raw);
 
     const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
     const suggestedPoints = pointsMatch ? Number(pointsMatch[1]) : undefined;
@@ -323,6 +339,7 @@ Requirements:
 - Output ONLY the test code, no explanations or markdown code fences.
 - Tests should be meaningful: cover main behaviors, edge cases, and important branches.
 - Keep the test file self-contained and runnable.
+${language === 'python' ? pythonUnittestRamioConstraints() : ''}
 
 Source code (${language}):
 
@@ -333,7 +350,7 @@ ${sourceCode}
 Generate the complete test file now:`;
 
     const raw = await this.invoke(prompt, 8192);
-    return stripMarkdownCodeFences(raw);
+    return stripModelCodeOutput(raw);
   }
   async generateUnitTestsFromDescription(
     description: string,
@@ -355,6 +372,7 @@ Requirements:
 - Tests should match what the description asks students to implement: assert the expected behavior.
 - Keep the test file self-contained and runnable (imports, test runner).
 - Assume the student will implement a solution that your tests will run against (e.g. solution.py or a module they provide).
+${language === 'python' ? pythonUnittestRamioConstraints() : ''}
 
 Assignment description:
 
@@ -365,6 +383,6 @@ ${description}
 Generate the complete test file now:`;
 
     const raw = await this.invoke(prompt, 8192);
-    return stripMarkdownCodeFences(raw);
+    return stripModelCodeOutput(raw);
   }
 }

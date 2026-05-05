@@ -7,6 +7,24 @@ import * as path from 'node:path';
 import type { RunCodeResponseDto } from './dto/run-code.dto';
 import type { TestLanguage } from '../bedrock/bedrock.service';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { stripModelCodeOutput } from '../lib/strip-model-code.js';
+
+/**
+ * Docker Desktop on Windows often mounts an empty `/workspace` when the host
+ * path uses backslashes. Normalize so `Solution.cs` / `SolutionTests.cs` (and
+ * other runners) are visible inside the container.
+ *
+ * If the API runs in a container but talks to the **host** Docker socket, this
+ * path must exist on that host (not only inside the API container); that
+ * mismatch also yields missing files under `/workspace`.
+ */
+function dockerHostBindSource(hostPath: string): string {
+  const resolved = path.resolve(hostPath);
+  if (process.platform === 'win32') {
+    return resolved.replace(/\\/g, '/');
+  }
+  return resolved;
+}
 
 @Injectable()
 export class CodeTestService {
@@ -38,32 +56,27 @@ export class CodeTestService {
     code: string,
     tests: string,
   ): Promise<RunCodeResponseDto> {
+    const normalizedTests = stripModelCodeOutput(tests);
     const solutionFile = 'solution.py';
     const testFile = 'test_solution.py';
     const result = await this.runLanguageTests({
       code,
-      tests,
+      tests: normalizedTests,
       solutionFile,
       testFile,
       image: this.pythonImage,
-      // discover + -t sets sys.path so `from solution import …` works (plain
-      // `unittest test_solution` can fail with ModuleNotFoundError in slim images).
+      // discover + -t/-s puts workspace on the path so `import solution` works.
+      // -p test_solution.py matches only our file (avoids ambiguous `unittest test_solution`
+      // failing with ModuleNotFoundError in some images). PYTHONPATH is belt-and-suspenders.
       command: [
-        'python',
-        '-B',
-        '-m',
-        'unittest',
-        'discover',
-        '-s',
-        '/workspace',
-        '-t',
-        '/workspace',
-        '-p',
-        'test*.py',
-        '-v',
+        'sh',
+        '-lc',
+        'export PYTHONPATH=/workspace && cd /workspace && exec python -B -m unittest discover -s /workspace -t /workspace -p test_solution.py -v',
       ],
     });
-    return this.withPythonUnittestNoTestsHint(result);
+    return this.withPythonSolutionImportHint(
+      this.withPythonUnittestNoTestsHint(result),
+    );
   }
 
   async runNodeTests(code: string, tests: string): Promise<RunCodeResponseDto> {
@@ -131,14 +144,13 @@ export class CodeTestService {
           'export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1',
           'export DOTNET_CLI_TELEMETRY_OPTOUT=1',
           'export DOTNET_NOLOGO=1',
-          'export NUGET_PACKAGES=/tmp/nuget',
-          'mkdir -p /tmp/proj',
+          // Point at the packages baked into the image; no network restore needed.
+          'export NUGET_PACKAGES=/nuget-cache',
+          // Copy the pre-restored xUnit template; packages are already resolved.
+          'cp -r /opt/xunit-template /tmp/proj',
+          'cp /workspace/Solution.cs /workspace/SolutionTests.cs /tmp/proj/',
           'cd /tmp/proj',
-          'dotnet new console --force >/tmp/dotnet-new.log 2>&1 || { cat /tmp/dotnet-new.log >&2; exit 1; }',
-          'rm -f Program.cs',
-          'cp /workspace/Solution.cs /workspace/SolutionTests.cs ./',
-          'dotnet build --nologo --verbosity quiet',
-          'dotnet /tmp/proj/bin/Debug/net8.0/proj.dll 2>&1',
+          'dotnet test --nologo --verbosity normal --no-restore 2>&1',
         ].join(' && '),
       ],
     });
@@ -159,6 +171,35 @@ export class CodeTestService {
       };
     }
     return result;
+  }
+
+  /**
+   * When tests fail importing a symbol from the student's solution module — not when the
+   * runner fails to load test_solution.py (ModuleNotFoundError: test_solution).
+   */
+  private withPythonSolutionImportHint(
+    result: RunCodeResponseDto,
+  ): RunCodeResponseDto {
+    if (result.success) return result;
+    const err = result.stderr;
+    if (err.includes('Ramio: Automated tests import symbols')) return result;
+
+    const testModuleLoadFailed =
+      /Failed to import test module:\s*test_solution\b/.test(err) ||
+      /No module named ['"]test_solution['"]/.test(err);
+    if (testModuleLoadFailed) return result;
+
+    const studentSolutionImportIssue =
+      /cannot import name .+ from ['"]solution['"]/.test(err) ||
+      /No module named ['"]solution['"]/.test(err) ||
+      (/ImportError:\s*cannot import name/.test(err) && /\bsolution\b/.test(err));
+
+    if (!studentSolutionImportIssue) return result;
+
+    return {
+      ...result,
+      stderr: `${err.trimEnd()}\n\nRamio: Automated tests import symbols from your submitted module (solution.py). Define the missing function or class (and spelling must match). Output from print(...) alone does not create an importable name.\n`,
+    };
   }
 
   private async runLanguageTests(input: {
@@ -186,19 +227,24 @@ export class CodeTestService {
     );
 
     try {
+      // mkdtemp creates dirs with mode 0700; runner containers use a different UID (10001)
+      // so both the directory and all files must be world-readable.
+      await fs.chmod(workspaceDir, 0o755);
+
+      const writeOpts = { encoding: 'utf-8' as const, mode: 0o644 };
       await fs.writeFile(
         path.join(workspaceDir, input.solutionFile),
         input.code,
-        'utf-8',
+        writeOpts,
       );
       await fs.writeFile(
         path.join(workspaceDir, input.testFile),
         input.tests,
-        'utf-8',
+        writeOpts,
       );
       if (input.extraFiles) {
         for (const [name, content] of Object.entries(input.extraFiles)) {
-          await fs.writeFile(path.join(workspaceDir, name), content, 'utf-8');
+          await fs.writeFile(path.join(workspaceDir, name), content, writeOpts);
         }
       }
 
@@ -246,7 +292,7 @@ export class CodeTestService {
         '--cap-drop',
         'ALL',
         '-v',
-        `${workspaceDir}:/workspace:ro`,
+        `${dockerHostBindSource(workspaceDir)}:/workspace:ro`,
         '-w',
         '/workspace',
         image,
