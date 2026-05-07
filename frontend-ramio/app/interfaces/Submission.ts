@@ -7,6 +7,7 @@ export interface SubmissionListItem {
   points: number;
   isChecked: boolean;
   checkedAt: string | null;
+  language: string | null;
   user: {
     id: string;
     username: string | null;
@@ -16,6 +17,7 @@ export interface SubmissionListItem {
 
 export interface SubmissionDetail extends SubmissionListItem {
   solutionContent: string | null;
+  language: string | null;
   assignment: {
     id: string;
     title: string;

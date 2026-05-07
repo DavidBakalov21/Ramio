@@ -120,6 +120,11 @@ export default function AssessAssignmentSubmissionPage() {
             {loading ? <p className="text-sm text-slate-500">Loading submission…</p> : null}
             {submission ? (
               <>
+                {submission.language && (
+                  <p className="text-xs text-slate-500 mb-1">
+                    Language: <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono font-medium text-slate-700">{submission.language}</span>
+                  </p>
+                )}
                 <pre className="max-h-64 overflow-auto rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm whitespace-pre-wrap">{submission.solutionContent || '(No code submitted)'}</pre>
                 <div>
                   <button type="button" onClick={() => void handleRunTests()} disabled={isRunning || !submission.solutionContent?.trim()} className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60">

@@ -13,7 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { UserRole } from '@prisma/client';
+import { AssignmentLanguage, UserRole } from '@prisma/client';
 import { User } from '../auth/decorators/user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import type { User as PrismaUser } from '@prisma/client';
@@ -23,6 +23,15 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmissionChatDto } from './dto/submission-chat.dto';
+
+function parseLanguage(raw: string | undefined): AssignmentLanguage | undefined {
+  if (!raw) return undefined;
+  const upper = raw.toUpperCase() as AssignmentLanguage;
+  if (!Object.values(AssignmentLanguage).includes(upper)) {
+    throw new BadRequestException(`Invalid language: ${raw}`);
+  }
+  return upper;
+}
 
 @Controller('assignment')
 export class AssignmentController {
@@ -92,14 +101,86 @@ export class AssignmentController {
     return this.assignmentService.findByCourse(BigInt(courseId), user.id);
   }
 
-  @Get(':id/test-file')
+  // ─── Per-language test file routes ───────────────────────────────────────
+
+  @Get(':id/test-files')
   @Roles(UserRole.TEACHER)
-  getTestFileContent(
+  getTestFilesOverview(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
   ) {
-    return this.assignmentService.getTestFileContent(BigInt(id), user.id);
+    return this.assignmentService.getTestFilesOverview(BigInt(id), user.id);
   }
+
+  @Get(':id/test-file/:language')
+  @Roles(UserRole.TEACHER)
+  getTestFileContent(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('language') language: string,
+    @User() user: PrismaUser,
+  ) {
+    const lang = parseLanguage(language);
+    if (!lang) throw new BadRequestException('language is required');
+    return this.assignmentService.getTestFileContentForLanguage(
+      BigInt(id),
+      user.id,
+      lang,
+    );
+  }
+
+  @Post(':id/test-file/:language')
+  @Roles(UserRole.TEACHER)
+  @UseInterceptors(FileInterceptor('file'))
+  uploadTestFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('language') language: string,
+    @User() user: PrismaUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('File is required');
+    const lang = parseLanguage(language);
+    if (!lang) throw new BadRequestException('language is required');
+    return this.assignmentService.uploadTestFileForLanguage(
+      BigInt(id),
+      user.id,
+      lang,
+      file,
+    );
+  }
+
+  @Delete(':id/test-file/:language')
+  @Roles(UserRole.TEACHER)
+  deleteTestFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('language') language: string,
+    @User() user: PrismaUser,
+  ) {
+    const lang = parseLanguage(language);
+    if (!lang) throw new BadRequestException('language is required');
+    return this.assignmentService.deleteTestFileForLanguage(
+      BigInt(id),
+      user.id,
+      lang,
+    );
+  }
+
+  @Post(':id/test-file/:language/generate')
+  @Roles(UserRole.TEACHER)
+  generateTestFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('language') language: string,
+    @User() user: PrismaUser,
+  ) {
+    const lang = parseLanguage(language);
+    if (!lang) throw new BadRequestException('language is required');
+    return this.assignmentService.generateTestFileForLanguage(
+      BigInt(id),
+      user.id,
+      lang,
+    );
+  }
+
+  // ─── Assignment CRUD ──────────────────────────────────────────────────────
 
   @Get(':id/submission')
   getSubmission(
@@ -134,7 +215,13 @@ export class AssignmentController {
     @User() user: PrismaUser,
     @Body() dto: RunAssignmentDto,
   ) {
-    return this.assignmentService.runAssignment(BigInt(id), user.id, dto.code);
+    const lang = parseLanguage(dto.language);
+    return this.assignmentService.runAssignment(
+      BigInt(id),
+      user.id,
+      dto.code,
+      lang,
+    );
   }
 
   @Patch(':id')
@@ -153,20 +240,6 @@ export class AssignmentController {
     return this.assignmentService.remove(BigInt(id), user.id);
   }
 
-  @Post(':id/test-file')
-  @Roles(UserRole.TEACHER)
-  @UseInterceptors(FileInterceptor('file'))
-  uploadTestFile(
-    @Param('id', ParseIntPipe) id: number,
-    @User() user: PrismaUser,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-    return this.assignmentService.uploadTestFile(BigInt(id), user.id, file);
-  }
-
   @Post(':id/submission')
   @Roles(UserRole.STUDENT)
   @UseInterceptors(FilesInterceptor('files', 11))
@@ -174,11 +247,14 @@ export class AssignmentController {
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @UploadedFiles() files?: Express.Multer.File[],
+    @Body('language') languageRaw?: string,
   ) {
+    const lang = parseLanguage(languageRaw);
     return this.assignmentService.createSubmission(
       BigInt(id),
       user.id,
       files && files.length > 0 ? files : undefined,
+      lang,
     );
   }
 
@@ -189,11 +265,18 @@ export class AssignmentController {
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @UploadedFiles() files?: Express.Multer.File[],
+    @Body('language') languageRaw?: string,
   ) {
     if (!files?.length) {
       throw new BadRequestException('At least one file is required');
     }
-    return this.assignmentService.updateSubmission(BigInt(id), user.id, files);
+    const lang = parseLanguage(languageRaw);
+    return this.assignmentService.updateSubmission(
+      BigInt(id),
+      user.id,
+      files,
+      lang,
+    );
   }
 
   @Post(':id/submission/:submissionId/ai-feedback')

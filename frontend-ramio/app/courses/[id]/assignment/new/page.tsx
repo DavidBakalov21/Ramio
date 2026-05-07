@@ -9,6 +9,8 @@ import { ASSIGNMENT_LANGUAGE_MAP, getAssignmentLanguageFileExtension } from '@/a
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { TeacherPageShell } from '@/app/components/layout/TeacherPageShell';
 
+const ALL_LANGUAGES = Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[];
+
 const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   PYTHON: 'text/x-python',
   NODE_JS: 'text/javascript',
@@ -30,9 +32,19 @@ export default function NewAssignmentPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState(100);
-  const [language, setLanguage] = useState<AssignmentLanguage>('PYTHON');
-  const [testCode, setTestCode] = useState('');
-  const [generatingTests, setGeneratingTests] = useState(false);
+  const [dueDate, setDueDate] = useState('');
+
+  // Per-language test state
+  const [activeTestTab, setActiveTestTab] = useState<AssignmentLanguage>('PYTHON');
+  const [testStates, setTestStates] = useState<
+    Record<AssignmentLanguage, { code: string; file: File | null; generating: boolean }>
+  >(() => {
+    const init = {} as Record<AssignmentLanguage, { code: string; file: File | null; generating: boolean }>;
+    for (const lang of ALL_LANGUAGES) {
+      init[lang] = { code: '', file: null, generating: false };
+    }
+    return init;
+  });
 
   useEffect(() => {
     if (!user?.role || !courseId) return;
@@ -47,14 +59,19 @@ export default function NewAssignmentPage() {
     void checkCourseAccess();
   }, [user?.role, courseId]);
 
-  const handleGenerateTests = async () => {
-    const trimmed = description.trim();
-    if (!trimmed) {
-      setError('Enter a description first to generate tests.');
-      return;
-    }
+  const setTestField = <K extends keyof typeof testStates[AssignmentLanguage]>(
+    lang: AssignmentLanguage,
+    field: K,
+    value: typeof testStates[AssignmentLanguage][K],
+  ) => {
+    setTestStates((prev) => ({ ...prev, [lang]: { ...prev[lang], [field]: value } }));
+  };
+
+  const handleGenerateTest = async (lang: AssignmentLanguage) => {
+    const desc = description.trim();
+    if (!desc) { setError('Enter a description first to generate tests.'); return; }
     setError('');
-    setGeneratingTests(true);
+    setTestField(lang, 'generating', true);
     try {
       const languageMap: Record<AssignmentLanguage, 'python' | 'javascript' | 'java' | 'csharp'> = {
         PYTHON: 'python',
@@ -64,46 +81,54 @@ export default function NewAssignmentPage() {
       };
       const res = await api.post<{ tests: string }>(
         '/code-test/generate-tests-from-description',
-        { description: trimmed, language: languageMap[language] },
+        { description: desc, language: languageMap[lang] },
       );
-      setTestCode(res.data.tests ?? '');
-      showToast('Tests generated.', 'success');
+      setTestField(lang, 'code', res.data.tests ?? '');
+      setTestField(lang, 'file', null);
+      showToast('Tests generated — review before saving.', 'success');
     } catch {
       setError('Failed to generate tests.');
     } finally {
-      setGeneratingTests(false);
+      setTestField(lang, 'generating', false);
     }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setError('Title is required.');
-      return;
-    }
+    if (!trimmedTitle) { setError('Title is required.'); return; }
     setError('');
     setSubmitting(true);
     try {
+      const dueDateSeconds = dueDate ? Math.floor(new Date(dueDate).getTime() / 1000) : null;
       const created = await api.post<{ id: string }>('/assignment', {
         title: trimmedTitle,
         description: description.trim() || undefined,
         points,
-        language,
         courseId: Number(courseId),
+        dueDate: dueDateSeconds,
       });
 
-      if (testCode.trim()) {
-        const ext = getAssignmentLanguageFileExtension(language);
-        const file = new File([testCode], `test.${ext}`, {
-          type: LANGUAGE_MIME_TYPE[language],
-        });
+      // Upload test files for every language that has content
+      for (const lang of ALL_LANGUAGES) {
+        const state = testStates[lang];
+        let fileToUpload: File | null = state.file;
+        if (!fileToUpload && state.code.trim()) {
+          const ext = getAssignmentLanguageFileExtension(lang);
+          fileToUpload = new File([state.code], `test.${ext}`, {
+            type: LANGUAGE_MIME_TYPE[lang],
+          });
+        }
+        if (!fileToUpload) continue;
         const formData = new FormData();
-        formData.append('file', file);
-        await api.post(`/assignment/${created.data.id}/test-file`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        formData.append('file', fileToUpload);
+        await api.post(
+          `/assignment/${created.data.id}/test-file/${lang}`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
       }
+
       showToast('Assignment created.', 'success');
       router.push(`/courses/${courseId}`);
     } catch (err: unknown) {
@@ -124,96 +149,137 @@ export default function NewAssignmentPage() {
 
   return (
     <TeacherPageShell user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut}>
+      <button
+        type="button"
+        onClick={() => router.push(`/courses/${courseId}`)}
+        className="mb-3 self-start text-xs font-medium text-slate-500 transition hover:text-slate-700"
+      >
+        ← Back to course
+      </button>
+      <h1 className="text-xl font-semibold text-slate-900">Create assignment</h1>
+
+      <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Assignment title"
+          maxLength={255}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What students should implement"
+          rows={3}
+          maxLength={2000}
+          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input
+            type="number"
+            min={0}
+            value={points}
+            onChange={(e) => setPoints(Number(e.target.value) || 0)}
+            placeholder="Points"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+        </div>
+
+        {/* Per-language test files */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/50">
+          <div className="border-b border-slate-200 px-3 pt-3">
+            <p className="mb-2 text-xs font-medium text-slate-600">
+              Test files <span className="text-slate-400 font-normal">(optional — add one or more language tests)</span>
+            </p>
+            <div className="flex gap-1 flex-wrap">
+              {ALL_LANGUAGES.map((lang) => {
+                const hasContent = !!(testStates[lang].file || testStates[lang].code.trim());
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setActiveTestTab(lang)}
+                    className={`rounded-t-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      activeTestTab === lang
+                        ? 'bg-white border border-b-white border-slate-200 text-slate-900 -mb-px z-10'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {ASSIGNMENT_LANGUAGE_MAP[lang].label}
+                    {hasContent && (
+                      <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-violet-500" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {ALL_LANGUAGES.map((lang) => {
+            if (lang !== activeTestTab) return null;
+            const state = testStates[lang];
+            return (
+              <div key={lang} className="p-3 space-y-2">
+                <input
+                  type="file"
+                  accept=".py,.js,.java,.cs"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    setTestField(lang, 'file', f);
+                    if (f) setTestField(lang, 'code', '');
+                  }}
+                  className="block w-full text-xs text-slate-600 file:mr-2 file:rounded-full file:border-0 file:bg-slate-200 file:px-3 file:py-1.5"
+                />
+                <textarea
+                  value={state.code}
+                  onChange={(e) => {
+                    setTestField(lang, 'code', e.target.value);
+                    if (e.target.value) setTestField(lang, 'file', null);
+                  }}
+                  rows={8}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm"
+                  placeholder={ASSIGNMENT_LANGUAGE_MAP[lang].testCodePlaceholder}
+                />
+                <button
+                  type="button"
+                  disabled={state.generating || submitting}
+                  onClick={() => void handleGenerateTest(lang)}
+                  className="rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                >
+                  {state.generating ? 'Generating…' : 'Generate with AI'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={() => router.push(`/courses/${courseId}`)}
-            className="mb-3 self-start text-xs font-medium text-slate-500 transition hover:text-slate-700"
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            ← Back to course
+            Cancel
           </button>
-          <h1 className="text-xl font-semibold text-slate-900">Create assignment</h1>
-          <p className="mt-1 text-sm text-slate-500">Use a full page editor for faster setup and test preparation.</p>
-
-          <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Assignment title"
-              maxLength={255}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What students should implement"
-              rows={3}
-              maxLength={2000}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-            />
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <input
-                type="number"
-                min={0}
-                value={points}
-                onChange={(e) => setPoints(Number(e.target.value) || 0)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-              />
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as AssignmentLanguage)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-              >
-                {Object.entries(ASSIGNMENT_LANGUAGE_MAP).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-700">Test code (optional)</p>
-                <button
-                  type="button"
-                  onClick={() => void handleGenerateTests()}
-                  disabled={generatingTests || submitting}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                >
-                  {generatingTests ? 'Generating…' : 'Generate from description'}
-                </button>
-              </div>
-              <textarea
-                value={testCode}
-                onChange={(e) => setTestCode(e.target.value)}
-                rows={12}
-                placeholder={ASSIGNMENT_LANGUAGE_MAP[language].testCodePlaceholder}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-              />
-            </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => router.push(`/courses/${courseId}`)}
-                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-              >
-                {submitting ? 'Creating…' : 'Create assignment'}
-              </button>
-            </div>
-          </form>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
+            {submitting ? 'Creating…' : 'Create assignment'}
+          </button>
+        </div>
+      </form>
     </TeacherPageShell>
   );
 }
-

@@ -149,7 +149,7 @@ model Assignment {
   updatedAt   DateTime           @updatedAt
   courseId    BigInt
   course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  test        TestFile?
+  tests       TestFile[]
   submissions AssignmentSubmission[]
 }
 
@@ -218,17 +218,18 @@ model ProjectFileComment {
 }
 
 model AssignmentSubmission {
-  id           BigInt   @id @default(autoincrement())
-  assignmentId BigInt
-  teacherFeedback String @db.LongText
-  points Int @default(0)
-  isChecked Boolean @default(false)
-  checkedAt DateTime?
-  userId      BigInt
-  completedAt DateTime @default(now())
-  assignment  Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  solutionFiles SubmissionFile[]
+  id              BigInt              @id @default(autoincrement())
+  assignmentId    BigInt
+  teacherFeedback String              @db.LongText
+  points          Int                 @default(0)
+  isChecked       Boolean             @default(false)
+  checkedAt       DateTime?
+  userId          BigInt
+  language        AssignmentLanguage?
+  completedAt     DateTime            @default(now())
+  assignment      Assignment          @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  solutionFiles   SubmissionFile[]
 
   @@unique([assignmentId, userId])
 }
@@ -244,15 +245,18 @@ model SubmissionFile {
   submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 }
 
-model TestFile{
-  id BigInt @id @default(autoincrement())
-  url String
-  key String
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  assignmentId BigInt @unique
-  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+model TestFile {
+  id           BigInt             @id @default(autoincrement())
+  url          String
+  key          String
+  name         String
+  language     AssignmentLanguage @default(PYTHON)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  assignmentId BigInt
+  assignment   Assignment?        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, language])
 }
 
 model PendingEnrollment {

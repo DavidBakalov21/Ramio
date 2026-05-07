@@ -7,7 +7,10 @@ import { Assignment } from '@/app/interfaces/Assignment';
 import {
   getAssignmentLanguageLabel,
   getAssignmentLanguageFileExtension,
+  ASSIGNMENT_LANGUAGE_MAP,
 } from '@/app/constants/assignmentLanguages';
+
+const ALL_LANGUAGES = Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[];
 import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { User } from '@/app/interfaces/User';
 import { SubmissionDetail } from '@/app/interfaces/Submission';
@@ -27,6 +30,13 @@ const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   NODE_JS: 'text/javascript',
   JAVA: 'text/x-java-source',
   DOTNET: 'text/plain',
+};
+
+const CODE_PLACEHOLDER: Record<AssignmentLanguage, string> = {
+  PYTHON: '# Write your Python solution here\n# Use the function/class names expected by the tests',
+  NODE_JS: '// Write your JavaScript solution here',
+  JAVA: '// Write your Java solution here',
+  DOTNET: '// Write your C# solution here',
 };
 
 export default function AssignmentSandboxPage() {
@@ -49,6 +59,7 @@ export default function AssignmentSandboxPage() {
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<AssignmentLanguage | null>(null);
   const [chatMessages, setChatMessages] = useState<
     { role: 'user' | 'assistant'; content: string }[]
   >([]);
@@ -82,6 +93,16 @@ export default function AssignmentSandboxPage() {
       try {
         const res = await api.get<Assignment>(`/assignment/${assignmentId}`);
         setAssignment(res.data);
+        // Pick default language: assignment default if it has a test, else first available
+        const tests = res.data.tests ?? [];
+        const defaultHasTest = tests.some((t) => t.language === res.data.language);
+        if (defaultHasTest) {
+          setSelectedLanguage(res.data.language);
+        } else if (tests.length > 0) {
+          setSelectedLanguage(tests[0].language);
+        } else {
+          setSelectedLanguage(res.data.language);
+        }
       } catch {
         setAssignment(null);
       } finally {
@@ -107,12 +128,18 @@ export default function AssignmentSandboxPage() {
         if (res.data.solutionContent != null) {
           setCode(res.data.solutionContent);
         }
+        // Restore the language the student submitted with
+        if (res.data.language) {
+          setSelectedLanguage(res.data.language as AssignmentLanguage);
+        }
       } catch {
         console.error('Failed to fetch submission');
       }
     };
     fetchSubmission();
   }, [assignmentId, assignment?.id, assignment?.submitted, user?.role]);
+
+  const effectiveLang = selectedLanguage ?? assignment?.language ?? 'PYTHON';
 
   const handleSubmit = async () => {
     if (!assignment) return;
@@ -121,13 +148,15 @@ export default function AssignmentSandboxPage() {
     setIsSubmitting(true);
     const isUpdate = !!assignment.submitted;
     try {
-      const ext = getAssignmentLanguageFileExtension(assignment.language);
+      const ext = getAssignmentLanguageFileExtension(effectiveLang);
       const filename = `solution.${ext}`;
       const file = new File([code], filename, {
-        type: LANGUAGE_MIME_TYPE[assignment.language],
+        type: LANGUAGE_MIME_TYPE[effectiveLang],
       });
       const formData = new FormData();
       formData.append('files', file);
+      formData.append('language', effectiveLang);
+
       if (isUpdate) {
         await api.patch(`/assignment/${assignmentId}/submission`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -173,14 +202,17 @@ export default function AssignmentSandboxPage() {
     setResult(null);
     setIsRunning(true);
     try {
-      const { data } = await api.post<RunResult>(`/assignment/${assignmentId}/run`, { code });
+      const { data } = await api.post<RunResult>(`/assignment/${assignmentId}/run`, {
+        code,
+        language: effectiveLang,
+      });
       setResult(data);
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
-      const errorMsg = msg || 'Failed to run tests';
+      const errorMsg = (msg as string) || 'Failed to run tests';
       setError(errorMsg);
       showToast(errorMsg, 'error');
     } finally {
@@ -219,8 +251,7 @@ export default function AssignmentSandboxPage() {
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data
-              ?.message
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
       setChatError((msg as string) || 'Could not reach the tutor. Try again.');
     } finally {
@@ -235,6 +266,8 @@ export default function AssignmentSandboxPage() {
       </div>
     );
   }
+
+  const availableLanguages = assignment?.tests?.map((t) => t.language) ?? [];
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
@@ -253,7 +286,7 @@ export default function AssignmentSandboxPage() {
             <p className="text-sm text-slate-500">Loading assignment…</p>
           ) : !assignment ? (
             <div className="text-center">
-              <p className="text-sm text-slate-600">Assignment not found or you don’t have access.</p>
+              <p className="text-sm text-slate-600">Assignment not found or you don&apos;t have access.</p>
               <button
                 type="button"
                 onClick={() => router.push(`/courses/${courseId}`)}
@@ -270,7 +303,7 @@ export default function AssignmentSandboxPage() {
                   <p className="mt-2 text-sm text-slate-600">{assignment.description}</p>
                 )}
                 <p className="mt-2 text-xs text-slate-400">
-                  {assignment.points} pts · {getAssignmentLanguageLabel(assignment.language)}
+                  {assignment.points} pts
                   {assignment.dueDate && ` · Due ${new Date(assignment.dueDate).toLocaleDateString()}`}
                 </p>
               </header>
@@ -281,17 +314,18 @@ export default function AssignmentSandboxPage() {
                     <p className="font-semibold">
                       Your result:{' '}
                       {submission?.points != null ? (
-                        <>
-                          {submission.points} / {assignment.points} pts
-                        </>
+                        <>{submission.points} / {assignment.points} pts</>
                       ) : (
                         'Checked'
                       )}
                     </p>
-                    {submission?.teacherFeedback && (
-                      <p className="mt-1 text-xs whitespace-pre-wrap">
-                        {submission.teacherFeedback}
+                    {submission?.language && (
+                      <p className="mt-1 text-xs text-green-700">
+                        Language: {getAssignmentLanguageLabel(submission.language as AssignmentLanguage)}
                       </p>
+                    )}
+                    {submission?.teacherFeedback && (
+                      <p className="mt-1 text-xs whitespace-pre-wrap">{submission.teacherFeedback}</p>
                     )}
                   </div>
 
@@ -309,9 +343,7 @@ export default function AssignmentSandboxPage() {
                       Discuss this assignment with AI
                     </h3>
                     <p className="mt-1 text-xs text-slate-600">
-                      Ask about your grade, mistakes, or how to improve. The assistant knows your
-                      task, your code, test output from the grader runner, and your teacher&apos;s
-                      feedback.
+                      Ask about your grade, mistakes, or how to improve.
                     </p>
                     <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
                       {chatMessages.length === 0 ? (
@@ -336,9 +368,7 @@ export default function AssignmentSandboxPage() {
                         ))
                       )}
                     </div>
-                    {chatError && (
-                      <p className="mt-2 text-xs text-red-600">{chatError}</p>
-                    )}
+                    {chatError && <p className="mt-2 text-xs text-red-600">{chatError}</p>}
                     <div className="mt-2 flex gap-2">
                       <textarea
                         value={chatInput}
@@ -367,35 +397,60 @@ export default function AssignmentSandboxPage() {
                 </div>
               ) : (
                 <>
+                  {/* Language picker — always all languages, with test-availability indicator */}
+                  <div className="mb-4">
+                    <p className="mb-1.5 text-xs font-medium text-slate-600">Choose your language</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ALL_LANGUAGES.map((lang) => {
+                        const hasTest = availableLanguages.includes(lang);
+                        return (
+                          <button
+                            key={lang}
+                            type="button"
+                            onClick={() => { setSelectedLanguage(lang); setResult(null); }}
+                            className={`relative rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                              effectiveLang === lang
+                                ? 'border-violet-600 bg-violet-600 text-white'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:text-violet-700'
+                            }`}
+                          >
+                            {ASSIGNMENT_LANGUAGE_MAP[lang].label}
+                            {hasTest && (
+                              <span
+                                title="Tests available"
+                                className={`ml-1.5 inline-block h-1.5 w-1.5 rounded-full ${effectiveLang === lang ? 'bg-white/70' : 'bg-green-500'}`}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500 mr-1 align-middle" />
+                      = tests available for that language
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
-                    <label
-                      htmlFor="sandbox-code"
-                      className="block text-sm font-medium text-slate-700"
-                    >
+                    <label htmlFor="sandbox-code" className="block text-sm font-medium text-slate-700">
                       Your solution
+                      {availableLanguages.length > 0 && (
+                        <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-normal text-slate-600">
+                          {ASSIGNMENT_LANGUAGE_MAP[effectiveLang].label}
+                        </span>
+                      )}
                     </label>
-                    {assignment.language === 'PYTHON' && (
+                    {effectiveLang === 'PYTHON' && (
                       <p className="text-xs text-slate-500">
-                        Your editor is run as <span className="font-mono">solution.py</span>. Tests
-                        use <span className="font-mono">import solution</span> or{' '}
-                        <span className="font-mono">from solution import …</span> — implement those
-                        names; a bare <span className="font-mono">print(...)</span> line is not enough
-                        if the tests expect a function or class.
+                        Your editor is run as <span className="font-mono">solution.py</span>. Tests use{' '}
+                        <span className="font-mono">import solution</span> — implement the function/class names expected by the tests.
                       </p>
                     )}
                     <textarea
                       id="sandbox-code"
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
-                      placeholder={
-                        assignment.language === 'PYTHON'
-                          ? '# Write your Python solution here\n# Use the function/class names expected by the tests'
-                          : assignment.language === 'NODE_JS'
-                            ? '// Write your JavaScript solution here'
-                            : assignment.language === 'JAVA'
-                              ? '// Write your Java solution here'
-                              : '// Write your C# solution here'
-                      }
+                      placeholder={CODE_PLACEHOLDER[effectiveLang]}
                       rows={16}
                       className="block w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
                     />
@@ -403,33 +458,20 @@ export default function AssignmentSandboxPage() {
 
                   {submitMessage === 'success' && (
                     <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
-                      {lastSubmitWasUpdate
-                        ? 'Submission updated.'
-                        : 'Assignment submitted successfully.'}
+                      {lastSubmitWasUpdate ? 'Submission updated.' : 'Assignment submitted successfully.'}
                     </div>
                   )}
                   {submitMessage === 'error' && (
-                    <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-                      {error}
-                    </div>
+                    <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>
                   )}
-
                   {error && submitMessage !== 'error' && (
-                    <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-                      {error}
-                    </div>
+                    <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>
                   )}
 
                   {result && (
                     <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                       <div className="flex items-center gap-2">
-                        <span
-                          className={
-                            result.success
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }
-                        >
+                        <span className={result.success ? 'text-green-600' : 'text-red-600'}>
                           {result.success ? 'All tests passed' : 'Tests failed'}
                           {result.timedOut ? ' (timed out)' : ''}
                         </span>
@@ -449,18 +491,25 @@ export default function AssignmentSandboxPage() {
                   )}
 
                   <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={handleRun}
-                      disabled={isRunning}
-                      className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isRunning ? 'Running…' : 'Run tests'}
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      {!availableLanguages.includes(effectiveLang) && (
+                        <p className="text-[11px] text-slate-400">
+                          No tests added for {ASSIGNMENT_LANGUAGE_MAP[effectiveLang].label} yet
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleRun()}
+                        disabled={isRunning || !availableLanguages.includes(effectiveLang)}
+                        className="rounded-full border border-violet-300 bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isRunning ? 'Running…' : 'Run tests'}
+                      </button>
+                    </div>
                     {isStudent && (
                       <button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={() => void handleSubmit()}
                         disabled={isSubmitting || !code.trim()}
                         className="rounded-full bg-slate-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                         title={
@@ -472,12 +521,8 @@ export default function AssignmentSandboxPage() {
                         }
                       >
                         {isSubmitting
-                          ? assignment.submitted
-                            ? 'Updating…'
-                            : 'Submitting…'
-                          : assignment.submitted
-                            ? 'Update submission'
-                            : 'Submit assignment'}
+                          ? assignment.submitted ? 'Updating…' : 'Submitting…'
+                          : assignment.submitted ? 'Update submission' : 'Submit assignment'}
                       </button>
                     )}
                   </div>

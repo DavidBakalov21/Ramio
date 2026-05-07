@@ -20,6 +20,16 @@ import type { SubmissionChatDto } from './dto/submission-chat.dto';
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 
+const LANGUAGE_TO_TEST_LANGUAGE: Record<
+  AssignmentLanguage,
+  'python' | 'javascript' | 'java' | 'csharp'
+> = {
+  PYTHON: 'python',
+  NODE_JS: 'javascript',
+  JAVA: 'java',
+  DOTNET: 'csharp',
+};
+
 @Injectable()
 export class AssignmentService {
   private readonly assignmentBucket: string;
@@ -62,7 +72,7 @@ export class AssignmentService {
     await this.assertCanAccessCourse(courseId, userId);
     const assignments = await this.prisma.assignment.findMany({
       where: { courseId },
-      include: { test: true },
+      include: { tests: true },
       orderBy: { createdAt: 'desc' },
     });
     const assignmentIds = assignments.map((a) => a.id);
@@ -93,7 +103,7 @@ export class AssignmentService {
   async findOne(assignmentId: bigint, userId: bigint) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true, tests: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     await this.assertCanAccessCourse(assignment.courseId, userId);
@@ -146,7 +156,7 @@ export class AssignmentService {
   async remove(assignmentId: bigint, teacherId: bigint) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true, tests: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
@@ -154,99 +164,65 @@ export class AssignmentService {
         'You can only delete assignments in your own courses',
       );
     }
-    if (assignment.test) {
-      await this.storage.deleteFile(assignment.test.key, this.assignmentBucket);
+    for (const t of assignment.tests) {
+      await this.storage.deleteFile(t.key, this.assignmentBucket);
     }
     await this.prisma.assignment.delete({ where: { id: assignmentId } });
     return { success: true };
   }
 
-  async getTestFileContent(
-    assignmentId: bigint,
-    teacherId: bigint,
-  ): Promise<string> {
+  // ─── Test file management (per-language) ─────────────────────────────────
+
+  async getTestFilesOverview(assignmentId: bigint, teacherId: bigint) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true, tests: true },
     });
-    console.log(assignment);
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
       throw new ForbiddenException(
         'You can only view test files for your own assignments',
       );
     }
-    if (!assignment.test) {
-      throw new NotFoundException('No test file for this assignment');
-    }
-    return this.storage.getFileContentAsText(
-      assignment.test.key,
-      this.assignmentBucket,
-    );
+    return assignment.tests.map((t) => this.toTestFileResponse(t));
   }
 
-  async getTestFileContentForRun(
+  async getTestFileContentForLanguage(
     assignmentId: bigint,
-    userId: bigint,
+    teacherId: bigint,
+    language: AssignmentLanguage,
   ): Promise<string> {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    await this.assertCanAccessCourse(assignment.courseId, userId);
-    if (!assignment.test) {
-      throw new NotFoundException(
-        'This assignment has no tests configured yet',
+    if (assignment.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'You can only view test files for your own assignments',
       );
     }
-    return this.storage.getFileContentAsText(
-      assignment.test.key,
-      this.assignmentBucket,
-    );
-  }
-
-  async runAssignment(
-    assignmentId: bigint,
-    userId: bigint,
-    code: string,
-  ): Promise<RunCodeResponseDto> {
-    const assignment = await this.prisma.assignment.findUnique({
-      where: { id: assignmentId },
-      include: { course: true, test: true },
+    const testFile = await this.prisma.testFile.findUnique({
+      where: { assignmentId_language: { assignmentId, language } },
     });
-    if (!assignment) throw new NotFoundException('Assignment not found');
-    await this.assertCanAccessCourse(assignment.courseId, userId);
-    if (!assignment.test) {
-      throw new BadRequestException('This assignment has no tests configured');
+    if (!testFile) {
+      throw new NotFoundException(`No test file for language ${language}`);
     }
-    const testContent = await this.storage.getFileContentAsText(
-      assignment.test.key,
+    return this.storage.getFileContentAsText(
+      testFile.key,
       this.assignmentBucket,
     );
-    if (assignment.language === AssignmentLanguage.PYTHON) {
-      return this.codeTestService.runPythonTests(code, testContent);
-    }
-    if (assignment.language === AssignmentLanguage.NODE_JS) {
-      return this.codeTestService.runNodeTests(code, testContent);
-    }
-    if (assignment.language === AssignmentLanguage.JAVA) {
-      return this.codeTestService.runJavaTests(code, testContent);
-    }
-    if (assignment.language === AssignmentLanguage.DOTNET) {
-      return this.codeTestService.runDotnetTests(code, testContent);
-    }
-    throw new BadRequestException('Unsupported assignment language');
   }
 
-  async uploadTestFile(
+  async uploadTestFileForLanguage(
     assignmentId: bigint,
     teacherId: bigint,
+    language: AssignmentLanguage,
     file: Express.Multer.File,
   ) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     if (assignment.course.userId !== teacherId) {
@@ -255,7 +231,7 @@ export class AssignmentService {
       );
     }
     const filename = file.originalname?.split(/[/\\]/).pop() ?? 'test-file';
-    const key = `tests/${assignmentId}/${filename}`;
+    const key = `tests/${assignmentId}/${language}/${filename}`;
     const { url } = await this.storage.overwriteFile(
       file,
       this.assignmentBucket,
@@ -263,35 +239,114 @@ export class AssignmentService {
     );
     const name = file.originalname ?? 'test-file';
 
-    if (assignment.test) {
-      if (assignment.test.key !== key) {
-        await this.storage.deleteFile(
-          assignment.test.key,
-          this.assignmentBucket,
-        );
+    const existing = await this.prisma.testFile.findUnique({
+      where: { assignmentId_language: { assignmentId, language } },
+    });
+
+    if (existing) {
+      if (existing.key !== key) {
+        await this.storage.deleteFile(existing.key, this.assignmentBucket);
       }
       const updated = await this.prisma.testFile.update({
-        where: { id: assignment.test.id },
+        where: { id: existing.id },
         data: { url, key, name },
       });
       return this.toTestFileResponse(updated);
     }
 
     const testFile = await this.prisma.testFile.create({
-      data: {
-        url,
-        key,
-        name,
-        assignmentId,
-      },
+      data: { url, key, name, language, assignmentId },
     });
     return this.toTestFileResponse(testFile);
   }
+
+  async deleteTestFileForLanguage(
+    assignmentId: bigint,
+    teacherId: bigint,
+    language: AssignmentLanguage,
+  ) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    if (assignment.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'You can only delete test files from your own assignments',
+      );
+    }
+    const testFile = await this.prisma.testFile.findUnique({
+      where: { assignmentId_language: { assignmentId, language } },
+    });
+    if (!testFile) {
+      throw new NotFoundException(`No test file for language ${language}`);
+    }
+    await this.storage.deleteFile(testFile.key, this.assignmentBucket);
+    await this.prisma.testFile.delete({ where: { id: testFile.id } });
+    return { success: true };
+  }
+
+  async generateTestFileForLanguage(
+    assignmentId: bigint,
+    teacherId: bigint,
+    language: AssignmentLanguage,
+  ): Promise<{ code: string }> {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    if (assignment.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'You can only generate tests for your own assignments',
+      );
+    }
+    const description =
+      `${assignment.title}\n\n${assignment.description ?? ''}`.trim();
+    const testLanguage = LANGUAGE_TO_TEST_LANGUAGE[language];
+    const code = await this.codeTestService.generateUnitTestsFromDescription(
+      description,
+      testLanguage,
+    );
+    return { code };
+  }
+
+  // ─── Sandbox run (student writes code in browser) ────────────────────────
+
+  async runAssignment(
+    assignmentId: bigint,
+    userId: bigint,
+    code: string,
+    language?: AssignmentLanguage,
+  ): Promise<RunCodeResponseDto> {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: { course: true, tests: true },
+    });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    await this.assertCanAccessCourse(assignment.courseId, userId);
+
+    const lang = language ?? assignment.language;
+    const testFile = assignment.tests.find((t) => t.language === lang);
+    if (!testFile) {
+      throw new BadRequestException(
+        `This assignment has no test configured for ${lang}`,
+      );
+    }
+    const testContent = await this.storage.getFileContentAsText(
+      testFile.key,
+      this.assignmentBucket,
+    );
+    return this.runByLanguage(lang, code, testContent);
+  }
+
+  // ─── Submissions ──────────────────────────────────────────────────────────
 
   async createSubmission(
     assignmentId: bigint,
     studentId: bigint,
     files?: Express.Multer.File[],
+    language?: AssignmentLanguage,
   ) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -323,6 +378,7 @@ export class AssignmentService {
         assignmentId,
         userId: studentId,
         teacherFeedback: '',
+        language: language ?? null,
       },
       include: { assignment: true },
     });
@@ -353,6 +409,7 @@ export class AssignmentService {
     assignmentId: bigint,
     studentId: bigint,
     files: Express.Multer.File[],
+    language?: AssignmentLanguage,
   ) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -386,6 +443,16 @@ export class AssignmentService {
     await this.prisma.submissionFile.deleteMany({
       where: { submissionId: submission.id },
     });
+
+    const data: Record<string, unknown> = {};
+    if (language !== undefined) data.language = language;
+
+    if (Object.keys(data).length) {
+      await this.prisma.assignmentSubmission.update({
+        where: { id: submission.id },
+        data,
+      });
+    }
 
     if (files?.length) {
       const solutionPrefix = `solutions/${assignmentId}/${studentId}/`;
@@ -444,6 +511,7 @@ export class AssignmentService {
       points: submission.points,
       isChecked: submission.isChecked,
       checkedAt: submission.checkedAt?.toISOString() ?? null,
+      language: submission.language ?? null,
       solutionContent,
     };
   }
@@ -470,6 +538,7 @@ export class AssignmentService {
       points: s.points,
       isChecked: s.isChecked,
       checkedAt: s.checkedAt?.toISOString() ?? null,
+      language: s.language ?? null,
       user: {
         id: s.user.id.toString(),
         username: s.user.username,
@@ -511,6 +580,7 @@ export class AssignmentService {
       points: submission.points,
       isChecked: submission.isChecked,
       checkedAt: submission.checkedAt?.toISOString() ?? null,
+      language: submission.language ?? null,
       user: {
         id: submission.user.id.toString(),
         username: submission.user.username,
@@ -534,7 +604,7 @@ export class AssignmentService {
       where: { id: submissionId },
       include: {
         solutionFiles: true,
-        assignment: { include: { course: true, test: true } },
+        assignment: { include: { course: true, tests: true } },
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
@@ -543,9 +613,17 @@ export class AssignmentService {
         'Only the course teacher can run tests on submissions',
       );
     }
-    if (!submission.assignment.test) {
-      throw new BadRequestException('This assignment has no tests configured');
+
+    const lang = submission.language ?? submission.assignment.language;
+    const testFile = submission.assignment.tests.find(
+      (t) => t.language === lang,
+    );
+    if (!testFile) {
+      throw new BadRequestException(
+        `No test configured for language ${lang} on this assignment`,
+      );
     }
+
     let code = '';
     const firstFile = submission.solutionFiles[0];
     if (firstFile) {
@@ -562,22 +640,10 @@ export class AssignmentService {
       throw new BadRequestException('Submission has no code');
     }
     const testContent = await this.storage.getFileContentAsText(
-      submission.assignment.test.key,
+      testFile.key,
       this.assignmentBucket,
     );
-    if (submission.assignment.language === AssignmentLanguage.PYTHON) {
-      return this.codeTestService.runPythonTests(code, testContent);
-    }
-    if (submission.assignment.language === AssignmentLanguage.NODE_JS) {
-      return this.codeTestService.runNodeTests(code, testContent);
-    }
-    if (submission.assignment.language === AssignmentLanguage.JAVA) {
-      return this.codeTestService.runJavaTests(code, testContent);
-    }
-    if (submission.assignment.language === AssignmentLanguage.DOTNET) {
-      return this.codeTestService.runDotnetTests(code, testContent);
-    }
-    throw new BadRequestException('Unsupported assignment language');
+    return this.runByLanguage(lang, code, testContent);
   }
 
   async assessSubmission(
@@ -659,19 +725,18 @@ export class AssignmentService {
       throw new BadRequestException('Submission has no code');
     }
 
+    const effectiveLanguage =
+      submission.language ?? submission.assignment.language;
     const { feedback, suggestedPoints } =
       await this.bedrock.generateSubmissionFeedback({
-        language: submission.assignment.language,
+        language: effectiveLanguage,
         assignmentTitle: submission.assignment.title,
         assignmentDescription: submission.assignment.description,
         maxPoints: submission.assignment.points,
         code,
       });
 
-    return {
-      feedback,
-      suggestedPoints,
-    };
+    return { feedback, suggestedPoints };
   }
 
   async studentGradedSubmissionChat(
@@ -701,7 +766,7 @@ export class AssignmentService {
 
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
-      include: { course: true, test: true },
+      include: { course: true, tests: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
     await this.assertCanAccessCourse(assignment.courseId, studentId);
@@ -734,6 +799,8 @@ export class AssignmentService {
       }
     }
 
+    const effectiveLang = submission.language ?? assignment.language;
+
     const cacheKey = `${submission.id.toString()}:${studentId.toString()}`;
     const cached = this.gradedChatTestCache.get(cacheKey);
     const cacheValid =
@@ -745,10 +812,11 @@ export class AssignmentService {
       testSummary = cached!.summary;
     } else {
       testSummary = 'Tests were not run (no test file or unsupported language).';
-      if (assignment.language === AssignmentLanguage.PYTHON && assignment.test) {
+      const testFile = assignment.tests.find((t) => t.language === effectiveLang);
+      if (effectiveLang === AssignmentLanguage.PYTHON && testFile) {
         try {
           const testContent = await this.storage.getFileContentAsText(
-            assignment.test.key,
+            testFile.key,
             this.assignmentBucket,
           );
           const run = await this.codeTestService.runPythonTests(code, testContent);
@@ -764,7 +832,7 @@ export class AssignmentService {
         } catch {
           testSummary = 'Automated test run failed to execute.';
         }
-      } else if (assignment.language === AssignmentLanguage.NODE_JS) {
+      } else if (effectiveLang === AssignmentLanguage.NODE_JS) {
         testSummary =
           'Node.js sandbox tests are not run server-side in this environment; rely on assignment description and teacher feedback.';
       }
@@ -774,8 +842,12 @@ export class AssignmentService {
       });
     }
 
-    const langLabel =
-      assignment.language === AssignmentLanguage.PYTHON ? 'Python' : 'JavaScript / Node.js';
+    const langLabel = {
+      PYTHON: 'Python',
+      NODE_JS: 'JavaScript / Node.js',
+      JAVA: 'Java',
+      DOTNET: 'C# / .NET',
+    }[effectiveLang] ?? effectiveLang;
 
     const system = `You are a supportive programming tutor helping a student reflect on their graded assignment.
 
@@ -815,6 +887,27 @@ Rules:
     return { reply: reply.trim() };
   }
 
+  // ─── Private helpers ──────────────────────────────────────────────────────
+
+  private runByLanguage(
+    language: AssignmentLanguage,
+    code: string,
+    testContent: string,
+  ): Promise<RunCodeResponseDto> {
+    switch (language) {
+      case AssignmentLanguage.PYTHON:
+        return this.codeTestService.runPythonTests(code, testContent);
+      case AssignmentLanguage.NODE_JS:
+        return this.codeTestService.runNodeTests(code, testContent);
+      case AssignmentLanguage.JAVA:
+        return this.codeTestService.runJavaTests(code, testContent);
+      case AssignmentLanguage.DOTNET:
+        return this.codeTestService.runDotnetTests(code, testContent);
+      default:
+        throw new BadRequestException('Unsupported assignment language');
+    }
+  }
+
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -851,7 +944,7 @@ Rules:
     createdAt: Date;
     updatedAt: Date;
     courseId: bigint;
-    test?: { id: bigint; url: string; key: string; name: string } | null;
+    tests?: { id: bigint; url: string; key: string; name: string; language: AssignmentLanguage }[];
   }) {
     return {
       id: a.id.toString(),
@@ -863,7 +956,7 @@ Rules:
       createdAt: a.createdAt,
       updatedAt: a.updatedAt,
       courseId: a.courseId.toString(),
-      test: a.test ? this.toTestFileResponse(a.test) : null,
+      tests: (a.tests ?? []).map((t) => this.toTestFileResponse(t)),
     };
   }
 
@@ -872,12 +965,14 @@ Rules:
     url: string;
     key: string;
     name: string;
+    language: AssignmentLanguage;
   }) {
     return {
       id: t.id.toString(),
       url: t.url,
       key: t.key,
       name: t.name,
+      language: t.language,
     };
   }
 
@@ -886,6 +981,7 @@ Rules:
     assignmentId: bigint;
     userId: bigint;
     completedAt: Date;
+    language?: AssignmentLanguage | null;
     solutionFiles: { id: bigint; url: string; key: string; name: string }[];
     assignment: { id: bigint; title: string };
   }) {
@@ -894,6 +990,7 @@ Rules:
       assignmentId: s.assignmentId.toString(),
       userId: s.userId.toString(),
       completedAt: s.completedAt,
+      language: s.language ?? null,
       solutionFiles: s.solutionFiles.map((f) => ({
         id: f.id.toString(),
         url: f.url,
