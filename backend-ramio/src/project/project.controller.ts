@@ -20,6 +20,7 @@ import type { User as PrismaUser } from '@prisma/client';
 import { AssessSubmissionDto } from '../assignment/dto/assess-submission.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { CreateFileCommentDto } from './dto/create-file-comment.dto';
 import { ProjectService } from './project.service';
 
 @Controller('project')
@@ -38,6 +39,63 @@ export class ProjectController {
     @User() user: PrismaUser,
   ) {
     return this.projectService.findByCourse(BigInt(courseId), user.id);
+  }
+
+  @Get('submission/:submissionId/files/content')
+  getSubmissionFileContent(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @Query('path') filePath: string,
+    @User() user: PrismaUser,
+  ) {
+    if (!filePath) throw new BadRequestException('path query param is required');
+    return this.projectService.getSubmissionFileContent(
+      BigInt(submissionId),
+      user.id,
+      filePath,
+    );
+  }
+
+  @Get('submission/:submissionId/files')
+  getSubmissionFileTree(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.getSubmissionFileTree(
+      BigInt(submissionId),
+      user.id,
+    );
+  }
+
+  @Get('submission/:submissionId/comments')
+  getFileComments(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.getFileComments(BigInt(submissionId), user.id);
+  }
+
+  @Post('submission/:submissionId/comments')
+  @Roles(UserRole.TEACHER)
+  createFileComment(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @Body() dto: CreateFileCommentDto,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.createFileComment(
+      BigInt(submissionId),
+      user.id,
+      dto,
+    );
+  }
+
+  @Delete('submission/:submissionId/comments/:commentId')
+  @Roles(UserRole.TEACHER)
+  deleteFileComment(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.deleteFileComment(BigInt(commentId), user.id);
   }
 
   @Get('submission/:submissionId')

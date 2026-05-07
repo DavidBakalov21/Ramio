@@ -8,6 +8,7 @@ import { ProjectSubmissionDetail } from '@/app/interfaces/Project';
 import { User } from '@/app/interfaces/User';
 import { Navbar } from '@/app/components/Navbar';
 import { useToast } from '@/app/components/utility/toast';
+import { ProjectFileViewer } from '@/app/components/projects/ProjectFileViewer';
 
 const ARCHIVE_ACCEPT =
   '.zip,.tar.gz,.tgz,.tar,.rar,.7z,.tar.bz2,.tbz2,application/zip,application/x-zip-compressed';
@@ -214,6 +215,11 @@ export default function ProjectUploadPage() {
                       {submission.name}
                     </a>
                   </div>
+                  <ProjectFileViewer
+                    submissionId={submission.id}
+                    submissionName={submission.name}
+                    isTeacher={false}
+                  />
                 </div>
               ) : isStudent ? (
                 <div className="space-y-4">
@@ -221,19 +227,26 @@ export default function ProjectUploadPage() {
                     Upload <strong>one</strong> archive file (.zip, .tar.gz, .rar, .7z, etc.).
                   </p>
                   {project.submitted && submission && (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
-                      <p className="text-xs font-medium text-slate-500">Current file</p>
-                      <a
-                        href={submission.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-block font-medium text-violet-600 hover:underline"
-                      >
-                        {submission.name}
-                      </a>
-                      <p className="mt-2 text-xs text-slate-500">
-                        Choose a new file below to replace your submission.
-                      </p>
+                    <div className="space-y-3">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
+                        <p className="text-xs font-medium text-slate-500">Current file</p>
+                        <a
+                          href={submission.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-block font-medium text-violet-600 hover:underline"
+                        >
+                          {submission.name}
+                        </a>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Choose a new file below to replace your submission.
+                        </p>
+                      </div>
+                      <ProjectFileViewer
+                        submissionId={submission.id}
+                        submissionName={submission.name}
+                        isTeacher={false}
+                      />
                     </div>
                   )}
                   <div>

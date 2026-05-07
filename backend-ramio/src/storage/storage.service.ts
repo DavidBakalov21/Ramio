@@ -117,6 +117,18 @@ export class StorageService {
     });
   }
 
+  async downloadFileAsBuffer(key: string, bucketName: string): Promise<Buffer> {
+    const { stream } = await this.downloadFile(key, bucketName);
+    const chunks: Buffer[] = [];
+    return new Promise<Buffer>((resolve, reject) => {
+      stream.on('data', (chunk: Buffer | Uint8Array) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+      );
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
+  }
+
   async deleteFile(key: string, bucketName: string): Promise<void> {
     try {
       await this.s3Client.send(

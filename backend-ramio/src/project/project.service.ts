@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ProjectLanguage } from '@prisma/client';
+import AdmZip from 'adm-zip';
 import { BedrockService } from '../bedrock/bedrock.service';
 import {
   CodeBuildService,
@@ -19,6 +20,35 @@ import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { AssessSubmissionDto } from '../assignment/dto/assess-submission.dto';
+import type { CreateFileCommentDto } from './dto/create-file-comment.dto';
+
+const CODE_EXTENSIONS = new Set([
+  '.py', '.js', '.ts', '.jsx', '.tsx', '.cs', '.java', '.cpp', '.cc', '.c',
+  '.h', '.hpp', '.go', '.rb', '.php', '.swift', '.kt', '.kts', '.rs',
+  '.scala', '.vb', '.fs', '.fsx', '.r', '.m', '.pl', '.lua',
+  '.html', '.htm', '.css', '.scss', '.sass', '.less',
+  '.json', '.yaml', '.yml', '.toml', '.xml', '.ini', '.cfg', '.conf', '.env',
+  '.gradle', '.properties', '.csproj', '.pom',
+  '.sh', '.bash', '.zsh', '.ps1', '.bat', '.cmd',
+  '.sql', '.md', '.txt', '.csv', '.rst',
+]);
+
+const CODE_FILENAMES = new Set([
+  'dockerfile', 'makefile', 'rakefile', 'gemfile', 'procfile',
+  '.gitignore', '.dockerignore', '.editorconfig', '.eslintrc',
+  '.babelrc', 'requirements.txt',
+]);
+
+const MAX_FILE_CONTENT_BYTES = 100 * 1024;
+
+function isCodeFile(entryName: string): boolean {
+  const parts = entryName.replace(/\\/g, '/').split('/');
+  const filename = parts[parts.length - 1].toLowerCase();
+  if (CODE_FILENAMES.has(filename)) return true;
+  const lastDot = filename.lastIndexOf('.');
+  if (lastDot === -1) return false;
+  return CODE_EXTENSIONS.has(filename.substring(lastDot));
+}
 
 const ASSIGNMENT_BUCKET_KEY = 'S3_BUCKET_ASSIGNMENTS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
@@ -764,6 +794,167 @@ export class ProjectService {
       codeBuildTestsSkipped: updated?.codeBuildTestsSkipped ?? null,
       codeBuildTestMetricsAt:
         updated?.codeBuildTestMetricsAt?.toISOString() ?? null,
+    };
+  }
+
+  async getSubmissionFileTree(submissionId: bigint, userId: bigint) {
+    const submission = await this.assertCanViewSubmission(submissionId, userId);
+    if (!submission.name.toLowerCase().endsWith('.zip')) {
+      throw new BadRequestException(
+        'File browsing is only available for .zip archives',
+      );
+    }
+    const zipBuffer = await this.storage.downloadFileAsBuffer(
+      submission.key,
+      this.fileBucket,
+    );
+    const zip = new AdmZip(zipBuffer);
+    const entries = zip.getEntries();
+    const files = entries
+      .filter((e) => !e.isDirectory && isCodeFile(e.entryName))
+      .map((e) => ({
+        path: e.entryName.replace(/\\/g, '/'),
+        name: e.name,
+        size: e.header.size,
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path));
+    return { files };
+  }
+
+  async getSubmissionFileContent(
+    submissionId: bigint,
+    userId: bigint,
+    filePath: string,
+  ) {
+    const submission = await this.assertCanViewSubmission(submissionId, userId);
+    if (!submission.name.toLowerCase().endsWith('.zip')) {
+      throw new BadRequestException(
+        'File browsing is only available for .zip archives',
+      );
+    }
+    if (!isCodeFile(filePath)) {
+      throw new BadRequestException('Cannot display this file type');
+    }
+    const zipBuffer = await this.storage.downloadFileAsBuffer(
+      submission.key,
+      this.fileBucket,
+    );
+    const zip = new AdmZip(zipBuffer);
+    const entry = zip.getEntry(filePath) ?? zip.getEntry(filePath.replace(/\//g, '\\'));
+    if (!entry || entry.isDirectory) {
+      throw new NotFoundException('File not found in archive');
+    }
+    const data = entry.getData();
+    if (data.length > MAX_FILE_CONTENT_BYTES) {
+      return {
+        content:
+          data.slice(0, MAX_FILE_CONTENT_BYTES).toString('utf-8') +
+          '\n\n[File truncated — showing first 100 KB]',
+        truncated: true,
+      };
+    }
+    return { content: data.toString('utf-8'), truncated: false };
+  }
+
+  async getFileComments(submissionId: bigint, userId: bigint) {
+    await this.assertCanViewSubmission(submissionId, userId);
+    const comments = await this.prisma.projectFileComment.findMany({
+      where: { submissionId },
+      include: {
+        author: { select: { id: true, username: true, email: true } },
+      },
+      orderBy: [{ filePath: 'asc' }, { lineStart: 'asc' }],
+    });
+    return comments.map((c) => this.toCommentResponse(c));
+  }
+
+  async createFileComment(
+    submissionId: bigint,
+    teacherId: bigint,
+    dto: CreateFileCommentDto,
+  ) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    if (submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can add comments');
+    }
+    const comment = await this.prisma.projectFileComment.create({
+      data: {
+        submissionId,
+        filePath: dto.filePath,
+        lineStart: dto.lineStart,
+        lineEnd: dto.lineEnd ?? null,
+        body: dto.body,
+        authorId: teacherId,
+      },
+      include: {
+        author: { select: { id: true, username: true, email: true } },
+      },
+    });
+    return this.toCommentResponse(comment);
+  }
+
+  async deleteFileComment(commentId: bigint, teacherId: bigint) {
+    const comment = await this.prisma.projectFileComment.findUnique({
+      where: { id: commentId },
+      include: {
+        submission: { include: { project: { include: { course: true } } } },
+      },
+    });
+    if (!comment) throw new NotFoundException('Comment not found');
+    if (comment.submission.project.course.userId !== teacherId) {
+      throw new ForbiddenException(
+        'Only the course teacher can delete comments',
+      );
+    }
+    await this.prisma.projectFileComment.delete({ where: { id: commentId } });
+    return { success: true };
+  }
+
+  private async assertCanViewSubmission(submissionId: bigint, userId: bigint) {
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: { project: { include: { course: true } } },
+    });
+    if (!submission) throw new NotFoundException('Submission not found');
+    const isTeacher = submission.project.course.userId === userId;
+    const isOwner = submission.userId === userId;
+    if (!isTeacher && !isOwner) {
+      throw new ForbiddenException(
+        'You do not have access to this submission',
+      );
+    }
+    return submission;
+  }
+
+  private toCommentResponse(c: {
+    id: bigint;
+    submissionId: bigint;
+    filePath: string;
+    lineStart: number;
+    lineEnd: number | null;
+    body: string;
+    authorId: bigint;
+    createdAt: Date;
+    author: { id: bigint; username: string | null; email: string };
+  }) {
+    return {
+      id: c.id.toString(),
+      submissionId: c.submissionId.toString(),
+      filePath: c.filePath,
+      lineStart: c.lineStart,
+      lineEnd: c.lineEnd,
+      body: c.body,
+      authorId: c.authorId.toString(),
+      createdAt: c.createdAt.toISOString(),
+      author: {
+        id: c.author.id.toString(),
+        username: c.author.username,
+        email: c.author.email,
+      },
     };
   }
 

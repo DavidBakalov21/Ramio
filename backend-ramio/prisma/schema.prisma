@@ -64,6 +64,7 @@ model User {
   pendingEnrollments PendingEnrollment[]
   subscriptions         UserSubscription[]
   projectSubmissions ProjectSubmission[]
+  projectFileComments  ProjectFileComment[]
 }
 
 model UserSubscription {
@@ -193,9 +194,27 @@ model ProjectSubmission {
   codeBuildTestsFailed  Int?
   codeBuildTestsSkipped Int?
   codeBuildTestMetricsAt DateTime?
+  fileComments           ProjectFileComment[]
 
   @@unique([projectId, userId])
   @@map("project_submission")
+}
+
+model ProjectFileComment {
+  id           BigInt            @id @default(autoincrement())
+  submissionId BigInt
+  submission   ProjectSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  filePath     String            @db.VarChar(1024)
+  lineStart    Int
+  lineEnd      Int?
+  body         String            @db.LongText
+  authorId     BigInt
+  author       User              @relation(fields: [authorId], references: [id])
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([submissionId])
+  @@map("project_file_comment")
 }
 
 model AssignmentSubmission {

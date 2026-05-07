@@ -62,3 +62,25 @@ export interface ProjectSubmissionDetail extends ProjectSubmissionListItem {
     assessmentPrompt?: string | null;
   };
 }
+
+export interface SubmissionFileEntry {
+  path: string;
+  name: string;
+  size: number;
+}
+
+export interface FileComment {
+  id: string;
+  submissionId: string;
+  filePath: string;
+  lineStart: number;
+  lineEnd: number | null;
+  body: string;
+  authorId: string;
+  createdAt: string;
+  author: {
+    id: string;
+    username: string | null;
+    email: string;
+  };
+}
