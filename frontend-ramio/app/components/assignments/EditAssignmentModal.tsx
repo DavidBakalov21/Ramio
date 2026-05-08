@@ -79,7 +79,7 @@ export function EditAssignmentModal({
       setValidationError('');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
-      if (assignment.test) {
+      if (assignment.tests.length > 0) {
         setNewTestCode('');
         fetchTestCode(assignment.id);
       } else {
@@ -164,6 +164,8 @@ export function EditAssignmentModal({
   };
 
   if (!isOpen || !assignment) return null;
+
+  const primaryTestFile = assignment.tests[0];
 
   const modalContent = (
     <div
@@ -277,11 +279,11 @@ export function EditAssignmentModal({
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
             <p className="mb-2 text-xs font-medium text-slate-600">Test file</p>
-            {assignment.test && !newTestFile && (
+            {primaryTestFile && !newTestFile && (
               <p className="mb-2 text-xs text-slate-500">
-                Current: {assignment.test.name}{' '}
+                Current: {primaryTestFile.name}{' '}
                 <a
-                  href={assignment.test.url}
+                  href={primaryTestFile.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-violet-600 hover:underline"
@@ -308,7 +310,7 @@ export function EditAssignmentModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-400">
-                {assignment.test ? 'Edit test code below:' : 'or paste new test code:'}
+                {primaryTestFile ? 'Edit test code below:' : 'or paste new test code:'}
               </p>
               <textarea
                 value={newTestCode}
