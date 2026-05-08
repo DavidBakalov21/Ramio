@@ -17,6 +17,16 @@ type QuestionDraft = {
   imageUrl: string | null;
   answers: AnswerDraft[];
 };
+type GeneratedQuizDraft = {
+  title: string;
+  description: string;
+  questions: {
+    type: QuizQuestionType;
+    text: string;
+    points: number;
+    answers: { text: string; isCorrect: boolean }[];
+  }[];
+};
 
 const QUESTION_TYPE_LABELS: Record<QuizQuestionType, string> = {
   ONE_ANSWER: 'Single choice',
@@ -53,6 +63,9 @@ export default function NewQuizPage() {
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(true);
   const [showPointsPerQuestion, setShowPointsPerQuestion] = useState(true);
   const [questions, setQuestions] = useState<QuestionDraft[]>([blankQuestion()]);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiQuestionCount, setAiQuestionCount] = useState('5');
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   useEffect(() => {
     if (!user?.role || !courseId) return;
@@ -96,7 +109,10 @@ export default function NewQuizPage() {
         if (type === 'OPEN_ANSWER') {
           newQ.answers = [];
         } else if (q.type === 'OPEN_ANSWER') {
-          newQ.answers = [{ text: '', isCorrect: true }, { text: '', isCorrect: false }];
+          newQ.answers = [
+            { text: '', isCorrect: true, imageUrl: null },
+            { text: '', isCorrect: false, imageUrl: null },
+          ];
         }
         if (type === 'ONE_ANSWER') {
           const first = newQ.answers.findIndex((a) => a.isCorrect);
@@ -105,6 +121,61 @@ export default function NewQuizPage() {
         return newQ;
       }),
     );
+
+  const applyGeneratedDraft = (draft: GeneratedQuizDraft) => {
+    const generatedQuestions: QuestionDraft[] = draft.questions.map((q) => {
+      const answers: AnswerDraft[] =
+        q.type === 'OPEN_ANSWER'
+          ? []
+          : q.answers.map((a) => ({ text: a.text, isCorrect: a.isCorrect, imageUrl: null }));
+      return {
+        type: q.type,
+        text: q.text,
+        points: q.points,
+        imageUrl: null,
+        answers,
+      };
+    });
+    if (!generatedQuestions.length) {
+      setError('AI returned no valid questions.');
+      return;
+    }
+    setTitle(draft.title || '');
+    setDescription(draft.description || '');
+    setQuestions(generatedQuestions);
+  };
+
+  const handleGenerateWithAi = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt) {
+      setError('Please enter instructions for AI quiz generation.');
+      return;
+    }
+    setError('');
+    setIsGeneratingAi(true);
+    try {
+      const count = Number(aiQuestionCount);
+      const { data } = await api.post<GeneratedQuizDraft>('/quiz/generate', {
+        courseId: Number(courseId),
+        prompt,
+        questionCount: Number.isFinite(count) && count > 0 ? count : undefined,
+      });
+      applyGeneratedDraft(data);
+      showToast('Quiz draft generated with AI.', 'success');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+      const resolved = Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to generate AI quiz draft.';
+      if (typeof resolved === 'string' && resolved.toLowerCase().includes('ai returned invalid quiz schema')) {
+        const zodMessage = 'ai failed try again or change prompt';
+        setError(zodMessage);
+        showToast(zodMessage, 'error');
+      } else {
+        setError(resolved);
+      }
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -207,6 +278,44 @@ export default function NewQuizPage() {
                 <span className="text-sm text-slate-700">{label}</span>
               </label>
             ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4">
+          <p className="text-sm font-semibold text-violet-900">Generate with AI</p>
+          <p className="mt-1 text-xs text-violet-800/90">
+            Describe topic, level, and style. Generated title/description/questions will replace the current draft.
+          </p>
+          <div className="mt-3 grid gap-3">
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              rows={3}
+              maxLength={3000}
+              placeholder="Example: Create a beginner JavaScript quiz about arrays and objects with practical questions."
+              className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-violet-900">Questions:</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={aiQuestionCount}
+                  onChange={(e) => setAiQuestionCount(e.target.value)}
+                  className="w-20 rounded-xl border border-violet-200 bg-white px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={isGeneratingAi}
+                onClick={handleGenerateWithAi}
+                className="rounded-full bg-violet-700 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-800 disabled:opacity-60"
+              >
+                {isGeneratingAi ? 'Generating…' : 'Generate draft'}
+              </button>
+            </div>
           </div>
         </div>
 

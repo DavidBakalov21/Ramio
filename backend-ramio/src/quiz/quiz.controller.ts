@@ -21,6 +21,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SaveQuizAnswersDto } from './dto/save-quiz-answers.dto';
 import { AssessQuizSubmissionDto } from './dto/assess-quiz-submission.dto';
+import { GenerateQuizDto } from './dto/generate-quiz.dto';
 
 @Controller('quiz')
 export class QuizController {
@@ -28,7 +29,9 @@ export class QuizController {
 
   @Post('upload-image')
   @Roles(UserRole.TEACHER)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('File is required');
     return this.quizService.uploadImage(file);
@@ -38,6 +41,12 @@ export class QuizController {
   @Roles(UserRole.TEACHER)
   create(@User() user: PrismaUser, @Body() dto: CreateQuizDto) {
     return this.quizService.create(user.id, dto);
+  }
+
+  @Post('generate')
+  @Roles(UserRole.TEACHER)
+  generate(@User() user: PrismaUser, @Body() dto: GenerateQuizDto) {
+    return this.quizService.generateDraft(user.id, dto);
   }
 
   @Get('course/:courseId')
@@ -75,7 +84,11 @@ export class QuizController {
     @User() user: PrismaUser,
     @Body() dto: AssessQuizSubmissionDto,
   ) {
-    return this.quizService.assessSubmission(BigInt(submissionId), user.id, dto);
+    return this.quizService.assessSubmission(
+      BigInt(submissionId),
+      user.id,
+      dto,
+    );
   }
 
   // ─── Quiz CRUD ────────────────────────────────────────────────────────────
