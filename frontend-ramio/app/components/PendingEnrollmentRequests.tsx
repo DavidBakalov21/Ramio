@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { PendingEnrollmentRequest } from '../interfaces/Course';
 
 interface PendingEnrollmentRequestsProps {
@@ -17,6 +18,7 @@ export function PendingEnrollmentRequests({
   onAccept,
   onDecline,
 }: PendingEnrollmentRequestsProps) {
+  const router = useRouter();
   return (
     <section className="mb-8 flex w-full flex-col gap-3">
       <h2 className="text-lg font-semibold text-slate-900">Enrollment requests</h2>
@@ -33,8 +35,9 @@ export function PendingEnrollmentRequests({
               key={req.id}
               className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3"
             >
-              <div>
-                <p className="font-medium text-slate-900">
+              <button type="button" onClick={() => router.push(`/users/${req.userId}`)}
+                className="text-left hover:opacity-75 transition-opacity">
+                <p className="font-medium text-slate-900 hover:text-violet-600">
                   {req.username || req.email}
                 </p>
                 {req.username && (
@@ -43,7 +46,7 @@ export function PendingEnrollmentRequests({
                 <p className="mt-1 text-[11px] text-slate-400">
                   Requested {new Date(req.requestedAt).toLocaleString()}
                 </p>
-              </div>
+              </button>
               <div className="flex gap-2">
                 <button
                   type="button"

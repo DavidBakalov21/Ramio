@@ -2,6 +2,7 @@ export interface Course {
   id: string;
   title: string;
   description: string | null;
+  isOpen: boolean;
   createdAt: string;
   updatedAt: string;
   teacherId: string;

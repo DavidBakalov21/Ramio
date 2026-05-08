@@ -13,6 +13,7 @@ import { StudentResultsTable } from '@/app/components/course/StudentResultsTable
 import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 import { Navbar } from '@/app/components/Navbar';
 import { MaterialsSection } from '@/app/components/materials/MaterialsSection';
+import { QuizzesSection } from '@/app/components/quizzes/QuizzesSection';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -30,6 +31,8 @@ export default function CourseDetailPage() {
   const [studentResults, setStudentResults] = useState<StudentResultsResponse | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [togglingOpen, setTogglingOpen] = useState(false);
+  const [kickingId, setKickingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -91,6 +94,30 @@ export default function CourseDetailPage() {
       router.push('/login');
     } finally {
       setIsLoggingOut(false);
+    }
+  };
+
+  const handleToggleOpen = async () => {
+    if (!course || togglingOpen) return;
+    setTogglingOpen(true);
+    try {
+      await api.patch(`/course/${courseId}`, { isOpen: !course.isOpen });
+      setCourse((prev) => prev ? { ...prev, isOpen: !prev.isOpen } : prev);
+    } finally {
+      setTogglingOpen(false);
+    }
+  };
+
+  const handleKick = async (studentId: string) => {
+    setKickingId(studentId);
+    try {
+      await api.delete(`/course/${courseId}/enrollment/${studentId}`);
+      setStudentResults((prev) =>
+        prev ? { ...prev, students: prev.students.filter((s) => s.userId !== studentId) } : prev,
+      );
+      setCourse((prev) => prev ? { ...prev, enrollmentCount: Math.max(0, prev.enrollmentCount - 1) } : prev);
+    } finally {
+      setKickingId(null);
     }
   };
 
@@ -224,7 +251,12 @@ export default function CourseDetailPage() {
             <p className="text-sm text-slate-500">{course.description}</p>
           )}
           <p className="text-xs text-slate-400">
-            {course.teacherName} · {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
+            <button type="button"
+              onClick={() => router.push(`/users/${course.teacherId}`)}
+              className="font-medium text-slate-500 hover:text-violet-600 hover:underline">
+              {course.teacherName}
+            </button>
+            {' · '}{course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
             assignments
             {(course.projectCount ?? 0) > 0 && (
               <>
@@ -234,7 +266,21 @@ export default function CourseDetailPage() {
             )}
           </p>
 
-         
+          {course.isTeacher && (
+            <button
+              type="button"
+              onClick={() => void handleToggleOpen()}
+              disabled={togglingOpen}
+              className={`self-start rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
+                course.isOpen
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {course.isOpen ? 'Open enrollment · click to close' : 'Closed enrollment · click to open'}
+            </button>
+          )}
+
           <div className="mt-4 flex gap-2 border-b border-slate-200">
             <button
               type="button"
@@ -296,6 +342,7 @@ export default function CourseDetailPage() {
           <>
             <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
             <ProjectsSection courseId={courseId} isTeacher={course.isTeacher} />
+            <QuizzesSection courseId={courseId} isTeacher={course.isTeacher} />
           </>
         )}
 
@@ -306,7 +353,7 @@ export default function CourseDetailPage() {
         {activeTab === 'results' && course.isTeacher && (
           <section className="mb-8 flex w-full flex-col gap-3">
             <h2 className="text-lg font-semibold text-slate-900">Student results</h2>
-            <StudentResultsTable data={studentResults} loading={loadingResults} />
+            <StudentResultsTable data={studentResults} loading={loadingResults} onKick={handleKick} kickingId={kickingId} />
           </section>
         )}
 

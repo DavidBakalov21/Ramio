@@ -15,12 +15,18 @@ export interface StudentResultsResponse {
     title: string;
     maxPoints: number;
   }[];
+  quizzes: {
+    id: string;
+    title: string;
+    maxPoints: number;
+  }[];
   students: {
     userId: string;
     username: string | null;
     email: string;
     assignmentResults: ResultCell[];
     projectResults: ResultCell[];
+    quizResults: ResultCell[];
     totalEarned: number;
     totalMax: number;
   }[];

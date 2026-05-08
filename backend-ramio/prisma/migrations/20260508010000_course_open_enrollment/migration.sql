@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Course` ADD COLUMN `isOpen` TINYINT(1) NOT NULL DEFAULT 0;

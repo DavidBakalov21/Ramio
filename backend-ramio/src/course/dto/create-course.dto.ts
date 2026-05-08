@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateCourseDto {
   @IsString()
@@ -10,4 +10,8 @@ export class CreateCourseDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isOpen?: boolean;
 }

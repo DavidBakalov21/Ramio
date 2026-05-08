@@ -65,6 +65,7 @@ model User {
   subscriptions         UserSubscription[]
   projectSubmissions ProjectSubmission[]
   projectFileComments  ProjectFileComment[]
+  quizSubmissions      QuizSubmission[]
 }
 
 model UserSubscription {
@@ -99,6 +100,7 @@ model Course {
   id          BigInt   @id @default(autoincrement())
   title       String
   description String?
+  isOpen      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      BigInt
@@ -108,6 +110,7 @@ model Course {
   pendingEnrollments PendingEnrollment[]
   projects Project[]
   materials CourseMaterial[]
+  quizzes Quiz[]
 }
 
 model CourseMaterial {
@@ -268,4 +271,93 @@ model PendingEnrollment {
   createdAt DateTime @default(now())
 
   @@unique([userId, courseId])
+}
+
+// ─── Quiz (Test Tasks) ────────────────────────────────────────────────────────
+
+enum QuizQuestionType {
+  ONE_ANSWER
+  MULTI_ANSWER
+  OPEN_ANSWER
+}
+
+enum QuizSubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+model Quiz {
+  id                    BigInt    @id @default(autoincrement())
+  courseId              BigInt
+  course                Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title                 String
+  description           String?   @db.Text
+  timeLimit             Int?
+  deadline              DateTime?
+  allowReview           Boolean   @default(true)
+  showCorrectAnswers    Boolean   @default(true)
+  showPointsPerQuestion Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  questions   QuizQuestion[]
+  submissions QuizSubmission[]
+}
+
+model QuizQuestion {
+  id       BigInt           @id @default(autoincrement())
+  quizId   BigInt
+  quiz     Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type     QuizQuestionType
+  text     String           @db.Text
+  points   Float
+  order    Int
+  imageUrl String?          @db.Text
+
+  answers           QuizAnswer[]
+  submissionAnswers QuizSubmissionAnswer[]
+}
+
+model QuizAnswer {
+  id         BigInt       @id @default(autoincrement())
+  questionId BigInt
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String       @db.Text
+  isCorrect  Boolean
+  order      Int
+  imageUrl   String?      @db.Text
+
+  selectedIn QuizSubmissionAnswer[] @relation("SelectedQuizAnswers")
+}
+
+model QuizSubmission {
+  id          BigInt               @id @default(autoincrement())
+  quizId      BigInt
+  quiz        Quiz                 @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId      BigInt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      QuizSubmissionStatus @default(IN_PROGRESS)
+  startedAt   DateTime             @default(now())
+  submittedAt DateTime?
+  totalPoints Float?
+
+  answers QuizSubmissionAnswer[]
+
+  @@unique([quizId, userId])
+  @@map("quiz_submission")
+}
+
+model QuizSubmissionAnswer {
+  id           BigInt         @id @default(autoincrement())
+  submissionId BigInt
+  submission   QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   BigInt
+  question     QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  openText     String?        @db.Text
+  pointsEarned Float?
+
+  selectedAnswers QuizAnswer[] @relation("SelectedQuizAnswers")
+
+  @@unique([submissionId, questionId])
+  @@map("quiz_submission_answer")
 }

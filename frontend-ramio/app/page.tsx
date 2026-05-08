@@ -74,16 +74,25 @@ export default function Home() {
     }
   };
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (courseId: string, isOpen: boolean) => {
     setEnrollingId(courseId);
     try {
-      await api.post(`/course/${courseId}/enroll`);
-      setCourses((prev) =>
-        prev.map((c) =>
-          c.id === courseId ? { ...c, hasPendingRequest: true } : c
-        )
-      );
-      showToast('Enrollment request sent. Teacher will review it.', 'success');
+      const res = await api.post<{ enrolled: boolean }>(`/course/${courseId}/enroll`);
+      if (res.data.enrolled || isOpen) {
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === courseId ? { ...c, isEnrolled: true, hasPendingRequest: false } : c
+          )
+        );
+        showToast('You are now enrolled in the course!', 'success');
+      } else {
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === courseId ? { ...c, hasPendingRequest: true } : c
+          )
+        );
+        showToast('Enrollment request sent. Teacher will review it.', 'success');
+      }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -177,8 +186,18 @@ export default function Home() {
                       </p>
                     )}
                     <p className="mt-2 text-xs text-slate-400">
-                      {course.teacherName} · {course.enrollmentCount} enrolled ·{' '}
+                      <button type="button"
+                        onClick={(e) => { e.stopPropagation(); router.push(`/users/${course.teacherId}`); }}
+                        className="font-medium text-slate-500 hover:text-violet-600 hover:underline">
+                        {course.teacherName}
+                      </button>
+                      {' · '}{course.enrollmentCount} enrolled ·{' '}
                       {course.assignmentCount} tasks
+                      {course.isOpen && (
+                        <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                          Open
+                        </span>
+                      )}
                     </p>
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <button
@@ -208,11 +227,13 @@ export default function Home() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleEnroll(course.id)}
+                          onClick={() => handleEnroll(course.id, course.isOpen)}
                           disabled={enrollingId === course.id}
                           className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
                         >
-                          {enrollingId === course.id ? 'Sending…' : 'Request to enroll'}
+                          {enrollingId === course.id
+                            ? (course.isOpen ? 'Enrolling…' : 'Sending…')
+                            : (course.isOpen ? 'Enroll' : 'Request to enroll')}
                         </button>
                       )}
                     </div>

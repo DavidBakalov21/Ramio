@@ -133,6 +133,16 @@ export class CourseController {
     return this.materialService.remove(BigInt(id), BigInt(materialId), user.id);
   }
 
+  @Delete(':id/enrollment/:userId')
+  @Roles(UserRole.TEACHER)
+  removeEnrollment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.removeEnrollment(BigInt(id), BigInt(userId), user.id);
+  }
+
   @Get(':id/student-results')
   @Roles(UserRole.TEACHER)
   getStudentResults(

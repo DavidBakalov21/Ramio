@@ -172,6 +172,7 @@ export class CourseService {
       data: {
         title: dto.title,
         description: dto.description ?? null,
+        isOpen: dto.isOpen ?? false,
         userId: teacherId,
       },
     });
@@ -193,6 +194,7 @@ export class CourseService {
       data: {
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.isOpen !== undefined && { isOpen: dto.isOpen }),
       },
     });
     return this.toResponse(updated);
@@ -213,6 +215,20 @@ export class CourseService {
     if (existingEnrollment) {
       throw new ConflictException('You are already enrolled in this course');
     }
+
+    if (course.isOpen) {
+      // Open course — enroll immediately without teacher approval
+      const enrollment = await this.prisma.enrollment.create({
+        data: { userId: studentId, courseId },
+        include: { course: true },
+      });
+      return {
+        enrolled: true,
+        courseId: enrollment.courseId.toString(),
+        course: this.toResponse(enrollment.course),
+      };
+    }
+
     const existingPending = await this.prisma.pendingEnrollment.findUnique({
       where: {
         userId_courseId: { userId: studentId, courseId },
@@ -231,6 +247,7 @@ export class CourseService {
       include: { course: true },
     });
     return {
+      enrolled: false,
       id: pending.id.toString(),
       courseId: pending.courseId.toString(),
       requestedAt: pending.createdAt,
@@ -333,6 +350,22 @@ export class CourseService {
     };
   }
 
+  async removeEnrollment(courseId: bigint, studentId: bigint, teacherId: bigint) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can remove students');
+    }
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: studentId, courseId } },
+    });
+    if (!enrollment) throw new NotFoundException('Student is not enrolled in this course');
+    await this.prisma.enrollment.delete({
+      where: { userId_courseId: { userId: studentId, courseId } },
+    });
+    return { message: 'Student removed from course' };
+  }
+
   async getStudentResults(courseId: bigint, teacherId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -344,6 +377,14 @@ export class CourseService {
         projects: {
           orderBy: { createdAt: 'asc' },
           select: { id: true, title: true, points: true },
+        },
+        quizzes: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            title: true,
+            questions: { select: { points: true, type: true } },
+          },
         },
         enrollments: {
           include: {
@@ -411,6 +452,37 @@ export class CourseService {
       });
     }
 
+    const quizIds = course.quizzes.map((q) => q.id);
+    const quizSubmissions = await this.prisma.quizSubmission.findMany({
+      where: {
+        quizId: { in: quizIds },
+        userId: { in: enrollmentUserIds },
+        status: 'SUBMITTED',
+      },
+      include: {
+        answers: {
+          select: {
+            pointsEarned: true,
+            question: { select: { type: true } },
+          },
+        },
+      },
+    });
+
+    const quizSubMap = new Map<
+      string,
+      { points: number; isFullyGraded: boolean }
+    >();
+    for (const s of quizSubmissions) {
+      const hasUngradedOpen = s.answers.some(
+        (a) => a.question.type === 'OPEN_ANSWER' && a.pointsEarned == null,
+      );
+      quizSubMap.set(`${s.userId}-${s.quizId}`, {
+        points: s.totalPoints ?? 0,
+        isFullyGraded: !hasUngradedOpen,
+      });
+    }
+
     const totalMaxAssignments = course.assignments.reduce(
       (sum, a) => sum + a.points,
       0,
@@ -419,7 +491,11 @@ export class CourseService {
       (sum, p) => sum + p.points,
       0,
     );
-    const totalMax = totalMaxAssignments + totalMaxProjects;
+    const totalMaxQuizzes = course.quizzes.reduce(
+      (sum, q) => sum + q.questions.reduce((s, qn) => s + qn.points, 0),
+      0,
+    );
+    const totalMax = totalMaxAssignments + totalMaxProjects + totalMaxQuizzes;
 
     const students = course.enrollments.map((e) => {
       const assignmentResults = course.assignments.map((a) => {
@@ -442,15 +518,24 @@ export class CourseService {
             }
           : null;
       });
+      const quizResults = course.quizzes.map((q) => {
+        const maxPoints = q.questions.reduce((s, qn) => s + qn.points, 0);
+        const sub = quizSubMap.get(`${e.userId}-${q.id}`);
+        return sub
+          ? { points: sub.points, maxPoints, isChecked: sub.isFullyGraded }
+          : null;
+      });
       const totalEarned =
         assignmentResults.reduce((sum, r) => sum + (r?.points ?? 0), 0) +
-        projectResults.reduce((sum, r) => sum + (r?.points ?? 0), 0);
+        projectResults.reduce((sum, r) => sum + (r?.points ?? 0), 0) +
+        quizResults.reduce((sum, r) => sum + (r?.points ?? 0), 0);
       return {
         userId: e.user.id.toString(),
         username: e.user.username ?? null,
         email: e.user.email,
         assignmentResults,
         projectResults,
+        quizResults,
         totalEarned,
         totalMax,
       };
@@ -467,6 +552,11 @@ export class CourseService {
         title: p.title,
         maxPoints: p.points,
       })),
+      quizzes: course.quizzes.map((q) => ({
+        id: q.id.toString(),
+        title: q.title,
+        maxPoints: q.questions.reduce((s, qn) => s + qn.points, 0),
+      })),
       students: students.sort((a, b) =>
         (a.username ?? a.email).localeCompare(b.username ?? b.email),
       ),
@@ -477,6 +567,7 @@ export class CourseService {
     id: bigint;
     title: string;
     description: string | null;
+    isOpen: boolean;
     createdAt: Date;
     updatedAt: Date;
     userId: bigint;
@@ -485,6 +576,7 @@ export class CourseService {
       id: course.id.toString(),
       title: course.title,
       description: course.description,
+      isOpen: course.isOpen,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       teacherId: course.userId.toString(),

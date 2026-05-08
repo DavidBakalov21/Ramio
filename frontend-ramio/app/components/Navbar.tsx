@@ -11,13 +11,14 @@ interface NavbarProps {
 
 export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
   const initial = user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
+  const profileHref = `/users/${user.id}`;
 
   return (
     <nav className="sticky top-0 z-10 flex w-full items-center justify-between gap-4 border-b border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-sm">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/profile"
+            href={profileHref}
             className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-violet-500/10 ring-1 ring-violet-200/50 transition hover:ring-violet-300"
           >
             {user.profilePictureUrl ? (
@@ -58,7 +59,7 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
             Support us
           </Link>
           <Link
-            href="/profile"
+            href={profileHref}
             className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
           >
             Profile

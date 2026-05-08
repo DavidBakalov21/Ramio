@@ -15,6 +15,8 @@ import { AssignmentModule } from './assignment/assignment.module';
 import { ProjectModule } from './project/project.module';
 import { StripeModule } from './stripe/stripe.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { QuizModule } from './quiz/quiz.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
     ProjectModule,
     StripeModule,
     SubscriptionModule,
+    QuizModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [

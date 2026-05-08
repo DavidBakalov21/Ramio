@@ -22,6 +22,7 @@ export default function AllCoursesPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createIsOpen, setCreateIsOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -88,16 +89,25 @@ export default function AllCoursesPage() {
     }
   };
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (courseId: string, isOpen: boolean) => {
     setEnrollingId(courseId);
     try {
-      await api.post(`/course/${courseId}/enroll`);
-      setCourses((prev) =>
-        prev.map((c) =>
-          c.id === courseId ? { ...c, hasPendingRequest: true } : c,
-        ),
-      );
-      showToast('Enrollment request sent. Teacher will review it.', 'success');
+      const res = await api.post<{ enrolled: boolean }>(`/course/${courseId}/enroll`);
+      if (res.data.enrolled || isOpen) {
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === courseId ? { ...c, isEnrolled: true, hasPendingRequest: false } : c,
+          ),
+        );
+        showToast('You are now enrolled in the course!', 'success');
+      } else {
+        setCourses((prev) =>
+          prev.map((c) =>
+            c.id === courseId ? { ...c, hasPendingRequest: true } : c,
+          ),
+        );
+        showToast('Enrollment request sent. Teacher will review it.', 'success');
+      }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -128,6 +138,7 @@ export default function AllCoursesPage() {
     if (!createSubmitting) {
       setCreateModalOpen(false);
       setCreateError(null);
+      setCreateIsOpen(false);
     }
   };
 
@@ -141,10 +152,11 @@ export default function AllCoursesPage() {
     setCreateError(null);
     setCreateSubmitting(true);
     try {
-      await api.post('/course', { title, description: createDescription.trim() || undefined });
+      await api.post('/course', { title, description: createDescription.trim() || undefined, isOpen: createIsOpen });
       setCreateModalOpen(false);
       setCreateTitle('');
       setCreateDescription('');
+      setCreateIsOpen(false);
       await fetchCourses();
       showToast('Course created successfully.', 'success');
     } catch (err: unknown) {
@@ -245,8 +257,18 @@ export default function AllCoursesPage() {
                       </p>
                     )}
                     <p className="mt-2 text-[11px] text-slate-400">
-                      {course.teacherName} · {course.enrollmentCount} enrolled ·{' '}
+                      <button type="button"
+                        onClick={(e) => { e.stopPropagation(); router.push(`/users/${course.teacherId}`); }}
+                        className="font-medium text-slate-500 hover:text-violet-600 hover:underline">
+                        {course.teacherName}
+                      </button>
+                      {' · '}{course.enrollmentCount} enrolled ·{' '}
                       {course.assignmentCount} tasks
+                      {course.isOpen && (
+                        <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                          Open
+                        </span>
+                      )}
                     </p>
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <button
@@ -276,11 +298,13 @@ export default function AllCoursesPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleEnroll(course.id)}
+                          onClick={() => handleEnroll(course.id, course.isOpen)}
                           disabled={enrollingId === course.id}
                           className="rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
                         >
-                          {enrollingId === course.id ? 'Sending…' : 'Request to enroll'}
+                          {enrollingId === course.id
+                            ? (course.isOpen ? 'Enrolling…' : 'Sending…')
+                            : (course.isOpen ? 'Enroll' : 'Request to enroll')}
                         </button>
                       )}
                     </div>
@@ -367,6 +391,19 @@ export default function AllCoursesPage() {
                   disabled={createSubmitting}
                 />
               </div>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50">
+                <input
+                  type="checkbox"
+                  checked={createIsOpen}
+                  onChange={(e) => setCreateIsOpen(e.target.checked)}
+                  disabled={createSubmitting}
+                  className="mt-0.5 h-4 w-4 accent-violet-600"
+                />
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Open enrollment</p>
+                  <p className="text-xs text-slate-500">Students can join instantly without teacher approval</p>
+                </div>
+              </label>
               {createError && (
                 <p className="text-sm text-red-600">{createError}</p>
               )}
