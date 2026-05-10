@@ -7,7 +7,13 @@ import { useToast } from '@/app/components/utility/toast';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { TeacherPageShell } from '@/app/components/layout/TeacherPageShell';
 import { QuizImageUpload } from '@/app/components/quizzes/QuizImageUpload';
-import { QuizQuestionType } from '@/app/interfaces/Quiz';
+import {
+  QuizCodingGradingMode,
+  QuizQuestionType,
+  isQuizOpenStyleQuestion,
+} from '@/app/interfaces/Quiz';
+import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
+import { ASSIGNMENT_LANGUAGE_MAP } from '@/app/constants/assignmentLanguages';
 
 type AnswerDraft = { text: string; isCorrect: boolean; imageUrl: string | null };
 type QuestionDraft = {
@@ -16,6 +22,24 @@ type QuestionDraft = {
   points: number;
   imageUrl: string | null;
   answers: AnswerDraft[];
+  codingTaskLanguage?: AssignmentLanguage;
+  codingTaskStarterCode?: string;
+  codingTaskTeacherTests?: string;
+  codingTaskGradingMode?: QuizCodingGradingMode;
+  codingTaskAiReviewEnabled?: boolean;
+  codingTaskAiReviewRubric?: string;
+};
+
+const DEFAULT_PYTHON_TESTS = `import unittest
+import solution
+
+class TestQuiz(unittest.TestCase):
+    def test_stub(self):
+        self.assertTrue(True)`;
+
+const CODING_GRADING_LABELS: Record<QuizCodingGradingMode, string> = {
+  MANUAL_ONLY: 'Manual grading',
+  TESTS_ONLY: 'Auto-grade from tests only (all pass → full points)',
 };
 type GeneratedQuizDraft = {
   title: string;
@@ -25,6 +49,12 @@ type GeneratedQuizDraft = {
     text: string;
     points: number;
     answers: { text: string; isCorrect: boolean }[];
+    codingTaskLanguage?: AssignmentLanguage;
+    codingTaskStarterCode?: string;
+    codingTaskTeacherTests?: string;
+    codingTaskGradingMode?: QuizCodingGradingMode;
+    codingTaskAiReviewEnabled?: boolean;
+    codingTaskAiReviewRubric?: string;
   }[];
 };
 
@@ -32,6 +62,7 @@ const QUESTION_TYPE_LABELS: Record<QuizQuestionType, string> = {
   ONE_ANSWER: 'Single choice',
   MULTI_ANSWER: 'Multiple choice',
   OPEN_ANSWER: 'Open answer',
+  CODING_TASK: 'Coding task',
 };
 
 function blankQuestion(): QuestionDraft {
@@ -106,9 +137,32 @@ export default function NewQuizPage() {
       prev.map((q, i) => {
         if (i !== qi) return q;
         const newQ: QuestionDraft = { ...q, type };
-        if (type === 'OPEN_ANSWER') {
+        if (type === 'CODING_TASK') {
           newQ.answers = [];
-        } else if (q.type === 'OPEN_ANSWER') {
+          newQ.codingTaskLanguage = newQ.codingTaskLanguage ?? 'PYTHON';
+          newQ.codingTaskStarterCode =
+            newQ.codingTaskStarterCode ?? '# solution.py — define symbols your tests import.\n';
+          newQ.codingTaskTeacherTests =
+            newQ.codingTaskTeacherTests ?? DEFAULT_PYTHON_TESTS;
+          newQ.codingTaskGradingMode =
+            newQ.codingTaskGradingMode ?? 'MANUAL_ONLY';
+          newQ.codingTaskAiReviewEnabled = newQ.codingTaskAiReviewEnabled ?? false;
+          newQ.codingTaskAiReviewRubric = newQ.codingTaskAiReviewRubric ?? '';
+        } else if (type === 'OPEN_ANSWER') {
+          newQ.answers = [];
+          delete newQ.codingTaskLanguage;
+          delete newQ.codingTaskStarterCode;
+          delete newQ.codingTaskTeacherTests;
+          delete newQ.codingTaskGradingMode;
+          delete newQ.codingTaskAiReviewEnabled;
+          delete newQ.codingTaskAiReviewRubric;
+        } else if (isQuizOpenStyleQuestion(q.type)) {
+          delete newQ.codingTaskLanguage;
+          delete newQ.codingTaskStarterCode;
+          delete newQ.codingTaskTeacherTests;
+          delete newQ.codingTaskGradingMode;
+          delete newQ.codingTaskAiReviewEnabled;
+          delete newQ.codingTaskAiReviewRubric;
           newQ.answers = [
             { text: '', isCorrect: true, imageUrl: null },
             { text: '', isCorrect: false, imageUrl: null },
@@ -124,16 +178,31 @@ export default function NewQuizPage() {
 
   const applyGeneratedDraft = (draft: GeneratedQuizDraft) => {
     const generatedQuestions: QuestionDraft[] = draft.questions.map((q) => {
-      const answers: AnswerDraft[] =
-        q.type === 'OPEN_ANSWER'
-          ? []
-          : q.answers.map((a) => ({ text: a.text, isCorrect: a.isCorrect, imageUrl: null }));
+      const answers: AnswerDraft[] = isQuizOpenStyleQuestion(q.type)
+        ? []
+        : q.answers.map((a) => ({ text: a.text, isCorrect: a.isCorrect, imageUrl: null }));
       return {
         type: q.type,
         text: q.text,
         points: q.points,
         imageUrl: null,
         answers,
+        ...(q.type === 'CODING_TASK'
+          ? {
+              codingTaskLanguage: q.codingTaskLanguage ?? 'PYTHON',
+              codingTaskStarterCode:
+                (q.codingTaskStarterCode?.trim() ||
+                  '# solution.py — define symbols your tests import.\n'),
+              codingTaskTeacherTests:
+                (q.codingTaskTeacherTests?.trim() || DEFAULT_PYTHON_TESTS),
+              codingTaskGradingMode:
+                q.codingTaskGradingMode ?? 'MANUAL_ONLY',
+              codingTaskAiReviewEnabled:
+                !!q.codingTaskAiReviewEnabled,
+              codingTaskAiReviewRubric:
+                q.codingTaskAiReviewRubric?.trim() ?? '',
+            }
+          : {}),
       };
     });
     if (!generatedQuestions.length) {
@@ -185,7 +254,16 @@ export default function NewQuizPage() {
       const q = questions[i];
       if (!q.text.trim()) { setError(`Question ${i + 1} text is required.`); return; }
       if (q.points < 0) { setError(`Question ${i + 1} points cannot be negative.`); return; }
-      if (q.type !== 'OPEN_ANSWER') {
+      if (q.type === 'CODING_TASK') {
+        if (!q.codingTaskLanguage) {
+          setError(`Question ${i + 1}: choose a programming language.`);
+          return;
+        }
+        if (!q.codingTaskTeacherTests?.trim()) {
+          setError(`Question ${i + 1}: unit tests cannot be empty.`);
+          return;
+        }
+      } else if (!isQuizOpenStyleQuestion(q.type)) {
         if (q.answers.length < 2) { setError(`Question ${i + 1} needs at least 2 answers.`); return; }
         if (!q.answers.some((a) => a.isCorrect)) { setError(`Question ${i + 1} needs at least one correct answer.`); return; }
         if (q.answers.some((a) => !a.text.trim())) { setError(`All answers in question ${i + 1} need text.`); return; }
@@ -211,9 +289,25 @@ export default function NewQuizPage() {
           points: q.points,
           order: i,
           imageUrl: q.imageUrl ?? undefined,
-          answers: q.type !== 'OPEN_ANSWER'
-            ? q.answers.map((a, j) => ({ text: a.text.trim(), isCorrect: a.isCorrect, order: j, imageUrl: a.imageUrl ?? undefined }))
-            : undefined,
+          answers:
+            !isQuizOpenStyleQuestion(q.type)
+              ? q.answers.map((a, j) => ({
+                  text: a.text.trim(),
+                  isCorrect: a.isCorrect,
+                  order: j,
+                  imageUrl: a.imageUrl ?? undefined,
+                }))
+              : undefined,
+          ...(q.type === 'CODING_TASK'
+            ? {
+                codingTaskLanguage: q.codingTaskLanguage,
+                codingTaskStarterCode: q.codingTaskStarterCode?.trim() || undefined,
+                codingTaskTeacherTests: q.codingTaskTeacherTests!.trim(),
+                codingTaskGradingMode: q.codingTaskGradingMode,
+                codingTaskAiReviewEnabled: !!q.codingTaskAiReviewEnabled,
+                codingTaskAiReviewRubric: q.codingTaskAiReviewRubric?.trim() || undefined,
+              }
+            : {}),
         })),
       });
       showToast('Quiz created.', 'success');
@@ -284,7 +378,7 @@ export default function NewQuizPage() {
         <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4">
           <p className="text-sm font-semibold text-violet-900">Generate with AI</p>
           <p className="mt-1 text-xs text-violet-800/90">
-            Describe topic, level, and style. Generated title/description/questions will replace the current draft.
+            Write freely—topic, difficulty, languages, roughly how many of each question style, coding vs multiple choice vs short answer. You don&apos;t need any special format; the assistant figures out structure. Generated content replaces your current draft.
           </p>
           <div className="mt-3 grid gap-3">
             <textarea
@@ -292,7 +386,7 @@ export default function NewQuizPage() {
               onChange={(e) => setAiPrompt(e.target.value)}
               rows={3}
               maxLength={3000}
-              placeholder="Example: Create a beginner JavaScript quiz about arrays and objects with practical questions."
+              placeholder="Example: Week 4 review for my intro Python class — mix recap MCQ, two short explanations, one small coding function with tests roughly like the Factorial exercise."
               className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -352,7 +446,7 @@ export default function NewQuizPage() {
                   </div>
                 </div>
 
-                {q.type !== 'OPEN_ANSWER' && (
+                {!isQuizOpenStyleQuestion(q.type) && (
                   <div className="flex flex-col gap-2 mt-1">
                     <p className="text-xs text-slate-500">
                       {q.type === 'ONE_ANSWER' ? 'Select one correct answer:' : 'Select all correct answers:'}
@@ -390,6 +484,94 @@ export default function NewQuizPage() {
 
                 {q.type === 'OPEN_ANSWER' && (
                   <p className="text-xs italic text-slate-500">Students write a text answer. You grade it manually.</p>
+                )}
+
+                {q.type === 'CODING_TASK' && (
+                  <div className="mt-1 grid gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
+                    <p className="text-xs text-slate-600">
+                      Same Docker runners as course assignments (<code className="text-[11px]">solution.py</code> /
+                      {' '}<code className="text-[11px]">test_solution.py</code> for Python, etc.).
+                    </p>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">Language</label>
+                      <select
+                        value={q.codingTaskLanguage ?? 'PYTHON'}
+                        onChange={(e) =>
+                          updateQuestion(qi, {
+                            codingTaskLanguage: e.target.value as AssignmentLanguage,
+                          })}
+                        className="w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                        {(Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]).map((lang) => (
+                          <option key={lang} value={lang}>{ASSIGNMENT_LANGUAGE_MAP[lang].label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">Starter code (shown to students)</label>
+                      <textarea
+                        value={q.codingTaskStarterCode ?? ''}
+                        onChange={(e) =>
+                          updateQuestion(qi, { codingTaskStarterCode: e.target.value })}
+                        rows={5}
+                        maxLength={100_000}
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">Teacher unit tests</label>
+                      <textarea
+                        value={q.codingTaskTeacherTests ?? ''}
+                        onChange={(e) =>
+                          updateQuestion(qi, { codingTaskTeacherTests: e.target.value })}
+                        rows={10}
+                        maxLength={100_000}
+                        placeholder={ASSIGNMENT_LANGUAGE_MAP[q.codingTaskLanguage ?? 'PYTHON'].testCodePlaceholder}
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">Grading</label>
+                      <select
+                        value={q.codingTaskGradingMode ?? 'MANUAL_ONLY'}
+                        onChange={(e) =>
+                          updateQuestion(qi, {
+                            codingTaskGradingMode: e.target.value as QuizCodingGradingMode,
+                          })}
+                        className="w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+                        {(Object.keys(CODING_GRADING_LABELS) as QuizCodingGradingMode[]).map((m) => (
+                          <option key={m} value={m}>{CODING_GRADING_LABELS[m]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!q.codingTaskAiReviewEnabled}
+                        onChange={(e) =>
+                          updateQuestion(qi, {
+                            codingTaskAiReviewEnabled: e.target.checked,
+                          })}
+                        className="h-4 w-4 accent-violet-600"
+                      />
+                      <span className="text-sm text-slate-700">AI code review after submit</span>
+                    </label>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        AI review hints (optional)
+                      </label>
+                      <p className="mb-1.5 text-xs text-slate-500">
+                        Saved with this question either way; Bedrock reads them only when AI review above is on.
+                      </p>
+                      <textarea
+                        value={q.codingTaskAiReviewRubric ?? ''}
+                        onChange={(e) =>
+                          updateQuestion(qi, { codingTaskAiReviewRubric: e.target.value })}
+                        rows={2}
+                        maxLength={4000}
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

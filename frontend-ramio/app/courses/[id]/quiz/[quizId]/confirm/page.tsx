@@ -6,7 +6,7 @@ import { api } from '@/lib/axios';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { Navbar } from '@/app/components/Navbar';
 import { motion } from 'framer-motion';
-import { OwnQuizSubmission, Quiz } from '@/app/interfaces/Quiz';
+import { OwnQuizSubmission, Quiz, isQuizOpenStyleQuestion } from '@/app/interfaces/Quiz';
 
 export default function ConfirmQuizSubmitPage() {
   const params = useParams();
@@ -70,7 +70,8 @@ export default function ConfirmQuizSubmitPage() {
 
   const totalQuestions = quiz.questions.length;
   const answeredCount = submission.questions.filter((q) => {
-    if (q.type === 'OPEN_ANSWER') return (q.openText ?? '').trim().length > 0;
+    if (isQuizOpenStyleQuestion(q.type))
+      return (q.openText ?? '').trim().length > 0;
     return q.answers.some((a) => a.isSelected);
   }).length;
   const unanswered = totalQuestions - answeredCount;

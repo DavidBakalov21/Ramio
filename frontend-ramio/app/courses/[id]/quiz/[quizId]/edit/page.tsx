@@ -7,7 +7,11 @@ import { useToast } from '@/app/components/utility/toast';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { TeacherPageShell } from '@/app/components/layout/TeacherPageShell';
 import { QuizImageUpload } from '@/app/components/quizzes/QuizImageUpload';
-import { Quiz } from '@/app/interfaces/Quiz';
+import {
+  Quiz,
+  isQuizOpenStyleQuestion,
+  type QuizQuestionType,
+} from '@/app/interfaces/Quiz';
 
 type AnswerEdit = { id: string; text: string; isCorrect: boolean; imageUrl: string | null };
 type QuestionEdit = { id: string; type: string; text: string; points: number; imageUrl: string | null; answers: AnswerEdit[] };
@@ -124,7 +128,7 @@ export default function EditQuizPage() {
               </div>
               <QuizImageUpload value={q.imageUrl} onChange={(url) => updateQuestion(qi, { imageUrl: url })} />
 
-              {q.type !== 'OPEN_ANSWER' ? (
+              {!isQuizOpenStyleQuestion(q.type as QuizQuestionType) ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-xs text-slate-500">
                     {q.type === 'ONE_ANSWER' ? 'Mark correct answer:' : 'Mark correct answers:'}
@@ -145,8 +149,12 @@ export default function EditQuizPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : q.type === 'OPEN_ANSWER' ? (
                 <p className="text-xs italic text-slate-500">Open answer — graded manually.</p>
+              ) : (
+                <p className="text-xs italic text-slate-500">
+                  Coding task — tests, language, and AI options are fixed at creation for now; you can still adjust points.
+                </p>
               )}
             </div>
           ))}

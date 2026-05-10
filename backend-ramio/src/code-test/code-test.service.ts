@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { AssignmentLanguage } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
@@ -155,6 +156,28 @@ export class CodeTestService {
         ].join(' && '),
       ],
     });
+  }
+
+  /**
+   * Same language matrix as assignment sandbox — used by AssignmentService and quiz CODING_TASK.
+   */
+  async runByAssignmentLanguage(
+    language: AssignmentLanguage,
+    code: string,
+    testContent: string,
+  ): Promise<RunCodeResponseDto> {
+    switch (language) {
+      case AssignmentLanguage.PYTHON:
+        return this.runPythonTests(code, testContent);
+      case AssignmentLanguage.NODE_JS:
+        return this.runNodeTests(code, testContent);
+      case AssignmentLanguage.JAVA:
+        return this.runJavaTests(code, testContent);
+      case AssignmentLanguage.DOTNET:
+        return this.runDotnetTests(code, testContent);
+      default:
+        throw new BadRequestException('Unsupported assignment language');
+    }
   }
 
   private withPythonUnittestNoTestsHint(

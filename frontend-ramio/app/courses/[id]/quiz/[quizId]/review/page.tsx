@@ -6,7 +6,7 @@ import { api } from '@/lib/axios';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { Navbar } from '@/app/components/Navbar';
 import { motion } from 'framer-motion';
-import { OwnQuizSubmission } from '@/app/interfaces/Quiz';
+import { OwnQuizSubmission, QuizCodingGradingMode } from '@/app/interfaces/Quiz';
 import { QuizImage } from '@/app/components/quizzes/QuizImage';
 
 export default function QuizReviewPage() {
@@ -65,7 +65,7 @@ export default function QuizReviewPage() {
                   {submission.totalPoints != null && (
                     <span className="font-medium text-slate-900">
                       Score: {Math.round(submission.totalPoints * 100) / 100} pts
-                      <span className="ml-1 text-xs font-normal text-slate-500">(open answers excluded until graded)</span>
+                      <span className="ml-1 text-xs font-normal text-slate-500">(open answers / manual coding tasks excluded until graded)</span>
                     </span>
                   )}
                 </div>
@@ -78,8 +78,15 @@ export default function QuizReviewPage() {
                   const showPoints = submission.showPointsPerQuestion;
                   const showCorrect = submission.showCorrectAnswers;
 
+                  const codingMode =
+                    q.codingTaskGradingMode ?? ('MANUAL_ONLY' as QuizCodingGradingMode);
+                  const codingAwaitingTeacher =
+                    q.type === 'CODING_TASK' &&
+                    codingMode !== 'TESTS_ONLY' &&
+                    q.pointsEarned == null;
+
                   let verdict: 'correct' | 'partial' | 'wrong' | 'open' | null = null;
-                  if (q.type === 'OPEN_ANSWER') verdict = 'open';
+                  if (q.type === 'OPEN_ANSWER' || codingAwaitingTeacher) verdict = 'open';
                   else if (showPoints && q.pointsEarned != null) {
                     if (q.pointsEarned >= q.points) verdict = 'correct';
                     else if (q.pointsEarned > 0) verdict = 'partial';
@@ -96,7 +103,7 @@ export default function QuizReviewPage() {
                         <p className="text-sm font-medium text-slate-900">{idx + 1}. {q.text}</p>
                         {q.imageUrl && <QuizImage url={q.imageUrl} alt={`Question ${idx + 1} image`} />}
                         <div className="flex shrink-0 flex-col items-end gap-0.5">
-                          {showPoints && q.type !== 'OPEN_ANSWER' && q.pointsEarned != null && (
+                          {showPoints && q.type !== 'OPEN_ANSWER' && q.type !== 'CODING_TASK' && q.pointsEarned != null && (
                             <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                               q.pointsEarned >= q.points ? 'bg-emerald-100 text-emerald-700' :
                               q.pointsEarned > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
@@ -104,7 +111,8 @@ export default function QuizReviewPage() {
                               {Math.round(q.pointsEarned * 100) / 100} / {q.points} pts
                             </span>
                           )}
-                          {showPoints && q.type === 'OPEN_ANSWER' && (
+                          {showPoints &&
+                            (q.type === 'OPEN_ANSWER' || q.type === 'CODING_TASK') && (
                             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${q.pointsEarned != null ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                               {q.pointsEarned != null ? `${Math.round(q.pointsEarned * 100) / 100} / ${q.points} pts` : `Pending / ${q.points} pts`}
                             </span>
@@ -150,6 +158,31 @@ export default function QuizReviewPage() {
                           <p className="whitespace-pre-wrap text-sm text-slate-800">
                             {q.openText || <span className="italic text-slate-400">(no answer written)</span>}
                           </p>
+                        </div>
+                      )}
+
+                      {q.type === 'CODING_TASK' && (
+                        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                          <div>
+                            <p className="mb-1 text-xs font-medium text-slate-500">Your solution</p>
+                            {q.openText?.trim() ? (
+                              <pre className="max-h-40 overflow-auto whitespace-pre-wrap font-mono text-xs text-slate-800">{q.openText}</pre>
+                            ) : (
+                              <span className="italic text-slate-400 text-xs">(empty)</span>
+                            )}
+                          </div>
+                          {(q.codingTestStdout || q.codingTestStderr) && (
+                            <div>
+                              <p className="mb-1 text-xs font-medium text-slate-500">Last run (on submit)</p>
+                              <pre className="max-h-32 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-slate-700">{q.codingTestStderr?.trim() || q.codingTestStdout}</pre>
+                            </div>
+                          )}
+                          {q.codingAiReviewText && (
+                            <div className="border-t border-slate-200 pt-2">
+                              <p className="mb-1 text-xs font-medium text-slate-500">AI review</p>
+                              <p className="whitespace-pre-wrap text-sm text-slate-800">{q.codingAiReviewText}</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

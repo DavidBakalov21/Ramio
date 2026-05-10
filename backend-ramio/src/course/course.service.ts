@@ -463,7 +463,9 @@ export class CourseService {
         answers: {
           select: {
             pointsEarned: true,
-            question: { select: { type: true } },
+            question: {
+              select: { type: true, codingTaskGradingMode: true },
+            },
           },
         },
       },
@@ -474,9 +476,17 @@ export class CourseService {
       { points: number; isFullyGraded: boolean }
     >();
     for (const s of quizSubmissions) {
-      const hasUngradedOpen = s.answers.some(
-        (a) => a.question.type === 'OPEN_ANSWER' && a.pointsEarned == null,
-      );
+      const hasUngradedOpen = s.answers.some((a) => {
+        const t = a.question.type;
+        if (t === 'OPEN_ANSWER') return a.pointsEarned == null;
+        if (t === 'CODING_TASK') {
+          const mode =
+            a.question.codingTaskGradingMode ?? 'MANUAL_ONLY';
+          if (mode === 'TESTS_ONLY') return false;
+          return a.pointsEarned == null;
+        }
+        return false;
+      });
       quizSubMap.set(`${s.userId}-${s.quizId}`, {
         points: s.totalPoints ?? 0,
         isFullyGraded: !hasUngradedOpen,

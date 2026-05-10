@@ -6,7 +6,11 @@ import { api } from '@/lib/axios';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { Navbar } from '@/app/components/Navbar';
 import { motion } from 'framer-motion';
-import { Quiz } from '@/app/interfaces/Quiz';
+import {
+  Quiz,
+  isQuizOpenStyleQuestion,
+  type RunQuizCodeResult,
+} from '@/app/interfaces/Quiz';
 import { QuizImage } from '@/app/components/quizzes/QuizImage';
 
 type AnswerState = { selectedIds: string[]; openText: string };
@@ -31,6 +35,8 @@ export default function TakeQuizPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [codeRunBusy, setCodeRunBusy] = useState<string | null>(null);
+  const [codeRunResult, setCodeRunResult] = useState<Record<string, RunQuizCodeResult | null>>({});
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -42,8 +48,12 @@ export default function TakeQuizPage() {
         const a = cur[q.id] ?? { selectedIds: [], openText: '' };
         return {
           questionId: Number(q.id),
-          selectedAnswerIds: q.type !== 'OPEN_ANSWER' ? a.selectedIds.map(Number) : undefined,
-          openText: q.type === 'OPEN_ANSWER' ? a.openText || undefined : undefined,
+          selectedAnswerIds: !isQuizOpenStyleQuestion(q.type)
+            ? a.selectedIds.map(Number)
+            : undefined,
+          openText: isQuizOpenStyleQuestion(q.type)
+            ? a.openText || undefined
+            : undefined,
         };
       }),
     [quiz],
@@ -110,10 +120,32 @@ export default function TakeQuizPage() {
           const subRes = await api.get<{ questions: { id: string; openText: string | null; answers: { id: string; isSelected: boolean }[] }[] }>(`/quiz/${quizId}/submission`);
           const pre: Record<string, AnswerState> = {};
           for (const q of subRes.data.questions) {
-            pre[q.id] = { selectedIds: q.answers.filter((a) => a.isSelected).map((a) => a.id), openText: q.openText ?? '' };
+            pre[q.id] = {
+              selectedIds: q.answers.filter((x) => x.isSelected).map((x) => x.id),
+              openText: q.openText ?? '',
+            };
+          }
+          for (const q of quizRes.data.questions) {
+            if (q.type !== 'CODING_TASK') continue;
+            if (!pre[q.id])
+              pre[q.id] = { selectedIds: [], openText: q.codingTaskStarterCode ?? '' };
+            else if (!pre[q.id].openText?.trim() && q.codingTaskStarterCode)
+              pre[q.id] = { ...pre[q.id], openText: q.codingTaskStarterCode ?? '' };
           }
           setAnswers(pre);
-        } catch { /* no prior answers */ }
+        } catch {
+          /* no prior answers — still seed starters */
+          const pre: Record<string, AnswerState> = {};
+          for (const q of quizRes.data.questions) {
+            if (q.type === 'CODING_TASK') {
+              pre[q.id] = {
+                selectedIds: [],
+                openText: q.codingTaskStarterCode ?? '',
+              };
+            }
+          }
+          setAnswers(pre);
+        }
       } catch {
         router.replace(`/courses/${courseId}/quiz/${quizId}`);
       } finally {
@@ -163,6 +195,27 @@ export default function TakeQuizPage() {
 
   const setOpenText = (qId: string, text: string) =>
     setAnswers((p) => ({ ...p, [qId]: { ...p[qId] ?? { selectedIds: [] }, openText: text } }));
+
+  const runCodingTests = async (questionId: string) => {
+    const code = (answers[questionId]?.openText ?? '').trim();
+    if (!code) {
+      setError('Write some code before running tests.');
+      return;
+    }
+    setError('');
+    setCodeRunBusy(questionId);
+    try {
+      const { data } = await api.post<RunQuizCodeResult>(`/quiz/${quizId}/coding-task/run`, {
+        questionId: Number(questionId),
+        code,
+      });
+      setCodeRunResult((prev) => ({ ...prev, [questionId]: data }));
+    } catch {
+      setError('Could not run tests. Check your connection or try again.');
+    } finally {
+      setCodeRunBusy(null);
+    }
+  };
 
   if (loadingUser || loading) {
     return (
@@ -243,6 +296,45 @@ export default function TakeQuizPage() {
                   <textarea value={a.openText} onChange={(e) => setOpenText(q.id, e.target.value)}
                     rows={4} maxLength={10000} placeholder="Write your answer here…"
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                )}
+
+                {q.type === 'CODING_TASK' && (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-xs text-slate-500">
+                      Language: {q.codingTaskLanguage ?? '?'} · Same runners as assignments.
+                    </p>
+                    <textarea
+                      value={a.openText}
+                      onChange={(e) => setOpenText(q.id, e.target.value)}
+                      rows={14}
+                      maxLength={100_000}
+                      spellCheck={false}
+                      placeholder="Write your solution…"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs leading-relaxed focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={codeRunBusy === q.id}
+                        onClick={() => void runCodingTests(q.id)}
+                        className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-50">
+                        {codeRunBusy === q.id ? 'Running…' : 'Run tests'}
+                      </button>
+                    </div>
+                    {codeRunResult[q.id] != null && (
+                      <pre
+                        className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border px-3 py-2 font-mono text-[11px] ${
+                          codeRunResult[q.id]?.success ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'
+                        }`}>
+                        {codeRunResult[q.id]?.timedOut ? 'Timed out\n' : ''}
+                        exit {codeRunResult[q.id]?.exitCode ?? '?'}
+                        {'\n\n— stdout —\n'}
+                        {codeRunResult[q.id]?.stdout || '(empty)'}
+                        {'\n\n— stderr —\n'}
+                        {codeRunResult[q.id]?.stderr || '(empty)'}
+                      </pre>
+                    )}
+                  </div>
                 )}
               </motion.div>
             );

@@ -11,9 +11,14 @@ import {
   IsUrl,
   Min,
   ArrayMinSize,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { QuizQuestionType } from '@prisma/client';
+import {
+  AssignmentLanguage,
+  QuizCodingGradingMode,
+  QuizQuestionType,
+} from '@prisma/client';
 
 export class CreateQuizAnswerDto {
   @IsString()
@@ -62,6 +67,33 @@ export class CreateQuizQuestionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateQuizAnswerDto)
   answers?: CreateQuizAnswerDto[];
+
+  @ValidateIf((q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK)
+  @IsEnum(AssignmentLanguage)
+  codingTaskLanguage?: AssignmentLanguage;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100_000)
+  codingTaskStarterCode?: string;
+
+  @ValidateIf((q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK)
+  @IsString()
+  @MaxLength(100_000)
+  codingTaskTeacherTests?: string;
+
+  @IsOptional()
+  @IsEnum(QuizCodingGradingMode)
+  codingTaskGradingMode?: QuizCodingGradingMode;
+
+  @IsOptional()
+  @IsBoolean()
+  codingTaskAiReviewEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  codingTaskAiReviewRubric?: string;
 }
 
 export class CreateQuizDto {

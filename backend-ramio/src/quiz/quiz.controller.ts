@@ -22,6 +22,7 @@ import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SaveQuizAnswersDto } from './dto/save-quiz-answers.dto';
 import { AssessQuizSubmissionDto } from './dto/assess-quiz-submission.dto';
 import { GenerateQuizDto } from './dto/generate-quiz.dto';
+import { RunQuizCodingTaskDto } from './dto/run-quiz-coding-task.dto';
 
 @Controller('quiz')
 export class QuizController {
@@ -129,6 +130,16 @@ export class QuizController {
   @Roles(UserRole.STUDENT)
   startQuiz(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
     return this.quizService.startQuiz(BigInt(id), user.id);
+  }
+
+  @Post(':id/coding-task/run')
+  @Roles(UserRole.STUDENT)
+  runCodingTaskTests(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: RunQuizCodingTaskDto,
+  ) {
+    return this.quizService.runCodingTaskTests(BigInt(id), user.id, dto);
   }
 
   @Patch(':id/submission')

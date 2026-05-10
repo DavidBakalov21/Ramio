@@ -232,7 +232,7 @@ function StudentQuizActions({
         {subPoints != null && (
           <p className="mt-1 text-sm text-slate-600">
             Score: <span className="font-semibold">{Math.round(subPoints * 100) / 100}</span> / {totalPoints} pts
-            <span className="ml-1 text-xs text-slate-500">(open answers excluded until graded)</span>
+            <span className="ml-1 text-xs text-slate-500">(open answers / manual coding tasks excluded until graded)</span>
           </p>
         )}
         <div className="mt-3">

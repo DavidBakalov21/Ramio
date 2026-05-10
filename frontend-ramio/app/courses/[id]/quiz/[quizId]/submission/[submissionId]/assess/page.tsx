@@ -30,7 +30,10 @@ export default function AssessQuizSubmissionPage() {
       setSubmission(res.data);
       const initial: Record<string, string> = {};
       for (const q of res.data.questions) {
-        if (q.type === 'OPEN_ANSWER') initial[q.id] = q.pointsEarned != null ? String(q.pointsEarned) : '';
+        if (q.type === 'OPEN_ANSWER' || q.type === 'CODING_TASK') {
+          initial[q.id] =
+            q.pointsEarned != null ? String(q.pointsEarned) : '';
+        }
       }
       setOpenPoints(initial);
     } catch {
@@ -48,8 +51,11 @@ export default function AssessQuizSubmissionPage() {
     setSaving(true);
     try {
       const answersToAssess = submission.questions
-        .filter((q) => q.type === 'OPEN_ANSWER')
-        .map((q) => ({ questionId: Number(q.id), pointsEarned: Number(openPoints[q.id] ?? 0) || 0 }));
+        .filter((q) => q.type === 'OPEN_ANSWER' || q.type === 'CODING_TASK')
+        .map((q) => ({
+          questionId: Number(q.id),
+          pointsEarned: Number(openPoints[q.id] ?? 0) || 0,
+        }));
       await api.patch(`/quiz/submission/${submissionId}/assess`, { answers: answersToAssess });
       router.push(`/courses/${courseId}/quiz/${quizId}`);
     } catch (err: unknown) {
@@ -134,6 +140,45 @@ export default function AssessQuizSubmissionPage() {
                       {q.openText || <span className="italic text-slate-400">(no answer written)</span>}
                     </p>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-slate-600">Points awarded:</label>
+                    <input type="number" min={0} max={q.points} step="any"
+                      value={openPoints[q.id] ?? ''}
+                      onChange={(e) => setOpenPoints((p) => ({ ...p, [q.id]: e.target.value }))}
+                      className="w-24 rounded-xl border border-slate-200 px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none" />
+                    <span className="text-xs text-slate-500">/ {q.points} max</span>
+                  </div>
+                </div>
+              )}
+
+              {q.type === 'CODING_TASK' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-500">
+                    Grading: {q.codingTaskGradingMode ?? 'MANUAL_ONLY'}
+                    {q.codingAutoPointsEarned != null && (
+                      <span className="ml-2">
+                        · Auto from tests: {Math.round(q.codingAutoPointsEarned * 100) / 100} / {q.points}
+                      </span>
+                    )}
+                  </p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                    <p className="mb-1 text-xs font-medium text-slate-500">Student code:</p>
+                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-xs text-slate-800">{q.openText || '(empty)'}</pre>
+                  </div>
+                  {(q.codingTestStdout || q.codingTestStderr) && (
+                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                      <p className="mb-1 text-xs font-medium text-slate-500">Test output</p>
+                      <pre className="max-h-40 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-slate-700">
+                        {q.codingTestStderr?.trim() || q.codingTestStdout}
+                      </pre>
+                    </div>
+                  )}
+                  {q.codingAiReviewText && (
+                    <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2.5">
+                      <p className="mb-1 text-xs font-medium text-violet-800">AI review</p>
+                      <p className="whitespace-pre-wrap text-sm text-slate-800">{q.codingAiReviewText}</p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium text-slate-600">Points awarded:</label>
                     <input type="number" min={0} max={q.points} step="any"

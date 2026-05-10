@@ -894,18 +894,11 @@ Rules:
     code: string,
     testContent: string,
   ): Promise<RunCodeResponseDto> {
-    switch (language) {
-      case AssignmentLanguage.PYTHON:
-        return this.codeTestService.runPythonTests(code, testContent);
-      case AssignmentLanguage.NODE_JS:
-        return this.codeTestService.runNodeTests(code, testContent);
-      case AssignmentLanguage.JAVA:
-        return this.codeTestService.runJavaTests(code, testContent);
-      case AssignmentLanguage.DOTNET:
-        return this.codeTestService.runDotnetTests(code, testContent);
-      default:
-        throw new BadRequestException('Unsupported assignment language');
-    }
+    return this.codeTestService.runByAssignmentLanguage(
+      language,
+      code,
+      testContent,
+    );
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {

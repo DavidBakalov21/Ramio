@@ -5,19 +5,29 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { QuizQuestionType, QuizSubmissionStatus } from '@prisma/client';
+import {
+  AssignmentLanguage,
+  QuizCodingGradingMode,
+  QuizCodingTestRunStatus,
+  QuizQuestionType,
+  QuizSubmissionStatus,
+} from '@prisma/client';
 import sharp from 'sharp';
 import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { CodeTestService } from '../code-test/code-test.service';
+import type { RunCodeResponseDto } from '../code-test/dto/run-code.dto';
 import type { CreateQuizDto } from './dto/create-quiz.dto';
 import type { UpdateQuizDto } from './dto/update-quiz.dto';
 import type { SaveQuizAnswersDto } from './dto/save-quiz-answers.dto';
 import type { AssessQuizSubmissionDto } from './dto/assess-quiz-submission.dto';
 import type { GenerateQuizDto } from './dto/generate-quiz.dto';
+import type { RunQuizCodingTaskDto } from './dto/run-quiz-coding-task.dto';
 
 const QUIZ_IMAGES_BUCKET = 'ramio-images';
+const QUIZ_STORE_LOG_MAX_CHARS = 12_000;
 const MAX_IMAGE_DIMENSION = 1920;
 const ALLOWED_IMAGE_MIMES = [
   'image/jpeg',
@@ -26,6 +36,50 @@ const ALLOWED_IMAGE_MIMES = [
   'image/gif',
 ];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+/** When AI emits CODING_TASK without tests, normalization applies this runnable stub so import still works */
+const FALLBACK_AI_CODING_PYTHON_TESTS = `import unittest
+import solution
+
+class TestQuiz(unittest.TestCase):
+    def test_stub(self):
+        self.assertIsNotNone(solution)
+`;
+const FALLBACK_AI_CODING_PYTHON_STARTER = `# solution.py — define symbols your tests import.\n`;
+
+function fallbackGeneratedTeacherTests(
+  lang: AssignmentLanguage,
+): string {
+  switch (lang) {
+    case AssignmentLanguage.PYTHON:
+      return FALLBACK_AI_CODING_PYTHON_TESTS;
+    default:
+      return '// Replace with teacher tests that match Ramio runners for this language.\n';
+  }
+}
+
+function fallbackGeneratedStarterCode(lang: AssignmentLanguage): string {
+  switch (lang) {
+    case AssignmentLanguage.PYTHON:
+      return FALLBACK_AI_CODING_PYTHON_STARTER;
+    case AssignmentLanguage.NODE_JS:
+      return '// solution.js — exports required by your tests.\n';
+    case AssignmentLanguage.JAVA:
+      return '// Solution.java — define the class your tests expect.\n';
+    case AssignmentLanguage.DOTNET:
+      return '// Solution.cs — define types your tests expect.\n';
+    default:
+      return '';
+  }
+}
+
+/** Short rules so generated Python tests execute in Ramio's Docker unittest discover runner */
+const GENERATE_PYTHON_UNITTEST_HINT = `
+Ramio executes Python coding tasks using stdlib unittest only (never pytest): student file solution.py beside test_solution.py, run via unittest discover. Tests MUST use:
+  import unittest
+  import solution (or from solution import Name)
+and class(es) subclassing unittest.TestCase with methods named test_* at module top level. Do not nest TestCase classes under if __name__ == '__main__':
+`.trim();
+
 const GeneratedQuizAnswerSchema = z
   .object({
     text: z.string().trim().min(1).max(1000),
@@ -42,8 +96,57 @@ const GeneratedQuizQuestionSchema = z
     text: z.string().trim().min(1).max(2000),
     points: z.coerce.number().finite().min(0),
     answers: z.array(GeneratedQuizAnswerSchema).max(6).default([]),
+    codingTaskLanguage: z
+      .preprocess(
+        (v) =>
+          v === undefined || v === null
+            ? undefined
+            : typeof v === 'string'
+              ? v.toUpperCase()
+              : v,
+        z.nativeEnum(AssignmentLanguage).optional(),
+      )
+      .optional(),
+    codingTaskStarterCode: z.string().max(100_000).optional(),
+    codingTaskTeacherTests: z.string().max(100_000).optional(),
+    codingTaskGradingMode: z
+      .preprocess(
+        (v) =>
+          v === undefined || v === null
+            ? undefined
+            : typeof v === 'string'
+              ? v.toUpperCase()
+              : v,
+        z.nativeEnum(QuizCodingGradingMode).optional(),
+      )
+      .optional(),
+    codingTaskAiReviewEnabled: z.boolean().optional(),
+    codingTaskAiReviewRubric: z.string().max(4000).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((q, ctx) => {
+    const hasCodingField =
+      q.codingTaskLanguage !== undefined ||
+      (q.codingTaskStarterCode !== undefined &&
+        q.codingTaskStarterCode.trim().length > 0) ||
+      (q.codingTaskTeacherTests !== undefined &&
+        q.codingTaskTeacherTests.trim().length > 0) ||
+      q.codingTaskGradingMode !== undefined ||
+      q.codingTaskAiReviewEnabled !== undefined ||
+      (q.codingTaskAiReviewRubric !== undefined &&
+        q.codingTaskAiReviewRubric.trim().length > 0);
+    if (
+      q.type !== QuizQuestionType.CODING_TASK &&
+      hasCodingField
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'codingTask* keys are only allowed when type is CODING_TASK',
+        path: ['type'],
+      });
+    }
+  });
 
 const GeneratedQuizSchema = z
   .object({
@@ -61,6 +164,7 @@ export class QuizService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly bedrock: BedrockService,
+    private readonly codeTestService: CodeTestService,
   ) {}
 
   // ─── Upload image ────────────────────────────────────────────────────────
@@ -105,6 +209,21 @@ export class QuizService {
   async create(teacherId: bigint, dto: CreateQuizDto) {
     await this.assertTeacherOwnsCourse(BigInt(dto.courseId), teacherId);
 
+    for (const q of dto.questions ?? []) {
+      if (q.type === QuizQuestionType.CODING_TASK) {
+        if (!q.codingTaskLanguage) {
+          throw new BadRequestException(
+            'Coding task questions must include codingTaskLanguage',
+          );
+        }
+        if (!q.codingTaskTeacherTests?.trim()) {
+          throw new BadRequestException(
+            'Coding task questions must include non-empty codingTaskTeacherTests',
+          );
+        }
+      }
+    }
+
     const deadline =
       dto.deadline != null ? new Date(dto.deadline * 1000) : null;
 
@@ -125,8 +244,23 @@ export class QuizService {
             points: q.points,
             order: q.order,
             imageUrl: q.imageUrl ?? null,
+            ...(q.type === QuizQuestionType.CODING_TASK
+              ? {
+                  codingTaskLanguage: q.codingTaskLanguage as AssignmentLanguage,
+                  codingTaskStarterCode: q.codingTaskStarterCode ?? null,
+                  codingTaskTeacherTests:
+                    q.codingTaskTeacherTests?.trim() ?? null,
+                  codingTaskGradingMode:
+                    q.codingTaskGradingMode ??
+                    QuizCodingGradingMode.MANUAL_ONLY,
+                  codingTaskAiReviewEnabled: q.codingTaskAiReviewEnabled ?? false,
+                  codingTaskAiReviewRubric: q.codingTaskAiReviewRubric ?? null,
+                }
+              : {}),
             answers:
-              q.type !== QuizQuestionType.OPEN_ANSWER && q.answers?.length
+              q.type !== QuizQuestionType.OPEN_ANSWER &&
+              q.type !== QuizQuestionType.CODING_TASK &&
+              q.answers?.length
                 ? {
                     create: q.answers.map((a) => ({
                       text: a.text,
@@ -158,26 +292,46 @@ export class QuizService {
       throw new BadRequestException('Prompt is required');
     }
 
-    const aiPrompt = `Generate a quiz draft as strict JSON only.
+    const aiPrompt = `You create quiz drafts from what an instructor wants. Follow their briefing loosely: infer topic, difficulty, languages, mix of factual vs reasoning vs coding, and point weights if they omit details.
 
-Teacher request:
+"""Instructor briefing (plain language—they are NOT responsible for formatting your reply):"""
 ${prompt}
+"""
 
-Requirements:
-- Return exactly one JSON object.
-- Object keys: title (string), description (string), questions (array).
-- Create exactly ${requestedCount} questions.
-- Each question: type ("ONE_ANSWER" | "MULTI_ANSWER" | "OPEN_ANSWER"), text (string), points (number >= 0), answers (array).
-- For OPEN_ANSWER, answers must be [].
-- For ONE_ANSWER and MULTI_ANSWER, answers must have 2-6 items.
-- Each answer: text (string), isCorrect (boolean).
-- ONE_ANSWER must have exactly one correct answer.
-- MULTI_ANSWER must have at least one correct answer.
-- Keep question text concise and classroom-appropriate.
-- Do not include markdown code fences.
-- Do not include any additional keys.`;
+Aim for about ${requestedCount} questions unless the briefing clearly implies a different number.
 
-    const raw = await this.bedrock.invoke(aiPrompt, 4096);
+When the briefing mentions coding, labs, implementations, functions, programs, \"write code\", debugger-style tasks, or autograding, include one or more CODING_TASK questions with clear specs in plain language in \"text\". Otherwise use multiple choice / short answer types as fits.
+
+Coding tasks: infer programming language from context (assume PYTHON when unclear). Supply starter scaffolding and runnable teacher-side tests—not just a vague description—together with sensible defaults for grading unless the briefing contradicts.
+
+---
+
+Your reply for the grading app (machine-readable):
+
+Return a single parsed JSON object and nothing else: no preamble, apologies, headings, markdown fences, or trailing commentary.
+
+Structure:
+• title — string  
+• description — string (can summarize the briefing)  
+• questions — array; each element has:
+
+  • type: ONE_ANSWER | MULTI_ANSWER | OPEN_ANSWER | CODING_TASK  
+  • text — what the learner sees  
+  • points — number ≥ 0 (weight coding heavier if appropriate)  
+  • answers — for EVERY question: array. Use [] only for OPEN_ANSWER or CODING_TASK. For ONE_ANSWER and MULTI_ANSWER use 2–6 answers { text, isCorrect }; ONE_ANSWER has exactly one correct, MULTI_ANSWER at least one.
+
+  For each CODING_TASK also include strings:
+    • codingTaskLanguage — PYTHON | NODE_JS | JAVA | DOTNET  
+    • codingTaskStarterCode — what appears in their editor initially (embed newlines inside the JSON string); may be stubs or hints  
+    • codingTaskTeacherTests — full runnable test source in that language as one JSON string  
+
+  Optionally for CODING_TASK: codingTaskGradingMode (MANUAL_ONLY | TESTS_ONLY only; default sensible), codingTaskAiReviewEnabled boolean, codingTaskAiReviewRubric short optional string.
+
+Python tests must match this runtime (${GENERATE_PYTHON_UNITTEST_HINT}).
+
+Prefer concise wording; classroom-appropriate. Escape characters so the whole response is valid JSON.`;
+
+    const raw = await this.bedrock.invoke(aiPrompt, 10_000);
     const parsed = this.parseGeneratedQuiz(raw);
     const validated = this.validateGeneratedQuiz(parsed);
 
@@ -362,35 +516,11 @@ Requirements:
       include: { selectedAnswers: true },
     });
 
-    let totalPoints = 0;
-    for (const question of quiz.questions) {
-      const subAnswer = savedAnswers.find((a) => a.questionId === question.id);
-      if (question.type === QuizQuestionType.OPEN_ANSWER) continue;
-
-      const selectedIds = subAnswer?.selectedAnswers.map((a) => a.id) ?? [];
-      const earned = this.calculatePoints(
-        question,
-        question.answers,
-        selectedIds,
-      );
-
-      await this.prisma.quizSubmissionAnswer.upsert({
-        where: {
-          submissionId_questionId: {
-            submissionId: submission.id,
-            questionId: question.id,
-          },
-        },
-        create: {
-          submissionId: submission.id,
-          questionId: question.id,
-          pointsEarned: earned,
-        },
-        update: { pointsEarned: earned },
-      });
-
-      totalPoints += earned;
-    }
+    const totalPoints = await this.applyAutoGradedScores(
+      submission.id,
+      quiz,
+      savedAnswers,
+    );
 
     const updated = await this.prisma.quizSubmission.update({
       where: { id: submission.id },
@@ -431,32 +561,11 @@ Requirements:
       include: { selectedAnswers: true },
     });
 
-    let totalPoints = 0;
-    for (const question of quiz.questions) {
-      if (question.type === QuizQuestionType.OPEN_ANSWER) continue;
-      const subAnswer = savedAnswers.find((a) => a.questionId === question.id);
-      const selectedIds = subAnswer?.selectedAnswers.map((a) => a.id) ?? [];
-      const earned = this.calculatePoints(
-        question,
-        question.answers,
-        selectedIds,
-      );
-      await this.prisma.quizSubmissionAnswer.upsert({
-        where: {
-          submissionId_questionId: {
-            submissionId: submission.id,
-            questionId: question.id,
-          },
-        },
-        create: {
-          submissionId: submission.id,
-          questionId: question.id,
-          pointsEarned: earned,
-        },
-        update: { pointsEarned: earned },
-      });
-      totalPoints += earned;
-    }
+    const totalPoints = await this.applyAutoGradedScores(
+      submission.id,
+      quiz,
+      savedAnswers,
+    );
 
     const updated = await this.prisma.quizSubmission.update({
       where: { id: submission.id },
@@ -473,6 +582,106 @@ Requirements:
       totalPoints: updated.totalPoints,
       submittedAt: updated.submittedAt?.toISOString() ?? null,
     };
+  }
+
+  /** Student-run unit tests during an in-progress attempt (assignment-style runners). */
+  async runCodingTaskTests(
+    quizId: bigint,
+    studentId: bigint,
+    dto: RunQuizCodingTaskDto,
+  ): Promise<RunCodeResponseDto> {
+    const submission = await this.prisma.quizSubmission.findUnique({
+      where: { quizId_userId: { quizId, userId: studentId } },
+    });
+    if (!submission) throw new NotFoundException('Quiz not started');
+    if (submission.status !== QuizSubmissionStatus.IN_PROGRESS) {
+      throw new BadRequestException('Quiz already submitted');
+    }
+
+    const question = await this.prisma.quizQuestion.findFirst({
+      where: { quizId, id: BigInt(dto.questionId) },
+    });
+    if (!question || question.type !== QuizQuestionType.CODING_TASK) {
+      throw new BadRequestException('Not a coding task on this quiz');
+    }
+
+    const tests = question.codingTaskTeacherTests?.trim();
+    const lang = question.codingTaskLanguage;
+    let run: RunCodeResponseDto;
+    if (!lang || !tests) {
+      run = {
+        success: false,
+        exitCode: -1,
+        stdout: '',
+        stderr: 'This question has no runnable tests configured.',
+        timedOut: false,
+      };
+    } else {
+      await this.prisma.quizSubmissionAnswer.upsert({
+        where: {
+          submissionId_questionId: {
+            submissionId: submission.id,
+            questionId: question.id,
+          },
+        },
+        create: {
+          submissionId: submission.id,
+          questionId: question.id,
+          openText: dto.code,
+          codingTestRunStatus: QuizCodingTestRunStatus.RUNNING,
+        },
+        update: {
+          openText: dto.code,
+          codingTestRunStatus: QuizCodingTestRunStatus.RUNNING,
+        },
+      });
+      try {
+        run = await this.codeTestService.runByAssignmentLanguage(
+          lang,
+          dto.code,
+          tests,
+        );
+      } catch {
+        run = {
+          success: false,
+          exitCode: -1,
+          stdout: '',
+          stderr: 'Test runner failed unexpectedly.',
+          timedOut: false,
+        };
+      }
+    }
+
+    await this.prisma.quizSubmissionAnswer.upsert({
+      where: {
+        submissionId_questionId: {
+          submissionId: submission.id,
+          questionId: question.id,
+        },
+      },
+      create: {
+        submissionId: submission.id,
+        questionId: question.id,
+        openText: dto.code,
+        codingTestRunStatus: QuizCodingTestRunStatus.DONE,
+        codingTestStdout: this.truncateForQuizStore(run.stdout),
+        codingTestStderr: this.truncateForQuizStore(run.stderr),
+        codingTestExitCode: run.exitCode,
+        codingTestTimedOut: run.timedOut ?? false,
+        codingTestSuccess: run.success,
+      },
+      update: {
+        openText: dto.code,
+        codingTestRunStatus: QuizCodingTestRunStatus.DONE,
+        codingTestStdout: this.truncateForQuizStore(run.stdout),
+        codingTestStderr: this.truncateForQuizStore(run.stderr),
+        codingTestExitCode: run.exitCode,
+        codingTestTimedOut: run.timedOut ?? false,
+        codingTestSuccess: run.success,
+      },
+    });
+
+    return run;
   }
 
   // ─── Get own submission (student) ─────────────────────────────────────────
@@ -528,18 +737,22 @@ Requirements:
     });
 
     const totalMax = quiz.questions.reduce((s, q) => s + q.points, 0);
-    const hasOpenAnswers = quiz.questions.some(
-      (q) => q.type === QuizQuestionType.OPEN_ANSWER,
-    );
 
     return submissions.map((sub) => {
-      const openPending = hasOpenAnswers
-        ? sub.answers.some(
-            (a) =>
-              a.question.type === QuizQuestionType.OPEN_ANSWER &&
-              a.pointsEarned == null,
-          )
-        : false;
+      const manualGradingPending = sub.answers.some((a) => {
+        const t = a.question.type;
+        if (t === QuizQuestionType.OPEN_ANSWER) {
+          return a.pointsEarned == null;
+        }
+        if (t === QuizQuestionType.CODING_TASK) {
+          const mode =
+            a.question.codingTaskGradingMode ??
+            QuizCodingGradingMode.MANUAL_ONLY;
+          if (mode === QuizCodingGradingMode.TESTS_ONLY) return false;
+          return a.pointsEarned == null;
+        }
+        return false;
+      });
       return {
         id: sub.id.toString(),
         userId: sub.userId.toString(),
@@ -548,7 +761,7 @@ Requirements:
         submittedAt: sub.submittedAt?.toISOString() ?? null,
         totalPoints: sub.totalPoints,
         totalMax,
-        isFullyGraded: !openPending,
+        isFullyGraded: !manualGradingPending,
       };
     });
   }
@@ -599,6 +812,25 @@ Requirements:
         imageUrl: q.imageUrl,
         openText: subAnswer?.openText ?? null,
         pointsEarned: subAnswer?.pointsEarned ?? null,
+        ...(q.type === QuizQuestionType.CODING_TASK
+          ? {
+              codingTaskLanguage: q.codingTaskLanguage ?? null,
+              codingTaskStarterCode: q.codingTaskStarterCode ?? null,
+              codingTaskTeacherTests: q.codingTaskTeacherTests ?? null,
+              codingTaskGradingMode: q.codingTaskGradingMode ?? null,
+              codingTaskAiReviewEnabled: q.codingTaskAiReviewEnabled ?? false,
+              codingTaskAiReviewRubric: q.codingTaskAiReviewRubric ?? null,
+              codingTestStdout: subAnswer?.codingTestStdout ?? null,
+              codingTestStderr: subAnswer?.codingTestStderr ?? null,
+              codingTestExitCode: subAnswer?.codingTestExitCode ?? null,
+              codingTestTimedOut: subAnswer?.codingTestTimedOut ?? null,
+              codingTestSuccess: subAnswer?.codingTestSuccess ?? null,
+              codingAutoPointsEarned: subAnswer?.codingAutoPointsEarned ?? null,
+              codingAiReviewText: subAnswer?.codingAiReviewText ?? null,
+              codingAiReviewedAt:
+                subAnswer?.codingAiReviewedAt?.toISOString() ?? null,
+            }
+          : {}),
       };
     });
 
@@ -650,9 +882,12 @@ Requirements:
         throw new BadRequestException(
           `Question ${item.questionId} not found in this quiz`,
         );
-      if (question.type !== QuizQuestionType.OPEN_ANSWER) {
+      if (
+        question.type !== QuizQuestionType.OPEN_ANSWER &&
+        question.type !== QuizQuestionType.CODING_TASK
+      ) {
         throw new BadRequestException(
-          `Question ${item.questionId} is not an open-answer question`,
+          `Question ${item.questionId} cannot be manually assessed`,
         );
       }
       const clamped = Math.min(Math.max(item.pointsEarned, 0), question.points);
@@ -803,6 +1038,233 @@ Requirements:
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
+  private truncateForQuizStore(raw: string): string {
+    if (raw.length <= QUIZ_STORE_LOG_MAX_CHARS) return raw;
+    return `${raw.slice(0, QUIZ_STORE_LOG_MAX_CHARS)}\n…(truncated)`;
+  }
+
+  private async applyAutoGradedScores(
+    submissionId: bigint,
+    quiz: {
+      questions: Array<{
+        id: bigint;
+        type: QuizQuestionType;
+        points: number;
+        text: string;
+        answers: Array<{ id: bigint; isCorrect: boolean }>;
+        codingTaskLanguage: AssignmentLanguage | null;
+        codingTaskTeacherTests: string | null;
+        codingTaskStarterCode: string | null;
+        codingTaskGradingMode: QuizCodingGradingMode | null;
+        codingTaskAiReviewEnabled: boolean;
+        codingTaskAiReviewRubric: string | null;
+      }>;
+    },
+    savedAnswers: Array<{
+      questionId: bigint;
+      openText: string | null;
+      selectedAnswers: { id: bigint }[];
+    }>,
+  ): Promise<number> {
+    let totalPoints = 0;
+    for (const question of quiz.questions) {
+      if (question.type === QuizQuestionType.OPEN_ANSWER) {
+        continue;
+      }
+      if (question.type === QuizQuestionType.CODING_TASK) {
+        const subAnswer = savedAnswers.find(
+          (a) => a.questionId === question.id,
+        );
+        const code = subAnswer?.openText ?? null;
+        totalPoints += await this.scoreCodingSubmissionOnFinalize(
+          submissionId,
+          question,
+          code,
+        );
+        continue;
+      }
+      const subAnswer = savedAnswers.find((a) => a.questionId === question.id);
+      const selectedIds = subAnswer?.selectedAnswers.map((a) => a.id) ?? [];
+      const earned = this.calculatePoints(
+        question,
+        question.answers,
+        selectedIds,
+      );
+      await this.prisma.quizSubmissionAnswer.upsert({
+        where: {
+          submissionId_questionId: {
+            submissionId,
+            questionId: question.id,
+          },
+        },
+        create: {
+          submissionId,
+          questionId: question.id,
+          pointsEarned: earned,
+        },
+        update: { pointsEarned: earned },
+      });
+      totalPoints += earned;
+    }
+    return totalPoints;
+  }
+
+  private async scoreCodingSubmissionOnFinalize(
+    submissionId: bigint,
+    question: {
+      id: bigint;
+      points: number;
+      text: string;
+      codingTaskLanguage: AssignmentLanguage | null;
+      codingTaskTeacherTests: string | null;
+      codingTaskStarterCode: string | null;
+      codingTaskGradingMode: QuizCodingGradingMode | null;
+      codingTaskAiReviewEnabled: boolean;
+      codingTaskAiReviewRubric: string | null;
+    },
+    code: string | null,
+  ): Promise<number> {
+    const tests = question.codingTaskTeacherTests?.trim() ?? '';
+    const lang = question.codingTaskLanguage;
+    const mode =
+      question.codingTaskGradingMode ?? QuizCodingGradingMode.MANUAL_ONLY;
+
+    let run: RunCodeResponseDto;
+    if (lang && tests && code?.trim()) {
+      try {
+        run = await this.codeTestService.runByAssignmentLanguage(
+          lang,
+          code,
+          tests,
+        );
+      } catch {
+        run = {
+          success: false,
+          exitCode: -1,
+          stdout: '',
+          stderr: 'Test runner failed unexpectedly.',
+          timedOut: false,
+        };
+      }
+    } else {
+      run = {
+        success: false,
+        exitCode: -1,
+        stdout: '',
+        stderr:
+          !lang || !tests
+            ? 'Question is missing runnable tests.'
+            : 'No code submitted.',
+        timedOut: false,
+      };
+    }
+
+    const success = !!run.success;
+    const autoPts = success ? question.points : 0;
+    let pointsEarned: number | null = null;
+    if (mode === QuizCodingGradingMode.TESTS_ONLY) {
+      pointsEarned = autoPts;
+    }
+
+    await this.prisma.quizSubmissionAnswer.upsert({
+      where: {
+        submissionId_questionId: {
+          submissionId,
+          questionId: question.id,
+        },
+      },
+      create: {
+        submissionId,
+        questionId: question.id,
+        openText: code,
+        pointsEarned,
+        codingTestRunStatus: QuizCodingTestRunStatus.DONE,
+        codingTestStdout: this.truncateForQuizStore(run.stdout),
+        codingTestStderr: this.truncateForQuizStore(run.stderr),
+        codingTestExitCode: run.exitCode,
+        codingTestTimedOut: run.timedOut ?? false,
+        codingTestSuccess: success,
+        codingAutoPointsEarned: autoPts,
+      },
+      update: {
+        openText: code ?? undefined,
+        pointsEarned,
+        codingTestRunStatus: QuizCodingTestRunStatus.DONE,
+        codingTestStdout: this.truncateForQuizStore(run.stdout),
+        codingTestStderr: this.truncateForQuizStore(run.stderr),
+        codingTestExitCode: run.exitCode,
+        codingTestTimedOut: run.timedOut ?? false,
+        codingTestSuccess: success,
+        codingAutoPointsEarned: autoPts,
+      },
+    });
+
+    if (question.codingTaskAiReviewEnabled && code?.trim()) {
+      void this.maybeWriteCodingAiReview(
+        submissionId,
+        question.id,
+        question,
+        code,
+        run,
+      ).catch(() => undefined);
+    }
+
+    return pointsEarned ?? 0;
+  }
+
+  private async maybeWriteCodingAiReview(
+    submissionId: bigint,
+    questionId: bigint,
+    question: {
+      text: string;
+      codingTaskStarterCode: string | null;
+      codingTaskAiReviewRubric: string | null;
+    },
+    studentCode: string,
+    run: RunCodeResponseDto,
+  ): Promise<void> {
+    try {
+      const rubricNote = question.codingTaskAiReviewRubric
+        ? `\nTeacher focus: ${question.codingTaskAiReviewRubric}`
+        : '';
+      const hint = `${run.success ? 'Tests exited successfully.' : 'Tests reported failure or errors.'}\nExit code ${run.exitCode}\nStdout (excerpt):\n${run.stdout.slice(0, 3000)}\nStderr (excerpt):\n${run.stderr.slice(0, 3000)}`;
+
+      const prompt = `Give concise Markdown feedback on the student's quiz code. Be constructive and classroom-appropriate.${rubricNote}\nDo not reproduce hidden teacher test sources verbatim.\n\nProblem statement:\n${question.text}\n\nStarter template (may be blank):\n${question.codingTaskStarterCode ?? '(none)'}\n\nSubmitted code:\n${studentCode}\n\nRunner summary:\n${hint}`;
+
+      const text = (await this.bedrock.invoke(prompt, 2048)).trim();
+
+      await this.prisma.quizSubmissionAnswer.update({
+        where: {
+          submissionId_questionId: {
+            submissionId,
+            questionId,
+          },
+        },
+        data: {
+          codingAiReviewText:
+            text.length > 28_000
+              ? `${text.slice(0, 28_000)}\n(truncated)`
+              : text,
+          codingAiReviewedAt: new Date(),
+        },
+      });
+    } catch {
+      await this.prisma.quizSubmissionAnswer.update({
+        where: {
+          submissionId_questionId: {
+            submissionId,
+            questionId,
+          },
+        },
+        data: {
+          codingAiReviewText:
+            '*AI review unavailable. Your submission was recorded.*',
+          codingAiReviewedAt: new Date(),
+        },
+      });
+    }
+  }
+
   private calculatePoints(
     question: { type: QuizQuestionType; points: number },
     answers: { id: bigint; isCorrect: boolean }[],
@@ -832,7 +1294,13 @@ Requirements:
       where: { id: questionId },
       include: { answers: true },
     });
-    if (!question || question.type === QuizQuestionType.OPEN_ANSWER) return;
+    if (
+      !question ||
+      question.type === QuizQuestionType.OPEN_ANSWER ||
+      question.type === QuizQuestionType.CODING_TASK
+    ) {
+      return;
+    }
 
     const subAnswers = await this.prisma.quizSubmissionAnswer.findMany({
       where: { questionId },
@@ -938,6 +1406,12 @@ Requirements:
     points: number;
     order: number;
     answers: { text: string; isCorrect: boolean; order: number }[];
+    codingTaskLanguage?: AssignmentLanguage;
+    codingTaskStarterCode?: string;
+    codingTaskTeacherTests?: string;
+    codingTaskGradingMode?: QuizCodingGradingMode;
+    codingTaskAiReviewEnabled?: boolean;
+    codingTaskAiReviewRubric?: string | null;
   } | null {
     const validType = source.type;
     const text = source.text.trim().slice(0, 2000);
@@ -948,7 +1422,10 @@ Requirements:
       order: i,
     }));
 
-    if (validType === QuizQuestionType.OPEN_ANSWER) {
+    if (
+      validType === QuizQuestionType.OPEN_ANSWER ||
+      validType === QuizQuestionType.CODING_TASK
+    ) {
       answers = [];
     } else {
       answers = answers.slice(0, 6);
@@ -967,6 +1444,34 @@ Requirements:
       } else if (correctCount === 0) {
         answers[0].isCorrect = true;
       }
+    }
+
+    if (validType === QuizQuestionType.CODING_TASK) {
+      const lang =
+        source.codingTaskLanguage ?? AssignmentLanguage.PYTHON;
+      return {
+        type: validType,
+        text,
+        points,
+        order: index,
+        answers,
+        codingTaskLanguage: lang,
+        codingTaskStarterCode: (
+          source.codingTaskStarterCode?.trim() ||
+          fallbackGeneratedStarterCode(lang)
+        ).slice(0, 100_000),
+        codingTaskTeacherTests: (
+          source.codingTaskTeacherTests?.trim() ||
+          fallbackGeneratedTeacherTests(lang)
+        ).slice(0, 100_000),
+        codingTaskGradingMode:
+          source.codingTaskGradingMode ??
+          QuizCodingGradingMode.MANUAL_ONLY,
+        codingTaskAiReviewEnabled:
+          source.codingTaskAiReviewEnabled ?? false,
+        codingTaskAiReviewRubric:
+          source.codingTaskAiReviewRubric?.trim().slice(0, 4000) ?? null,
+      };
     }
 
     return {
@@ -998,6 +1503,12 @@ Requirements:
         points: number;
         order: number;
         imageUrl: string | null;
+        codingTaskLanguage?: AssignmentLanguage | null;
+        codingTaskStarterCode?: string | null;
+        codingTaskTeacherTests?: string | null;
+        codingTaskGradingMode?: QuizCodingGradingMode | null;
+        codingTaskAiReviewEnabled?: boolean;
+        codingTaskAiReviewRubric?: string | null;
         answers: {
           id: bigint;
           text: string;
@@ -1035,6 +1546,20 @@ Requirements:
           imageUrl: a.imageUrl,
           ...(includeCorrectAnswers ? { isCorrect: a.isCorrect } : {}),
         })),
+        ...(q.type === QuizQuestionType.CODING_TASK
+          ? {
+              codingTaskLanguage: q.codingTaskLanguage ?? null,
+              codingTaskStarterCode: q.codingTaskStarterCode ?? null,
+              codingTaskGradingMode: q.codingTaskGradingMode ?? null,
+              codingTaskAiReviewEnabled: q.codingTaskAiReviewEnabled ?? false,
+              ...(includeCorrectAnswers
+                ? {
+                    codingTaskTeacherTests: q.codingTaskTeacherTests ?? null,
+                    codingTaskAiReviewRubric: q.codingTaskAiReviewRubric ?? null,
+                  }
+                : {}),
+            }
+          : {}),
       })),
     };
   }
@@ -1073,6 +1598,14 @@ Requirements:
         openText: string | null;
         pointsEarned: number | null;
         selectedAnswers: { id: bigint }[];
+        codingTestStdout?: string | null;
+        codingTestStderr?: string | null;
+        codingTestExitCode?: number | null;
+        codingTestTimedOut?: boolean | null;
+        codingTestSuccess?: boolean | null;
+        codingAutoPointsEarned?: number | null;
+        codingAiReviewText?: string | null;
+        codingAiReviewedAt?: Date | null;
       }[];
     },
   ) {
@@ -1100,6 +1633,19 @@ Requirements:
         openText: subAnswer?.openText ?? null,
         ...(quiz.showPointsPerQuestion
           ? { pointsEarned: subAnswer?.pointsEarned ?? null }
+          : {}),
+        ...(q.type === QuizQuestionType.CODING_TASK
+          ? {
+              codingTestStdout: subAnswer?.codingTestStdout ?? null,
+              codingTestStderr: subAnswer?.codingTestStderr ?? null,
+              codingTestExitCode: subAnswer?.codingTestExitCode ?? null,
+              codingTestTimedOut: subAnswer?.codingTestTimedOut ?? null,
+              codingTestSuccess: subAnswer?.codingTestSuccess ?? null,
+              codingAutoPointsEarned: subAnswer?.codingAutoPointsEarned ?? null,
+              codingAiReviewText: subAnswer?.codingAiReviewText ?? null,
+              codingAiReviewedAt:
+                subAnswer?.codingAiReviewedAt?.toISOString() ?? null,
+            }
           : {}),
       };
     });

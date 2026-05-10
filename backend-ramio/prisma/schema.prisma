@@ -279,6 +279,19 @@ enum QuizQuestionType {
   ONE_ANSWER
   MULTI_ANSWER
   OPEN_ANSWER
+  CODING_TASK
+}
+
+enum QuizCodingGradingMode {
+  MANUAL_ONLY
+  TESTS_ONLY
+}
+
+enum QuizCodingTestRunStatus {
+  PENDING
+  RUNNING
+  DONE
+  ERROR
 }
 
 enum QuizSubmissionStatus {
@@ -305,14 +318,20 @@ model Quiz {
 }
 
 model QuizQuestion {
-  id       BigInt           @id @default(autoincrement())
-  quizId   BigInt
-  quiz     Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  type     QuizQuestionType
-  text     String           @db.Text
-  points   Float
-  order    Int
-  imageUrl String?          @db.Text
+  id                      BigInt                 @id @default(autoincrement())
+  quizId                  BigInt
+  quiz                    Quiz                   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type                    QuizQuestionType
+  text                    String                 @db.Text
+  points                  Float
+  order                   Int
+  imageUrl                String?                @db.Text
+  codingTaskLanguage      AssignmentLanguage?
+  codingTaskStarterCode   String?                @db.LongText
+  codingTaskTeacherTests  String?                @db.LongText
+  codingTaskGradingMode   QuizCodingGradingMode?
+  codingTaskAiReviewEnabled Boolean              @default(false)
+  codingTaskAiReviewRubric  String?              @db.Text
 
   answers           QuizAnswer[]
   submissionAnswers QuizSubmissionAnswer[]
@@ -355,6 +374,16 @@ model QuizSubmissionAnswer {
   question     QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
   openText     String?        @db.Text
   pointsEarned Float?
+
+  codingTestRunStatus   QuizCodingTestRunStatus?
+  codingTestStdout      String?                 @db.Text
+  codingTestStderr      String?                 @db.Text
+  codingTestExitCode    Int?
+  codingTestTimedOut    Boolean?
+  codingTestSuccess     Boolean?
+  codingAutoPointsEarned Float?
+  codingAiReviewText    String?               @db.LongText
+  codingAiReviewedAt    DateTime?
 
   selectedAnswers QuizAnswer[] @relation("SelectedQuizAnswers")
 

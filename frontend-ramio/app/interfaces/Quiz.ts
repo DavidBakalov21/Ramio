@@ -1,5 +1,19 @@
-export type QuizQuestionType = 'ONE_ANSWER' | 'MULTI_ANSWER' | 'OPEN_ANSWER';
+import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
+
+export type QuizQuestionType =
+  | 'ONE_ANSWER'
+  | 'MULTI_ANSWER'
+  | 'OPEN_ANSWER'
+  | 'CODING_TASK';
+
+export type QuizCodingGradingMode = 'MANUAL_ONLY' | 'TESTS_ONLY';
+
 export type QuizSubmissionStatus = 'IN_PROGRESS' | 'SUBMITTED';
+
+/** Open-ended text/code — no MC options; submission uses openText */
+export function isQuizOpenStyleQuestion(type: QuizQuestionType): boolean {
+  return type === 'OPEN_ANSWER' || type === 'CODING_TASK';
+}
 
 export interface QuizAnswer {
   id: string;
@@ -10,7 +24,7 @@ export interface QuizAnswer {
   isSelected?: boolean;
 }
 
-export interface QuizQuestion {
+export interface QuizQuestionBase {
   id: string;
   type: QuizQuestionType;
   text: string;
@@ -18,6 +32,15 @@ export interface QuizQuestion {
   order: number;
   imageUrl?: string | null;
   answers: QuizAnswer[];
+  codingTaskLanguage?: AssignmentLanguage | null;
+  codingTaskStarterCode?: string | null;
+  codingTaskTeacherTests?: string | null;
+  codingTaskGradingMode?: QuizCodingGradingMode | null;
+  codingTaskAiReviewEnabled?: boolean;
+  codingTaskAiReviewRubric?: string | null;
+}
+
+export interface QuizQuestion extends QuizQuestionBase {
   openText?: string | null;
   pointsEarned?: number | null;
 }
@@ -64,6 +87,17 @@ export interface QuizSubmissionSummary {
   isFullyGraded: boolean;
 }
 
+export interface QuizCodingAnswerMeta {
+  codingTestStdout?: string | null;
+  codingTestStderr?: string | null;
+  codingTestExitCode?: number | null;
+  codingTestTimedOut?: boolean | null;
+  codingTestSuccess?: boolean | null;
+  codingAutoPointsEarned?: number | null;
+  codingAiReviewText?: string | null;
+  codingAiReviewedAt?: string | null;
+}
+
 export interface QuizSubmissionDetail {
   id: string;
   quizId: string;
@@ -74,24 +108,10 @@ export interface QuizSubmissionDetail {
   submittedAt: string | null;
   totalPoints: number | null;
   totalMax: number;
-  questions: {
-    id: string;
-    type: QuizQuestionType;
-    text: string;
-    points: number;
-    order: number;
-    imageUrl?: string | null;
-    answers: {
-      id: string;
-      text: string;
-      order: number;
-      imageUrl?: string | null;
-      isCorrect: boolean;
-      isSelected: boolean;
-    }[];
+  questions: (QuizQuestionBase & {
     openText: string | null;
     pointsEarned: number | null;
-  }[];
+  } & QuizCodingAnswerMeta)[];
 }
 
 export interface OwnQuizSubmission {
@@ -104,22 +124,16 @@ export interface OwnQuizSubmission {
   allowReview: boolean;
   showCorrectAnswers: boolean;
   showPointsPerQuestion: boolean;
-  questions: {
-    id: string;
-    type: QuizQuestionType;
-    text: string;
-    points: number;
-    order: number;
-    imageUrl?: string | null;
-    answers: {
-      id: string;
-      text: string;
-      order: number;
-      imageUrl?: string | null;
-      isSelected: boolean;
-      isCorrect?: boolean;
-    }[];
+  questions: (QuizQuestionBase & {
     openText: string | null;
     pointsEarned?: number | null;
-  }[];
+  } & QuizCodingAnswerMeta)[];
+}
+
+export interface RunQuizCodeResult {
+  success: boolean;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  timedOut?: boolean;
 }
