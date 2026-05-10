@@ -305,7 +305,9 @@ export default function NewQuizPage() {
                 codingTaskTeacherTests: q.codingTaskTeacherTests!.trim(),
                 codingTaskGradingMode: q.codingTaskGradingMode,
                 codingTaskAiReviewEnabled: !!q.codingTaskAiReviewEnabled,
-                codingTaskAiReviewRubric: q.codingTaskAiReviewRubric?.trim() || undefined,
+                codingTaskAiReviewRubric: q.codingTaskAiReviewEnabled
+                  ? q.codingTaskAiReviewRubric?.trim() || undefined
+                  : undefined,
               }
             : {}),
         })),
@@ -555,22 +557,24 @@ export default function NewQuizPage() {
                       />
                       <span className="text-sm text-slate-700">AI code review after submit</span>
                     </label>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">
-                        AI review hints (optional)
-                      </label>
-                      <p className="mb-1.5 text-xs text-slate-500">
-                        Saved with this question either way; Bedrock reads them only when AI review above is on.
-                      </p>
-                      <textarea
-                        value={q.codingTaskAiReviewRubric ?? ''}
-                        onChange={(e) =>
-                          updateQuestion(qi, { codingTaskAiReviewRubric: e.target.value })}
-                        rows={2}
-                        maxLength={4000}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                      />
-                    </div>
+                    {q.codingTaskAiReviewEnabled && (
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600">
+                          AI review hints (optional)
+                        </label>
+                        <p className="mb-1.5 text-xs text-slate-500">
+                          Extra guidance sent to the model with the problem and test output.
+                        </p>
+                        <textarea
+                          value={q.codingTaskAiReviewRubric ?? ''}
+                          onChange={(e) =>
+                            updateQuestion(qi, { codingTaskAiReviewRubric: e.target.value })}
+                          rows={2}
+                          maxLength={4000}
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
