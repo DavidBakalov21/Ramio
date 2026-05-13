@@ -44,6 +44,7 @@ export interface ProjectSubmissionListItem {
   codeBuildTestsFailed?: number | null;
   codeBuildTestsSkipped?: number | null;
   codeBuildTestMetricsAt?: string | null;
+  githubRepoUrl?: string | null;
   user: {
     id: string;
     username: string | null;

@@ -17,10 +17,12 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
+import { GithubRepoToS3Service } from './github-repo-to-s3.service';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { AssessSubmissionDto } from '../assignment/dto/assess-submission.dto';
 import type { CreateFileCommentDto } from './dto/create-file-comment.dto';
+import type { GithubSubmissionDto } from './dto/github-submission.dto';
 
 const CODE_EXTENSIONS = new Set([
   '.py', '.js', '.ts', '.jsx', '.tsx', '.cs', '.java', '.cpp', '.cc', '.c',
@@ -88,6 +90,7 @@ export class ProjectService {
     private readonly bedrock: BedrockService,
     private readonly codeBuild: CodeBuildService,
     private readonly projectZipToPrompt: ProjectZipToPromptService,
+    private readonly githubRepoToS3: GithubRepoToS3Service,
   ) {
     this.fileBucket =
       this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ??
@@ -319,6 +322,114 @@ export class ProjectService {
     const updated = await this.prisma.projectSubmission.update({
       where: { id: submission.id },
       data: { url, key, name, completedAt: new Date() },
+      include: { project: true, user: true },
+    });
+
+    return this.toSubmissionResponse(updated);
+  }
+
+  async createSubmissionFromGithub(
+    projectId: bigint,
+    studentId: bigint,
+    dto: GithubSubmissionDto,
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { course: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId: studentId, courseId: project.courseId },
+      },
+    });
+    if (!enrollment) {
+      throw new ForbiddenException(
+        'You must be enrolled in this course to submit',
+      );
+    }
+
+    const existing = await this.prisma.projectSubmission.findUnique({
+      where: { projectId_userId: { projectId, userId: studentId } },
+    });
+    if (existing) {
+      throw new ConflictException('You have already submitted this project');
+    }
+
+    const key = `project-submissions/${projectId}/${studentId}/repo.zip`;
+    const { url } = await this.githubRepoToS3.invokeGithubRepoToS3(
+      dto.repoUrl,
+      this.fileBucket,
+      key,
+      dto.branch,
+    );
+
+    const submission = await this.prisma.projectSubmission.create({
+      data: {
+        projectId,
+        userId: studentId,
+        url,
+        key,
+        name: 'repo.zip',
+        teacherFeedback: '',
+        githubRepoUrl: dto.repoUrl,
+      },
+      include: { project: true, user: true },
+    });
+
+    return this.toSubmissionResponse(submission);
+  }
+
+  async updateSubmissionFromGithub(
+    projectId: bigint,
+    studentId: bigint,
+    dto: GithubSubmissionDto,
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { course: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId: studentId, courseId: project.courseId },
+      },
+    });
+    if (!enrollment) {
+      throw new ForbiddenException(
+        'You must be enrolled in this course to submit',
+      );
+    }
+
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { projectId_userId: { projectId, userId: studentId } },
+      include: { project: true, user: true },
+    });
+    if (!submission) {
+      throw new NotFoundException('You have not submitted this project yet');
+    }
+
+    await this.storage.deleteFile(submission.key, this.fileBucket);
+
+    const key = `project-submissions/${projectId}/${studentId}/repo.zip`;
+    const { url } = await this.githubRepoToS3.invokeGithubRepoToS3(
+      dto.repoUrl,
+      this.fileBucket,
+      key,
+      dto.branch,
+    );
+
+    const updated = await this.prisma.projectSubmission.update({
+      where: { id: submission.id },
+      data: {
+        url,
+        key,
+        name: 'repo.zip',
+        githubRepoUrl: dto.repoUrl,
+        completedAt: new Date(),
+      },
       include: { project: true, user: true },
     });
 
@@ -1029,6 +1140,7 @@ export class ProjectService {
     codeBuildTestsFailed?: number | null;
     codeBuildTestsSkipped?: number | null;
     codeBuildTestMetricsAt?: Date | null;
+    githubRepoUrl?: string | null;
   }) {
     return {
       id: s.id.toString(),
@@ -1052,6 +1164,7 @@ export class ProjectService {
       codeBuildTestsFailed: s.codeBuildTestsFailed ?? null,
       codeBuildTestsSkipped: s.codeBuildTestsSkipped ?? null,
       codeBuildTestMetricsAt: s.codeBuildTestMetricsAt?.toISOString() ?? null,
+      githubRepoUrl: s.githubRepoUrl ?? null,
     };
   }
 }

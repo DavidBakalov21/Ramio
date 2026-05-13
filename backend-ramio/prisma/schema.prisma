@@ -197,6 +197,7 @@ model ProjectSubmission {
   codeBuildTestsFailed  Int?
   codeBuildTestsSkipped Int?
   codeBuildTestMetricsAt DateTime?
+  githubRepoUrl          String?   @db.VarChar(1024)
   fileComments           ProjectFileComment[]
 
   @@unique([projectId, userId])

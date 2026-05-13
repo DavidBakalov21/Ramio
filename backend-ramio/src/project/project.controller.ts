@@ -21,6 +21,7 @@ import { AssessSubmissionDto } from '../assignment/dto/assess-submission.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateFileCommentDto } from './dto/create-file-comment.dto';
+import { GithubSubmissionDto } from './dto/github-submission.dto';
 import { ProjectService } from './project.service';
 
 @Controller('project')
@@ -185,6 +186,34 @@ export class ProjectController {
       throw new BadRequestException('Upload one project archive');
     }
     return this.projectService.updateSubmission(BigInt(id), user.id, files);
+  }
+
+  @Post(':id/submission/github')
+  @Roles(UserRole.STUDENT)
+  createGithubSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: GithubSubmissionDto,
+  ) {
+    return this.projectService.createSubmissionFromGithub(
+      BigInt(id),
+      user.id,
+      dto,
+    );
+  }
+
+  @Patch(':id/submission/github')
+  @Roles(UserRole.STUDENT)
+  updateGithubSubmission(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: GithubSubmissionDto,
+  ) {
+    return this.projectService.updateSubmissionFromGithub(
+      BigInt(id),
+      user.id,
+      dto,
+    );
   }
 
   @Post(':id/submission/:submissionId/ai-feedback')

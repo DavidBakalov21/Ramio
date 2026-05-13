@@ -13,6 +13,8 @@ import { ProjectFileViewer } from '@/app/components/projects/ProjectFileViewer';
 const ARCHIVE_ACCEPT =
   '.zip,.tar.gz,.tgz,.tar,.rar,.7z,.tar.bz2,.tbz2,application/zip,application/x-zip-compressed';
 
+type SubmissionMethod = 'upload' | 'github';
+
 export default function ProjectUploadPage() {
   const params = useParams();
   const router = useRouter();
@@ -25,6 +27,9 @@ export default function ProjectUploadPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingProject, setLoadingProject] = useState(true);
   const [file, setFile] = useState<File | null>(null);
+  const [submissionMethod, setSubmissionMethod] = useState<SubmissionMethod>('upload');
+  const [repoUrl, setRepoUrl] = useState('');
+  const [repoBranch, setRepoBranch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -79,26 +84,44 @@ export default function ProjectUploadPage() {
   }, [projectId, project?.submitted, user?.role]);
 
   const handleSubmit = async () => {
-    if (!project || !file) return;
+    if (!project) return;
+    if (submissionMethod === 'upload' && !file) return;
+    if (submissionMethod === 'github' && !repoUrl.trim()) return;
+
     setError('');
     setIsSubmitting(true);
     const isUpdate = !!project.submitted;
+
     try {
-      const formData = new FormData();
-      formData.append('files', file);
-      if (isUpdate) {
-        await api.patch(`/project/${projectId}/submission`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        showToast('Submission updated.', 'success');
+      if (submissionMethod === 'github') {
+        const body: { repoUrl: string; branch?: string } = { repoUrl: repoUrl.trim() };
+        if (repoBranch.trim()) body.branch = repoBranch.trim();
+        if (isUpdate) {
+          await api.patch(`/project/${projectId}/submission/github`, body);
+          showToast('Submission updated from GitHub.', 'success');
+        } else {
+          await api.post(`/project/${projectId}/submission/github`, body);
+          showToast('Project submitted from GitHub successfully.', 'success');
+          setProject((prev) => (prev ? { ...prev, submitted: true } : null));
+        }
       } else {
-        await api.post(`/project/${projectId}/submission`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        showToast('Project submitted successfully.', 'success');
-        setProject((prev) => (prev ? { ...prev, submitted: true } : null));
+        const formData = new FormData();
+        formData.append('files', file!);
+        if (isUpdate) {
+          await api.patch(`/project/${projectId}/submission`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          showToast('Submission updated.', 'success');
+        } else {
+          await api.post(`/project/${projectId}/submission`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          showToast('Project submitted successfully.', 'success');
+          setProject((prev) => (prev ? { ...prev, submitted: true } : null));
+        }
+        setFile(null);
       }
-      setFile(null);
+
       const subRes = await api.get<ProjectSubmissionDetail>(`/project/${projectId}/submission`);
       setSubmission(subRes.data);
     } catch (err: unknown) {
@@ -204,16 +227,27 @@ export default function ProjectUploadPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Your submitted archive
+                      Your submitted {submission.githubRepoUrl ? 'repository' : 'archive'}
                     </p>
-                    <a
-                      href={submission.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-block text-sm font-medium text-violet-600 hover:underline"
-                    >
-                      {submission.name}
-                    </a>
+                    {submission.githubRepoUrl ? (
+                      <a
+                        href={submission.githubRepoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block text-sm font-medium text-violet-600 hover:underline"
+                      >
+                        {submission.githubRepoUrl}
+                      </a>
+                    ) : (
+                      <a
+                        href={submission.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block text-sm font-medium text-violet-600 hover:underline"
+                      >
+                        {submission.name}
+                      </a>
+                    )}
                   </div>
                   <ProjectFileViewer
                     submissionId={submission.id}
@@ -223,23 +257,32 @@ export default function ProjectUploadPage() {
                 </div>
               ) : isStudent ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-600">
-                    Upload <strong>one</strong> archive file (.zip, .tar.gz, .rar, .7z, etc.).
-                  </p>
+                  {/* Current submission banner */}
                   {project.submitted && submission && (
                     <div className="space-y-3">
                       <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
-                        <p className="text-xs font-medium text-slate-500">Current file</p>
-                        <a
-                          href={submission.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 inline-block font-medium text-violet-600 hover:underline"
-                        >
-                          {submission.name}
-                        </a>
+                        <p className="text-xs font-medium text-slate-500">Current submission</p>
+                        {submission.githubRepoUrl ? (
+                          <a
+                            href={submission.githubRepoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block font-medium text-violet-600 hover:underline"
+                          >
+                            {submission.githubRepoUrl}
+                          </a>
+                        ) : (
+                          <a
+                            href={submission.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block font-medium text-violet-600 hover:underline"
+                          >
+                            {submission.name}
+                          </a>
+                        )}
                         <p className="mt-2 text-xs text-slate-500">
-                          Choose a new file below to replace your submission.
+                          Choose a new submission below to replace it.
                         </p>
                       </div>
                       <ProjectFileViewer
@@ -249,35 +292,114 @@ export default function ProjectUploadPage() {
                       />
                     </div>
                   )}
-                  <div>
-                    <label
-                      htmlFor="project-archive"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+
+                  {/* Submission method tabs */}
+                  <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => { setSubmissionMethod('upload'); setError(''); }}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        submissionMethod === 'upload'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
                     >
-                      {project.submitted ? 'New archive' : 'Project archive'}
-                    </label>
-                    <input
-                      id="project-archive"
-                      type="file"
-                      accept={ARCHIVE_ACCEPT}
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                      className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-amber-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-amber-900 hover:file:bg-amber-200"
-                    />
+                      Upload archive
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSubmissionMethod('github'); setError(''); }}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        submissionMethod === 'github'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      GitHub repo
+                    </button>
                   </div>
+
+                  {/* Upload panel */}
+                  {submissionMethod === 'upload' && (
+                    <div>
+                      <label
+                        htmlFor="project-archive"
+                        className="mb-2 block text-sm font-medium text-slate-700"
+                      >
+                        {project.submitted ? 'New archive' : 'Project archive'}
+                      </label>
+                      <input
+                        id="project-archive"
+                        type="file"
+                        accept={ARCHIVE_ACCEPT}
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-amber-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-amber-900 hover:file:bg-amber-200"
+                      />
+                    </div>
+                  )}
+
+                  {/* GitHub panel */}
+                  {submissionMethod === 'github' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label
+                          htmlFor="repo-url"
+                          className="mb-1.5 block text-sm font-medium text-slate-700"
+                        >
+                          Repository URL
+                        </label>
+                        <input
+                          id="repo-url"
+                          type="url"
+                          placeholder="https://github.com/owner/repo"
+                          value={repoUrl}
+                          onChange={(e) => setRepoUrl(e.target.value)}
+                          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        />
+                        <p className="mt-1 text-xs text-slate-400">
+                          Must be a public repository on github.com
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="repo-branch"
+                          className="mb-1.5 block text-sm font-medium text-slate-700"
+                        >
+                          Branch <span className="font-normal text-slate-400">(optional, defaults to default branch)</span>
+                        </label>
+                        <input
+                          id="repo-branch"
+                          type="text"
+                          placeholder="main"
+                          value={repoBranch}
+                          onChange={(e) => setRepoBranch(e.target.value)}
+                          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {error && (
                     <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>
                   )}
+
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={() => void handleSubmit()}
-                      disabled={isSubmitting || !file}
+                      disabled={
+                        isSubmitting ||
+                        (submissionMethod === 'upload' && !file) ||
+                        (submissionMethod === 'github' && !repoUrl.trim())
+                      }
                       className="rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSubmitting
-                        ? project.submitted
-                          ? 'Updating…'
-                          : 'Submitting…'
+                        ? submissionMethod === 'github'
+                          ? 'Cloning repo…'
+                          : project.submitted
+                            ? 'Updating…'
+                            : 'Submitting…'
                         : project.submitted
                           ? 'Update submission'
                           : 'Submit project'}
