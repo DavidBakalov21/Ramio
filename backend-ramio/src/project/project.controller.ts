@@ -67,6 +67,17 @@ export class ProjectController {
     );
   }
 
+  @Get('submission/:submissionId/commits')
+  getSubmissionCommits(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.getSubmissionCommits(
+      BigInt(submissionId),
+      user.id,
+    );
+  }
+
   @Get('submission/:submissionId/comments')
   getFileComments(
     @Param('submissionId', ParseIntPipe) submissionId: number,

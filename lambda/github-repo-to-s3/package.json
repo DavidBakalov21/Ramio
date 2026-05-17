@@ -2,7 +2,7 @@
   "name": "github-repo-to-s3",
   "version": "1.0.0",
   "private": true,
-  "description": "Clone a public GitHub repo archive and upload it to S3 for Ramio project submissions",
+  "description": "Clone a public GitHub repo with full git history and upload as zip to S3 for Ramio project submissions",
   "main": "index.mjs",
   "type": "module",
   "scripts": {

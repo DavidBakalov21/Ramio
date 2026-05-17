@@ -70,6 +70,20 @@ export interface SubmissionFileEntry {
   size: number;
 }
 
+export interface SubmissionCommitEntry {
+  oid: string;
+  shortOid: string;
+  message: string;
+  authorName: string;
+  authorEmail: string;
+  committedAt: string;
+}
+
+export interface SubmissionCommitsResponse {
+  hasGitHistory: boolean;
+  commits: SubmissionCommitEntry[];
+}
+
 export interface FileComment {
   id: string;
   submissionId: string;

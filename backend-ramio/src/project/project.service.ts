@@ -23,6 +23,7 @@ import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { AssessSubmissionDto } from '../assignment/dto/assess-submission.dto';
 import type { CreateFileCommentDto } from './dto/create-file-comment.dto';
 import type { GithubSubmissionDto } from './dto/github-submission.dto';
+import { readCommitsFromZip } from './submission-git.util';
 
 const CODE_EXTENSIONS = new Set([
   '.py', '.js', '.ts', '.jsx', '.tsx', '.cs', '.java', '.cpp', '.cc', '.c',
@@ -906,6 +907,18 @@ export class ProjectService {
       codeBuildTestMetricsAt:
         updated?.codeBuildTestMetricsAt?.toISOString() ?? null,
     };
+  }
+
+  async getSubmissionCommits(submissionId: bigint, userId: bigint) {
+    const submission = await this.assertCanViewSubmission(submissionId, userId);
+    if (!submission.name.toLowerCase().endsWith('.zip')) {
+      return { hasGitHistory: false, commits: [] };
+    }
+    const zipBuffer = await this.storage.downloadFileAsBuffer(
+      submission.key,
+      this.fileBucket,
+    );
+    return readCommitsFromZip(zipBuffer);
   }
 
   async getSubmissionFileTree(submissionId: bigint, userId: bigint) {
