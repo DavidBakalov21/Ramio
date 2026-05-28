@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Build container image, push to ECR, and update the Lambda function.
-# Prerequisites: Docker, AWS CLI v2, credentials with ECR + Lambda permissions.
-#
-# Usage:
-#   ./deploy.sh
-#   ./deploy.sh GithubRepoToS3 eu-north-1 latest
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -22,7 +16,6 @@ echo "Logging in to ECR (${REGISTRY})…"
 aws ecr get-login-password --region "$REGION" \
   | docker login --username AWS --password-stdin "$REGISTRY"
 
-# Lambda requires Docker Image Manifest V2 — not OCI + attestations (Docker Desktop default).
 export BUILDX_NO_DEFAULT_ATTESTATIONS=1
 docker buildx inspect --bootstrap >/dev/null 2>&1 || true
 

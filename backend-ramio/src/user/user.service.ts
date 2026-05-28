@@ -42,7 +42,6 @@ export class UserService {
       };
     }
 
-    // STUDENT
     const enrollments = await this.prisma.enrollment.findMany({
       where: { userId: targetId },
       orderBy: { enrolledAt: 'desc' },

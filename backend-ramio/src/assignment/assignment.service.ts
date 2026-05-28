@@ -171,7 +171,6 @@ export class AssignmentService {
     return { success: true };
   }
 
-  // ─── Test file management (per-language) ─────────────────────────────────
 
   async getTestFilesOverview(assignmentId: bigint, teacherId: bigint) {
     const assignment = await this.prisma.assignment.findUnique({
@@ -311,7 +310,6 @@ export class AssignmentService {
     return { code };
   }
 
-  // ─── Sandbox run (student writes code in browser) ────────────────────────
 
   async runAssignment(
     assignmentId: bigint,
@@ -340,11 +338,10 @@ export class AssignmentService {
     return this.runByLanguage(lang, code, testContent);
   }
 
-  // ─── Submissions ──────────────────────────────────────────────────────────
 
   async createSubmission(
     assignmentId: bigint,
-    studentId: bigint,
+    userId: bigint,
     files?: Express.Multer.File[],
     language?: AssignmentLanguage,
   ) {
@@ -353,20 +350,23 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: assignment.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
+    const isTeacher = assignment.course.userId === userId;
+    if (!isTeacher) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId, courseId: assignment.courseId },
+        },
+      });
+      if (!enrollment) {
+        throw new ForbiddenException(
+          'You must be enrolled in this course to submit',
+        );
+      }
     }
 
     const existing = await this.prisma.assignmentSubmission.findUnique({
       where: {
-        assignmentId_userId: { assignmentId, userId: studentId },
+        assignmentId_userId: { assignmentId, userId },
       },
     });
     if (existing) {
@@ -376,7 +376,7 @@ export class AssignmentService {
     const submission = await this.prisma.assignmentSubmission.create({
       data: {
         assignmentId,
-        userId: studentId,
+        userId,
         teacherFeedback: '',
         language: language ?? null,
       },
@@ -384,7 +384,7 @@ export class AssignmentService {
     });
 
     if (files?.length) {
-      const solutionPrefix = `solutions/${assignmentId}/${studentId}/`;
+      const solutionPrefix = `solutions/${assignmentId}/${userId}/`;
       for (const file of files) {
         const { url, key } = await this.storage.uploadFile(
           file,
@@ -407,7 +407,7 @@ export class AssignmentService {
 
   async updateSubmission(
     assignmentId: bigint,
-    studentId: bigint,
+    userId: bigint,
     files: Express.Multer.File[],
     language?: AssignmentLanguage,
   ) {
@@ -416,20 +416,23 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: assignment.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
+    const isTeacher = assignment.course.userId === userId;
+    if (!isTeacher) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId, courseId: assignment.courseId },
+        },
+      });
+      if (!enrollment) {
+        throw new ForbiddenException(
+          'You must be enrolled in this course to submit',
+        );
+      }
     }
 
     const submission = await this.prisma.assignmentSubmission.findUnique({
       where: {
-        assignmentId_userId: { assignmentId, userId: studentId },
+        assignmentId_userId: { assignmentId, userId },
       },
       include: { solutionFiles: true, assignment: true },
     });
@@ -455,7 +458,7 @@ export class AssignmentService {
     }
 
     if (files?.length) {
-      const solutionPrefix = `solutions/${assignmentId}/${studentId}/`;
+      const solutionPrefix = `solutions/${assignmentId}/${userId}/`;
       for (const file of files) {
         const { url, key } = await this.storage.uploadFile(
           file,
@@ -887,7 +890,6 @@ Rules:
     return { reply: reply.trim() };
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
 
   private runByLanguage(
     language: AssignmentLanguage,

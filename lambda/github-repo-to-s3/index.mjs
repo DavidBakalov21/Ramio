@@ -1,19 +1,3 @@
-/**
- * Lambda (container image): { repoUrl, bucket, key, branch? } → git clone → zip → S3 PutObject
- * Handler: index.handler  |  Base image: public.ecr.aws/lambda/nodejs:22 (+ git)
- *
- * Input:
- *   repoUrl  - public GitHub repo URL (https://github.com/owner/repo or with .git suffix)
- *   bucket   - destination S3 bucket name
- *   key      - destination S3 object key (should end with .zip)
- *   branch   - optional branch name (defaults to repository default branch)
- *
- * Output:
- *   { ok: true,  key, url }          on success
- *   { ok: false, error: string }     on failure
- *
- * The zip includes the full .git directory (complete history, no shallow clone).
- */
 import { execFile } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -25,12 +9,9 @@ import AdmZip from 'adm-zip';
 
 const execFileAsync = promisify(execFile);
 
-const MAX_ARCHIVE_BYTES = 256 * 1024 * 1024; // 256 MB guard
+const MAX_ARCHIVE_BYTES = 256 * 1024 * 1024;
 const GIT_CLONE_TIMEOUT_MS = 110_000;
 
-/**
- * Parse a GitHub repo URL into { owner, repo }.
- */
 function parseGithubUrl(repoUrl) {
   const url = repoUrl.trim().replace(/\.git$/, '');
   const m = /^https:\/\/github\.com\/([^/]+)\/([^/?#]+)/.exec(url);

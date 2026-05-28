@@ -21,7 +21,6 @@ const CODEBUILD_PROJECT_ENV_BY_LANGUAGE: Record<ProjectLanguage, string> = {
   NODE_JS: 'CODEBUILD_PROJECT_NODE_JS',
 };
 
-/** Used when no CODEBUILD_PROJECT_* or CODEBUILD_PROJECT_NAME is set (IAM must allow StartBuild on this project). */
 const DEFAULT_CODEBUILD_PROJECT_BY_LANGUAGE: Partial<
   Record<ProjectLanguage, string>
 > = {
@@ -64,7 +63,6 @@ export function isTerminalCodeBuildStatus(status: string | null | undefined): bo
   return TERMINAL_CODEBUILD_STATUSES.has(status);
 }
 
-/** CodeBuild sometimes omits the leading slash; CloudWatch expects the canonical name. */
 function normalizeLogGroupName(name: string): string {
   const t = name.trim();
   if (!t) return t;
@@ -202,10 +200,6 @@ export class CodeBuildService {
     return out.builds?.[0];
   }
 
-  /**
-   * Fetches the tail of the CodeBuild log stream (test summaries are usually at the end).
-   * Paginates with nextBackwardToken; empty pages can occur when startFromHead is false.
-   */
   private async fetchBuildLinesMatching(
     groupName: string,
     streamName: string,

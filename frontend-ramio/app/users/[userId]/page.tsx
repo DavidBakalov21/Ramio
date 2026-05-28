@@ -64,7 +64,6 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Edit state (only used when viewing own profile)
   const [editMode, setEditMode] = useState(false);
   const [username, setUsername] = useState('');
   const [aboutMe, setAboutMe] = useState('');
@@ -169,14 +168,11 @@ export default function PublicProfilePage() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
               className="space-y-5">
 
-              {/* Header card */}
               <div className="rounded-[1.6rem] border border-slate-200 bg-white p-6 shadow-sm">
                 {editMode ? (
-                  /* ── Edit form ── */
                   <motion.form key="edit" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     onSubmit={handleSave} className="space-y-5">
 
-                    {/* Avatar upload */}
                     <div className="flex items-center gap-4">
                       <button type="button" onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingAvatar}
@@ -197,7 +193,6 @@ export default function PublicProfilePage() {
                         onChange={handleAvatarChange} className="hidden" />
                     </div>
 
-                    {/* Username */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700">Username</label>
                       <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
@@ -205,7 +200,6 @@ export default function PublicProfilePage() {
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200" />
                     </div>
 
-                    {/* About me */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700">About me</label>
                       <textarea value={aboutMe} onChange={(e) => setAboutMe(e.target.value)}
@@ -214,7 +208,6 @@ export default function PublicProfilePage() {
                       <p className="mt-1 text-xs text-slate-400">{aboutMe.length}/5000</p>
                     </div>
 
-                    {/* Birthdate */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700">Birthdate</label>
                       <input type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)}
@@ -233,7 +226,6 @@ export default function PublicProfilePage() {
                     </div>
                   </motion.form>
                 ) : (
-                  /* ── View mode ── */
                   <div className="flex items-start gap-5">
                     <Avatar url={profile.profilePictureUrl} name={profile.username} size={88} />
                     <div className="min-w-0 flex-1">
@@ -270,7 +262,6 @@ export default function PublicProfilePage() {
                 )}
               </div>
 
-              {/* Courses card */}
               {!editMode && (
                 <div className="rounded-[1.6rem] border border-slate-200 bg-white p-6 shadow-sm">
                   <h2 className="mb-4 text-sm font-semibold text-slate-800">

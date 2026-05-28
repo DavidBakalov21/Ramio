@@ -34,7 +34,6 @@ export default function NewAssignmentPage() {
   const [points, setPoints] = useState(100);
   const [dueDate, setDueDate] = useState('');
 
-  // Per-language test state
   const [activeTestTab, setActiveTestTab] = useState<AssignmentLanguage>('PYTHON');
   const [testStates, setTestStates] = useState<
     Record<AssignmentLanguage, { code: string; file: File | null; generating: boolean }>
@@ -109,7 +108,6 @@ export default function NewAssignmentPage() {
         dueDate: dueDateSeconds,
       });
 
-      // Upload test files for every language that has content
       for (const lang of ALL_LANGUAGES) {
         const state = testStates[lang];
         let fileToUpload: File | null = state.file;
@@ -193,7 +191,6 @@ export default function NewAssignmentPage() {
           />
         </div>
 
-        {/* Per-language test files */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/50">
           <div className="border-b border-slate-200 px-3 pt-3">
             <p className="mb-2 text-xs font-medium text-slate-600">

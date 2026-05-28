@@ -164,7 +164,6 @@ export default function ProfilePage() {
         </header>
 
         {!editMode ? (
-          /* View mode: how others see your profile */
           <motion.div
             key="view-mode"
             initial={{ opacity: 0, y: 6 }}
@@ -213,7 +212,6 @@ export default function ProfilePage() {
             onSubmit={handleSave}
             className="space-y-6"
           >
-          {/* Avatar */}
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -243,7 +241,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Username */}
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-slate-700">
               Username
@@ -259,7 +256,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* About me */}
           <div>
             <label htmlFor="aboutMe" className="block text-sm font-medium text-slate-700">
               About me
@@ -276,7 +272,6 @@ export default function ProfilePage() {
             <p className="mt-1 text-xs text-slate-500">{aboutMe.length}/5000</p>
           </div>
 
-          {/* Birthdate */}
           <div>
             <label htmlFor="birthdate" className="block text-sm font-medium text-slate-700">
               Birthdate
@@ -290,7 +285,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Read-only email */}
           <div>
             <label className="block text-sm font-medium text-slate-500">Email</label>
             <p className="mt-1 text-sm text-slate-600">{user.email}</p>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { CourseProject, PROJECT_LANGUAGE_OPTIONS } from '@/app/interfaces/Project';
 import { ProjectSubmissionDetail } from '@/app/interfaces/Project';
+import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 import { User } from '@/app/interfaces/User';
 import { Navbar } from '@/app/components/Navbar';
 import { useToast } from '@/app/components/utility/toast';
@@ -34,6 +35,10 @@ export default function ProjectUploadPage() {
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(null);
+  const [teacherStudents, setTeacherStudents] = useState<
+    { userId: string; username: string | null; email: string }[]
+  >([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -71,58 +76,128 @@ export default function ProjectUploadPage() {
   }, [projectId, user?.role]);
 
   useEffect(() => {
-    if (!projectId || !project?.submitted || user?.role !== 'STUDENT') return;
+    if (
+      !projectId ||
+      !project?.submitted ||
+      (user?.role !== 'STUDENT' && user?.role !== 'TEACHER')
+    ) {
+      return;
+    }
     const fetchSubmission = async () => {
       try {
-        const res = await api.get<ProjectSubmissionDetail>(`/project/${projectId}/submission`);
+        const query =
+          user?.role === 'TEACHER' && selectedStudentId
+            ? `?studentId=${selectedStudentId}`
+            : '';
+        const res = await api.get<ProjectSubmissionDetail>(
+          `/project/${projectId}/submission${query}`,
+        );
         setSubmission(res.data);
       } catch {
         setSubmission(null);
       }
     };
     void fetchSubmission();
-  }, [projectId, project?.submitted, user?.role]);
+  }, [projectId, project?.submitted, user?.role, selectedStudentId]);
+
+  useEffect(() => {
+    if (user?.role !== 'TEACHER' || !courseId) return;
+    const fetchStudents = async () => {
+      try {
+        const res = await api.get<StudentResultsResponse>(
+          `/course/${courseId}/student-results`,
+        );
+        const students = res.data.students.map((s) => ({
+          userId: s.userId,
+          username: s.username,
+          email: s.email,
+        }));
+        setTeacherStudents(students);
+        setSelectedStudentId((prev) => prev || students[0]?.userId || '');
+      } catch {
+        setTeacherStudents([]);
+        setSelectedStudentId('');
+      }
+    };
+    void fetchStudents();
+  }, [user?.role, courseId]);
 
   const handleSubmit = async () => {
     if (!project) return;
+    if (user?.role === 'TEACHER' && !selectedStudentId) return;
     if (submissionMethod === 'upload' && !file) return;
     if (submissionMethod === 'github' && !repoUrl.trim()) return;
 
     setError('');
     setIsSubmitting(true);
-    const isUpdate = !!project.submitted;
+    const isUpdate =
+      user?.role === 'TEACHER' ? !!submission : !!project.submitted;
 
     try {
       if (submissionMethod === 'github') {
-        const body: { repoUrl: string; branch?: string } = { repoUrl: repoUrl.trim() };
+        const body: { repoUrl: string; branch?: string; studentId?: string } = {
+          repoUrl: repoUrl.trim(),
+        };
         if (repoBranch.trim()) body.branch = repoBranch.trim();
+        if (user?.role === 'TEACHER' && selectedStudentId) {
+          body.studentId = selectedStudentId;
+        }
         if (isUpdate) {
           await api.patch(`/project/${projectId}/submission/github`, body);
-          showToast('Submission updated from GitHub.', 'success');
+          showToast(
+            user?.role === 'TEACHER'
+              ? 'Teacher solution updated from GitHub.'
+              : 'Submission updated from GitHub.',
+            'success',
+          );
         } else {
           await api.post(`/project/${projectId}/submission/github`, body);
-          showToast('Project submitted from GitHub successfully.', 'success');
+          showToast(
+            user?.role === 'TEACHER'
+              ? 'Teacher solution submitted from GitHub successfully.'
+              : 'Project submitted from GitHub successfully.',
+            'success',
+          );
           setProject((prev) => (prev ? { ...prev, submitted: true } : null));
         }
       } else {
         const formData = new FormData();
         formData.append('files', file!);
+        if (user?.role === 'TEACHER' && selectedStudentId) {
+          formData.append('studentId', selectedStudentId);
+        }
         if (isUpdate) {
           await api.patch(`/project/${projectId}/submission`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
-          showToast('Submission updated.', 'success');
+          showToast(
+            user?.role === 'TEACHER'
+              ? 'Teacher solution updated.'
+              : 'Submission updated.',
+            'success',
+          );
         } else {
           await api.post(`/project/${projectId}/submission`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
-          showToast('Project submitted successfully.', 'success');
+          showToast(
+            user?.role === 'TEACHER'
+              ? 'Teacher solution submitted successfully.'
+              : 'Project submitted successfully.',
+            'success',
+          );
           setProject((prev) => (prev ? { ...prev, submitted: true } : null));
         }
         setFile(null);
       }
 
-      const subRes = await api.get<ProjectSubmissionDetail>(`/project/${projectId}/submission`);
+      const query =
+        user?.role === 'TEACHER' && selectedStudentId
+          ? `?studentId=${selectedStudentId}`
+          : '';
+      const subRes = await api.get<ProjectSubmissionDetail>(
+        `/project/${projectId}/submission${query}`,
+      );
       setSubmission(subRes.data);
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -157,7 +232,9 @@ export default function ProjectUploadPage() {
   };
 
   const isStudent = user?.role === 'STUDENT';
+  const isTeacher = user?.role === 'TEACHER';
   const isAssessed = isStudent && !!submission?.isChecked;
+  const effectiveSubmitted = isTeacher ? !!submission : !!project?.submitted;
 
   if (loadingUser || !user) {
     return (
@@ -255,10 +332,38 @@ export default function ProjectUploadPage() {
                     isTeacher={false}
                   />
                 </div>
-              ) : isStudent ? (
+              ) : isStudent || isTeacher ? (
                 <div className="space-y-4">
-                  {/* Current submission banner */}
-                  {project.submitted && submission && (
+                  {isTeacher && (
+                    <div>
+                      <label
+                        htmlFor="teacher-student"
+                        className="mb-1.5 block text-sm font-medium text-slate-700"
+                      >
+                        Submit for student
+                      </label>
+                      <select
+                        id="teacher-student"
+                        value={selectedStudentId}
+                        onChange={(e) => setSelectedStudentId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      >
+                        {teacherStudents.length === 0 && (
+                          <option value="">No enrolled students</option>
+                        )}
+                        {teacherStudents.map((student) => (
+                          <option key={student.userId} value={student.userId}>
+                            {(student.username ?? student.email) + ` (${student.email})`}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Teachers can submit only on behalf of enrolled students.
+                      </p>
+                    </div>
+                  )}
+
+                  {effectiveSubmitted && submission && (
                     <div className="space-y-3">
                       <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
                         <p className="text-xs font-medium text-slate-500">Current submission</p>
@@ -293,7 +398,6 @@ export default function ProjectUploadPage() {
                     </div>
                   )}
 
-                  {/* Submission method tabs */}
                   <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
                     <button
                       type="button"
@@ -319,14 +423,13 @@ export default function ProjectUploadPage() {
                     </button>
                   </div>
 
-                  {/* Upload panel */}
                   {submissionMethod === 'upload' && (
                     <div>
                       <label
                         htmlFor="project-archive"
                         className="mb-2 block text-sm font-medium text-slate-700"
                       >
-                        {project.submitted ? 'New archive' : 'Project archive'}
+                        {effectiveSubmitted ? 'New archive' : 'Project archive'}
                       </label>
                       <input
                         id="project-archive"
@@ -338,7 +441,6 @@ export default function ProjectUploadPage() {
                     </div>
                   )}
 
-                  {/* GitHub panel */}
                   {submissionMethod === 'github' && (
                     <div className="space-y-3">
                       <div>
@@ -389,6 +491,7 @@ export default function ProjectUploadPage() {
                       onClick={() => void handleSubmit()}
                       disabled={
                         isSubmitting ||
+                        (isTeacher && !selectedStudentId) ||
                         (submissionMethod === 'upload' && !file) ||
                         (submissionMethod === 'github' && !repoUrl.trim())
                       }
@@ -397,18 +500,22 @@ export default function ProjectUploadPage() {
                       {isSubmitting
                         ? submissionMethod === 'github'
                           ? 'Cloning repo…'
-                          : project.submitted
+                          : effectiveSubmitted
                             ? 'Updating…'
                             : 'Submitting…'
-                        : project.submitted
-                          ? 'Update submission'
-                          : 'Submit project'}
+                        : effectiveSubmitted
+                          ? isTeacher
+                            ? 'Update teacher solution'
+                            : 'Update submission'
+                          : isTeacher
+                            ? 'Submit teacher solution'
+                            : 'Submit project'}
                     </button>
                   </div>
                 </div>
               ) : (
                 <p className="text-sm text-slate-600">
-                  Open this page as an enrolled student to upload a project archive.
+                  Open this page as an enrolled student or course teacher to upload a project archive.
                 </p>
               )}
             </>

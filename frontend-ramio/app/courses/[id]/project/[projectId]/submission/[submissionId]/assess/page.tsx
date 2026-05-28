@@ -109,7 +109,6 @@ export default function AssessProjectSubmissionPage() {
       {submission && (
         <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start">
 
-          {/* ── File explorer (main column) ─────────────────────────────── */}
           <div className="flex-1 min-w-0">
             <ProjectFileViewer
               submissionId={submissionId}
@@ -118,7 +117,6 @@ export default function AssessProjectSubmissionPage() {
             />
           </div>
 
-          {/* ── Assessment sidebar ──────────────────────────────────────── */}
           <div className="w-full lg:w-80 shrink-0 space-y-4">
 
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">

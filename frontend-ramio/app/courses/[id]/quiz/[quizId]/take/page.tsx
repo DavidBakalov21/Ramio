@@ -67,7 +67,6 @@ export default function TakeQuizPage() {
     [quiz, quizId, buildPayload],
   );
 
-  // Used only by the timer — saves + submits in one shot without going to confirm page
   const doTimerSubmit = useCallback(
     async (cur: Record<string, AnswerState>) => {
       if (hasTimerSubmittedRef.current || !quiz) return;
@@ -84,7 +83,6 @@ export default function TakeQuizPage() {
     [quiz, quizId, courseId, router, buildPayload],
   );
 
-  // Manual submit: save all answers first, then go to confirm page
   const handleManualSubmit = async () => {
     if (!quiz || saving) return;
     setSaving(true);
@@ -134,7 +132,6 @@ export default function TakeQuizPage() {
           }
           setAnswers(pre);
         } catch {
-          /* no prior answers — still seed starters */
           const pre: Record<string, AnswerState> = {};
           for (const q of quizRes.data.questions) {
             if (q.type === 'CODING_TASK') {
@@ -155,7 +152,6 @@ export default function TakeQuizPage() {
     void load();
   }, [user, quizId, courseId, router]);
 
-  // Countdown
   useEffect(() => {
     if (remainingSeconds === null || remainingSeconds <= 0) return;
     timerRef.current = setInterval(() => {
@@ -165,23 +161,18 @@ export default function TakeQuizPage() {
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remainingSeconds !== null]);
 
-  // Timer expiry → direct submit (no confirm page needed)
   useEffect(() => {
     if (remainingSeconds === 0 && !hasTimerSubmittedRef.current) void doTimerSubmit(answers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remainingSeconds]);
 
-  // Auto-save every 30s
   useEffect(() => {
     if (!quiz) return;
     autoSaveTimerRef.current = setInterval(() => {
-      if (!hasTimerSubmittedRef.current) void doSave(answers).catch(() => { /* silent */ });
+      if (!hasTimerSubmittedRef.current) void doSave(answers).catch(() => {});
     }, 30_000);
     return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz, answers]);
 
   const setSelected = (qId: string, aId: string) =>

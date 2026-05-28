@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# One-time: create or replace a Zip Lambda with a container image function (same name).
-# AWS cannot change PackageType in place.
-#
-# Usage:
-#   ./migrate-to-container.sh
-#   ./migrate-to-container.sh GithubRepoToS3 eu-north-1 latest
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -18,7 +12,6 @@ ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 IMAGE_URI="${REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
 
-# Defaults if the function was deleted and we cannot read config
 DEFAULT_ROLE="arn:aws:iam::${ACCOUNT_ID}:role/GithubRepoToS3-role-aieknl2b"
 DEFAULT_TIMEOUT=180
 DEFAULT_MEMORY=1024

@@ -38,9 +38,7 @@ export default function EditAssignmentPage() {
   const [points, setPoints] = useState(100);
   const [dueDate, setDueDate] = useState('');
 
-  // Per-language test state
   const [activeTestTab, setActiveTestTab] = useState<AssignmentLanguage>('PYTHON');
-  // Map of language → { code, file, saving, generating, deleting, loaded }
   const [testStates, setTestStates] = useState<
     Record<AssignmentLanguage, {
       code: string;
@@ -96,7 +94,6 @@ export default function EditAssignmentPage() {
     void load();
   }, [user, assignmentId]);
 
-  // Lazy-load test file content when switching tabs
   useEffect(() => {
     if (!assignmentId) return;
     const isConfigured = configuredTests.some((t) => t.language === activeTestTab);
@@ -109,11 +106,9 @@ export default function EditAssignmentPage() {
         setTestField(activeTestTab, 'code', typeof res.data === 'string' ? res.data : String(res.data ?? ''));
         setTestField(activeTestTab, 'loaded', true);
       } catch {
-        /* silently ignore */
       }
     };
     void loadContent();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTestTab, configuredTests, assignmentId]);
 
   const reloadSubmissions = async () => {
@@ -168,7 +163,6 @@ export default function EditAssignmentPage() {
       });
       setTestField(lang, 'file', null);
       setTestField(lang, 'loaded', true);
-      // Reload configured tests list
       const res = await api.get<Assignment>(`/assignment/${assignmentId}`);
       setConfiguredTests(res.data.tests ?? []);
       showToast(`${ASSIGNMENT_LANGUAGE_MAP[lang].label} test saved.`, 'success');
@@ -242,7 +236,6 @@ export default function EditAssignmentPage() {
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" />
         </div>
 
-        {/* Per-language test files */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/50">
           <div className="border-b border-slate-200 px-3 pt-3">
             <p className="mb-2 text-xs font-medium text-slate-600">Test files <span className="text-slate-400 font-normal">(per language — students pick their language)</span></p>
@@ -270,7 +263,6 @@ export default function EditAssignmentPage() {
             </div>
           </div>
 
-          {/* Active tab content */}
           {ALL_LANGUAGES.map((lang) => {
             if (lang !== activeTestTab) return null;
             const state = testStates[lang];
@@ -342,7 +334,6 @@ export default function EditAssignmentPage() {
           })}
         </div>
 
-        {/* Submissions list */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
           <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
           {submissionsLoading ? (

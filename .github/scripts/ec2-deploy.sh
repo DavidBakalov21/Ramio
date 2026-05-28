@@ -19,7 +19,6 @@ sudo systemctl enable docker nginx || true
 sudo systemctl start docker
 sudo docker info
 
-# Free disk used by old build cache/layers to avoid "no space left on device"
 sudo docker system prune -af --volumes || true
 sudo docker builder prune -af || true
 

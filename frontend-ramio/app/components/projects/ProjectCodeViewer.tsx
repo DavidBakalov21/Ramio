@@ -33,14 +33,12 @@ export function ProjectCodeViewer({
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
   const [commentForm, setCommentForm] = useState<CommentFormState | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // Raw string values for the line-range inputs — typed freely, applied on blur
   const [lineStartInput, setLineStartInput] = useState('');
   const [lineEndInput, setLineEndInput] = useState('');
 
   const lines = content.split('\n');
   const totalLines = lines.length;
 
-  // Comments keyed by the last line of their range (where they render)
   const commentsByAnchor = comments.reduce<Record<number, FileComment[]>>((acc, c) => {
     if (c.filePath !== filePath) return acc;
     const key = c.lineEnd ?? c.lineStart;
@@ -49,7 +47,6 @@ export function ProjectCodeViewer({
     return acc;
   }, {});
 
-  // Lines covered by any existing comment range (for background tint)
   const commentRangeSet = new Set<number>();
   for (const c of comments) {
     if (c.filePath !== filePath) continue;
@@ -87,12 +84,10 @@ export function ProjectCodeViewer({
 
   const clampLine = (val: number) => Math.max(1, Math.min(totalLines, val || 1));
 
-  // The form appears after commentForm.lineEnd (the current end value)
   const formAnchorLine = commentForm ? Math.max(commentForm.lineStart, commentForm.lineEnd) : null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
         <span className="font-mono text-xs text-slate-500">{filePath}</span>
         {truncated && (
@@ -102,7 +97,6 @@ export function ProjectCodeViewer({
         )}
       </div>
 
-      {/* Code table */}
       <div className="flex-1 overflow-auto">
         <table className="w-full border-collapse font-mono text-xs leading-5">
           <tbody>
@@ -129,12 +123,11 @@ export function ProjectCodeViewer({
                   onMouseEnter={() => setHoveredLine(lineNum)}
                   onMouseLeave={() => setHoveredLine(null)}
                 >
-                  {/* Line number */}
                   <td className="w-10 select-none border-r border-slate-100 pr-2 text-right text-slate-400">
                     {lineNum}
                   </td>
 
-                  {/* Comment button */}
+              
                   {isTeacher && (
                     <td className="w-6 pl-1">
                       {hoveredLine === lineNum && !commentForm && (
@@ -150,20 +143,18 @@ export function ProjectCodeViewer({
                     </td>
                   )}
 
-                  {/* Code */}
+                
                   <td className="whitespace-pre pl-3 pr-4 text-slate-800">
                     {line || ' '}
                   </td>
                 </tr>,
 
-                // Comment form — rendered after the current lineEnd
                 ...(isFormAnchor && commentForm
                   ? [
                       <tr key={`form-${lineNum}`} className="bg-violet-50">
                         <td colSpan={isTeacher ? 3 : 2} className="px-3 py-2">
-                          {/* max-w keeps the form compact regardless of line length */}
+                          
                           <div className="flex flex-col gap-2.5 rounded-lg border border-violet-200 bg-white p-3 shadow-sm max-w-lg">
-                            {/* Range picker + close */}
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[11px] font-semibold text-violet-700 shrink-0">
                                 Comment on lines
@@ -200,7 +191,6 @@ export function ProjectCodeViewer({
                               </span>
                             </div>
 
-                            {/* Body */}
                             <textarea
                               autoFocus
                               rows={3}
@@ -219,7 +209,6 @@ export function ProjectCodeViewer({
                               className="w-full resize-none rounded border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-violet-400"
                             />
 
-                            {/* Actions — left-aligned so they're always visible */}
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
@@ -244,12 +233,11 @@ export function ProjectCodeViewer({
                     ]
                   : []),
 
-                // Existing comments
                 ...lineComments.map((c) => (
                   <tr key={`comment-${c.id}`} className="bg-amber-50">
                     <td colSpan={isTeacher ? 3 : 2} className="px-3 py-1.5">
                       <div className="max-w-lg rounded-lg border border-amber-200 bg-white p-3 shadow-sm">
-                        {/* Author row */}
+                      
                         <div className="flex items-center gap-2">
                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
                             {(c.author.username ?? c.author.email)[0].toUpperCase()}
@@ -266,11 +254,9 @@ export function ProjectCodeViewer({
                             {new Date(c.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        {/* Body */}
                         <p className="mt-1.5 whitespace-pre-wrap text-xs text-slate-700">
                           {c.body}
                         </p>
-                        {/* Delete — left-aligned, below the body */}
                         {isTeacher && (
                           <div className="mt-2">
                             <button
