@@ -129,7 +129,17 @@ export default function EditProjectPage() {
 
   return (
     <TeacherPageShell user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut}>
-          <button type="button" onClick={() => router.push(`/courses/${courseId}`)} className="mb-3 text-xs font-medium text-slate-500 hover:text-slate-700">← Back to course</button>
+          <div className="mb-3 flex items-center gap-2">
+            <button type="button" onClick={() => router.push(`/courses/${courseId}`)} className="text-xs font-medium text-slate-500 hover:text-slate-700">← Back to course</button>
+            <span className="text-slate-300">·</span>
+            <button
+              type="button"
+              onClick={() => router.push(`/courses/${courseId}/project/${projectId}`)}
+              className="text-xs font-medium text-amber-700 hover:text-amber-800"
+            >
+              Open submission page
+            </button>
+          </div>
           <h1 className="text-xl font-semibold text-slate-900">Edit project</h1>
 
           <form onSubmit={handleSave} className="mt-5 grid gap-4">
