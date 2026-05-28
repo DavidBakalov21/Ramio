@@ -1,6 +1,3 @@
-/**
- * Best-effort parsing of common test runner summaries from CodeBuild / CloudWatch log text.
- */
 
 function stripAnsi(text: string): string {
   return text.replace(/\u001b\[[\d;?]*[\dA-Za-z]/g, '');
@@ -61,7 +58,6 @@ export function parseTestCountsFromBuildLog(log: string): {
     };
   }
 
-  /** Node.js `node --test` / TAP-style summary (often with a leading `1..N` plan line). */
   const tapPass = text.match(/#\s+pass\s+(\d+)\b/);
   const tapFail = text.match(/#\s+fail\s+(\d+)\b/);
   if (tapPass && tapFail) {

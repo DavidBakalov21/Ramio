@@ -217,7 +217,6 @@ export class CourseService {
     }
 
     if (course.isOpen) {
-      // Open course — enroll immediately without teacher approval
       const enrollment = await this.prisma.enrollment.create({
         data: { userId: studentId, courseId },
         include: { course: true },

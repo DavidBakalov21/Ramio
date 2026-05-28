@@ -331,7 +331,6 @@ export function EditAssignmentModal({
             </div>
           </div>
 
-          {/* Submissions section for teachers */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
             <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
             {submissionsLoading ? (

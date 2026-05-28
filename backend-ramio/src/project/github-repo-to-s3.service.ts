@@ -91,7 +91,7 @@ export class GithubRepoToS3Service {
       try {
         const errBody = JSON.parse(raw) as { errorMessage?: string };
         if (errBody.errorMessage) detail = errBody.errorMessage;
-      } catch { /* use raw */ }
+      } catch {  }
       throw new Error(detail);
     }
 

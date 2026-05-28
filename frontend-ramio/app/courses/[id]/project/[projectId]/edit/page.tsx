@@ -55,7 +55,6 @@ export default function EditProjectPage() {
 
   useEffect(() => {
     if (user) void loadProject();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, projectId]);
 
   const hasCodeBuildInProgress = submissions.some((s) => s.codeBuildStatus === 'IN_PROGRESS');

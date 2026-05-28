@@ -36,7 +36,6 @@ const ALLOWED_IMAGE_MIMES = [
   'image/gif',
 ];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-/** When AI emits CODING_TASK without tests, normalization applies this runnable stub so import still works */
 const FALLBACK_AI_CODING_PYTHON_TESTS = `import unittest
 import solution
 
@@ -72,7 +71,6 @@ function fallbackGeneratedStarterCode(lang: AssignmentLanguage): string {
   }
 }
 
-/** Short rules so generated Python tests execute in Ramio's Docker unittest discover runner */
 const GENERATE_PYTHON_UNITTEST_HINT = `
 Ramio executes Python coding tasks using stdlib unittest only (never pytest): student file solution.py beside test_solution.py, run via unittest discover. Tests MUST use:
   import unittest
@@ -167,7 +165,6 @@ export class QuizService {
     private readonly codeTestService: CodeTestService,
   ) {}
 
-  // ─── Upload image ────────────────────────────────────────────────────────
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
     if (!ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
@@ -179,7 +176,6 @@ export class QuizService {
       throw new BadRequestException('Image must be 10 MB or smaller.');
     }
 
-    // GIFs are uploaded as-is to preserve animation; all other formats get resized
     let uploadBuffer = file.buffer;
     if (file.mimetype !== 'image/gif') {
       uploadBuffer = await sharp(file.buffer)
@@ -204,7 +200,6 @@ export class QuizService {
     return { url };
   }
 
-  // ─── Create ───────────────────────────────────────────────────────────────
 
   async create(teacherId: bigint, dto: CreateQuizDto) {
     await this.assertTeacherOwnsCourse(BigInt(dto.courseId), teacherId);
@@ -351,7 +346,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  // ─── Find by course ───────────────────────────────────────────────────────
 
   async findByCourse(courseId: bigint, userId: bigint) {
     await this.assertCanAccessCourse(courseId, userId);
@@ -391,7 +385,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     });
   }
 
-  // ─── Find one ─────────────────────────────────────────────────────────────
 
   async findOne(quizId: bigint, userId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -414,7 +407,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return this.toQuizResponse(quiz, isTeacher);
   }
 
-  // ─── Start quiz (student) ─────────────────────────────────────────────────
 
   async startQuiz(quizId: bigint, studentId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -469,7 +461,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  // ─── Auto-save answers (student, IN_PROGRESS) ────────────────────────────
 
   async saveAnswers(
     quizId: bigint,
@@ -488,7 +479,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return { success: true };
   }
 
-  // ─── Submit quiz (student) ────────────────────────────────────────────────
 
   async submitQuiz(quizId: bigint, studentId: bigint, dto: SaveQuizAnswersDto) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -539,7 +529,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  // ─── Confirm submit (student, grades from already-saved answers) ─────────
 
   async confirmSubmit(quizId: bigint, studentId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -584,7 +573,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  /** Student-run unit tests during an in-progress attempt (assignment-style runners). */
   async runCodingTaskTests(
     quizId: bigint,
     studentId: bigint,
@@ -684,7 +672,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return run;
   }
 
-  // ─── Get own submission (student) ─────────────────────────────────────────
 
   async getOwnSubmission(quizId: bigint, userId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -713,7 +700,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return this.toStudentSubmissionResponse(quiz, submission);
   }
 
-  // ─── Get all submissions (teacher) ────────────────────────────────────────
 
   async getSubmissionsByQuiz(quizId: bigint, teacherId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -766,7 +752,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     });
   }
 
-  // ─── Get submission by ID (teacher) ───────────────────────────────────────
 
   async getSubmissionById(submissionId: bigint, teacherId: bigint) {
     const submission = await this.prisma.quizSubmission.findUnique({
@@ -853,7 +838,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  // ─── Assess open answers (teacher) ────────────────────────────────────────
 
   async assessSubmission(
     submissionId: bigint,
@@ -921,7 +905,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return { id: updated.id.toString(), totalPoints: updated.totalPoints };
   }
 
-  // ─── Update quiz (teacher, restricted fields) ─────────────────────────────
 
   async update(quizId: bigint, teacherId: bigint, dto: UpdateQuizDto) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -1021,7 +1004,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return this.toQuizResponse(updated, true);
   }
 
-  // ─── Delete quiz ──────────────────────────────────────────────────────────
 
   async remove(quizId: bigint, teacherId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -1036,7 +1018,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return { success: true };
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
 
   private truncateForQuizStore(raw: string): string {
     if (raw.length <= QUIZ_STORE_LOG_MAX_CHARS) return raw;
@@ -1664,7 +1645,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-  // ─── Delete submission (teacher resets a student's attempt) ─────────────
 
   async deleteSubmission(submissionId: bigint, teacherId: bigint) {
     const submission = await this.prisma.quizSubmission.findUnique({

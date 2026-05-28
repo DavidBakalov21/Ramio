@@ -94,7 +94,6 @@ export function ProjectFileViewer({
       );
       setComments(res.data);
     } catch {
-      // silently ignore
     } finally {
       setLoadingComments(false);
     }

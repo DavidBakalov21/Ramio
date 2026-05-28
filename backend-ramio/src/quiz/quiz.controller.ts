@@ -58,7 +58,6 @@ export class QuizController {
     return this.quizService.findByCourse(BigInt(courseId), user.id);
   }
 
-  // ─── Teacher submission routes (before :id to avoid conflicts) ────────────
 
   @Get('submission/:submissionId')
   @Roles(UserRole.TEACHER)
@@ -92,7 +91,6 @@ export class QuizController {
     );
   }
 
-  // ─── Quiz CRUD ────────────────────────────────────────────────────────────
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
@@ -124,7 +122,6 @@ export class QuizController {
     return this.quizService.getSubmissionsByQuiz(BigInt(id), user.id);
   }
 
-  // ─── Student routes ───────────────────────────────────────────────────────
 
   @Post(':id/start')
   @Roles(UserRole.STUDENT)

@@ -75,7 +75,7 @@ export class MeService {
         'Invalid file type. Allowed: JPEG, PNG, GIF, WebP',
       );
     }
-    const maxSize = 15 * 1024 * 1024; // 3MB
+    const maxSize = 15 * 1024 * 1024;
     if (file.size > maxSize) {
       throw new BadRequestException('Avatar must be at most 3MB');
     }
