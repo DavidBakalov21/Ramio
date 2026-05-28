@@ -111,7 +111,6 @@ export default function OnboardingPage() {
         transition={{ duration: 0.35, ease: 'easeOut' }}
         className="relative flex w-full max-w-3xl flex-col items-center space-y-8 rounded-[1.9rem] bg-white/85 p-6 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
       >
-        {/* Logout Button - Top Right */}
         <button
           onClick={handleLogout}
           disabled={isLoggingOut}
@@ -140,7 +139,6 @@ export default function OnboardingPage() {
         )}
 
         <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col space-y-6">
-          {/* Role Selection */}
           <div className="w-full">
             <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               I am joining as
@@ -174,7 +172,6 @@ export default function OnboardingPage() {
             </p>
           </div>
 
-          {/* Username Input */}
           <div className="w-full">
             <label
               htmlFor="username"
@@ -196,7 +193,6 @@ export default function OnboardingPage() {
             </p>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading || !role || !username.trim()}

@@ -24,7 +24,6 @@ import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmissionChatDto } from './dto/submission-chat.dto';
 
-// aaa
 
 function parseLanguage(raw: string | undefined): AssignmentLanguage | undefined {
   if (!raw) return undefined;
@@ -103,7 +102,6 @@ export class AssignmentController {
     return this.assignmentService.findByCourse(BigInt(courseId), user.id);
   }
 
-  // ─── Per-language test file routes ───────────────────────────────────────
 
   @Get(':id/test-files')
   @Roles(UserRole.TEACHER)
@@ -182,7 +180,6 @@ export class AssignmentController {
     );
   }
 
-  // ─── Assignment CRUD ──────────────────────────────────────────────────────
 
   @Get(':id/submission')
   getSubmission(
@@ -243,7 +240,7 @@ export class AssignmentController {
   }
 
   @Post(':id/submission')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   @UseInterceptors(FilesInterceptor('files', 11))
   createSubmission(
     @Param('id', ParseIntPipe) id: number,
@@ -261,7 +258,7 @@ export class AssignmentController {
   }
 
   @Patch(':id/submission')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   @UseInterceptors(FilesInterceptor('files', 11))
   updateSubmission(
     @Param('id', ParseIntPipe) id: number,

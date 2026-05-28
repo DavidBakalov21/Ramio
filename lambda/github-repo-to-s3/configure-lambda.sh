@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Apply recommended settings for full git clone + zip.
-#
-# Usage:
-#   ./configure-lambda.sh
-#   ./configure-lambda.sh GithubRepoToS3 eu-north-1
 
 set -euo pipefail
 

@@ -1,8 +1,3 @@
-/**
- * LLMs often wrap code in markdown fences or add a short preamble.
- * Avoid treating ``` inside real Python (e.g. strings) as a fence: if the file
- * already begins like Python, return as-is.
- */
 export function stripModelCodeOutput(text: string): string {
   const trimmed = text.trim().replace(/^\uFEFF/, '');
   const firstNonEmpty =

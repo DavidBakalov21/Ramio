@@ -214,8 +214,9 @@ export class ProjectService {
 
   async createSubmission(
     projectId: bigint,
-    studentId: bigint,
+    actorId: bigint,
     files?: Express.Multer.File[],
+    targetStudentId?: bigint,
   ) {
     if (!files?.length) {
       throw new BadRequestException('Upload one project archive');
@@ -230,26 +231,22 @@ export class ProjectService {
       include: { course: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: project.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
-    }
+    const submissionUserId = await this.resolveSubmissionUserId(
+      project.courseId,
+      project.course.userId,
+      actorId,
+      targetStudentId,
+    );
 
     const existing = await this.prisma.projectSubmission.findUnique({
-      where: { projectId_userId: { projectId, userId: studentId } },
+      where: { projectId_userId: { projectId, userId: submissionUserId } },
     });
     if (existing) {
       throw new ConflictException('You have already submitted this project');
     }
 
     const file = files[0];
-    const prefix = `project-submissions/${projectId}/${studentId}/`;
+    const prefix = `project-submissions/${projectId}/${submissionUserId}/`;
     const { url, key } = await this.storage.uploadFile(
       file,
       this.fileBucket,
@@ -260,7 +257,7 @@ export class ProjectService {
     const submission = await this.prisma.projectSubmission.create({
       data: {
         projectId,
-        userId: studentId,
+        userId: submissionUserId,
         url,
         key,
         name,
@@ -274,8 +271,9 @@ export class ProjectService {
 
   async updateSubmission(
     projectId: bigint,
-    studentId: bigint,
+    actorId: bigint,
     files: Express.Multer.File[],
+    targetStudentId?: bigint,
   ) {
     if (!files?.length) {
       throw new BadRequestException('Upload one project archive');
@@ -290,19 +288,15 @@ export class ProjectService {
       include: { course: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: project.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
-    }
+    const submissionUserId = await this.resolveSubmissionUserId(
+      project.courseId,
+      project.course.userId,
+      actorId,
+      targetStudentId,
+    );
 
     const submission = await this.prisma.projectSubmission.findUnique({
-      where: { projectId_userId: { projectId, userId: studentId } },
+      where: { projectId_userId: { projectId, userId: submissionUserId } },
       include: { project: true, user: true },
     });
     if (!submission) {
@@ -312,7 +306,7 @@ export class ProjectService {
     await this.storage.deleteFile(submission.key, this.fileBucket);
 
     const file = files[0];
-    const prefix = `project-submissions/${projectId}/${studentId}/`;
+    const prefix = `project-submissions/${projectId}/${submissionUserId}/`;
     const { url, key } = await this.storage.uploadFile(
       file,
       this.fileBucket,
@@ -331,8 +325,9 @@ export class ProjectService {
 
   async createSubmissionFromGithub(
     projectId: bigint,
-    studentId: bigint,
+    actorId: bigint,
     dto: GithubSubmissionDto,
+    targetStudentId?: bigint,
   ) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -340,25 +335,21 @@ export class ProjectService {
     });
     if (!project) throw new NotFoundException('Project not found');
 
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: project.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
-    }
+    const submissionUserId = await this.resolveSubmissionUserId(
+      project.courseId,
+      project.course.userId,
+      actorId,
+      targetStudentId,
+    );
 
     const existing = await this.prisma.projectSubmission.findUnique({
-      where: { projectId_userId: { projectId, userId: studentId } },
+      where: { projectId_userId: { projectId, userId: submissionUserId } },
     });
     if (existing) {
       throw new ConflictException('You have already submitted this project');
     }
 
-    const key = `project-submissions/${projectId}/${studentId}/repo.zip`;
+    const key = `project-submissions/${projectId}/${submissionUserId}/repo.zip`;
     const { url } = await this.githubRepoToS3.invokeGithubRepoToS3(
       dto.repoUrl,
       this.fileBucket,
@@ -369,7 +360,7 @@ export class ProjectService {
     const submission = await this.prisma.projectSubmission.create({
       data: {
         projectId,
-        userId: studentId,
+        userId: submissionUserId,
         url,
         key,
         name: 'repo.zip',
@@ -384,8 +375,9 @@ export class ProjectService {
 
   async updateSubmissionFromGithub(
     projectId: bigint,
-    studentId: bigint,
+    actorId: bigint,
     dto: GithubSubmissionDto,
+    targetStudentId?: bigint,
   ) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -393,19 +385,15 @@ export class ProjectService {
     });
     if (!project) throw new NotFoundException('Project not found');
 
-    const enrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: studentId, courseId: project.courseId },
-      },
-    });
-    if (!enrollment) {
-      throw new ForbiddenException(
-        'You must be enrolled in this course to submit',
-      );
-    }
+    const submissionUserId = await this.resolveSubmissionUserId(
+      project.courseId,
+      project.course.userId,
+      actorId,
+      targetStudentId,
+    );
 
     const submission = await this.prisma.projectSubmission.findUnique({
-      where: { projectId_userId: { projectId, userId: studentId } },
+      where: { projectId_userId: { projectId, userId: submissionUserId } },
       include: { project: true, user: true },
     });
     if (!submission) {
@@ -414,7 +402,7 @@ export class ProjectService {
 
     await this.storage.deleteFile(submission.key, this.fileBucket);
 
-    const key = `project-submissions/${projectId}/${studentId}/repo.zip`;
+    const key = `project-submissions/${projectId}/${submissionUserId}/repo.zip`;
     const { url } = await this.githubRepoToS3.invokeGithubRepoToS3(
       dto.repoUrl,
       this.fileBucket,
@@ -437,16 +425,26 @@ export class ProjectService {
     return this.toSubmissionResponse(updated);
   }
 
-  async getSubmission(projectId: bigint, userId: bigint) {
+  async getSubmission(
+    projectId: bigint,
+    actorId: bigint,
+    targetStudentId?: bigint,
+  ) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: { course: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    await this.assertCanAccessCourse(project.courseId, userId);
+    await this.assertCanAccessCourse(project.courseId, actorId);
+    const submissionUserId = await this.resolveSubmissionUserId(
+      project.courseId,
+      project.course.userId,
+      actorId,
+      targetStudentId,
+    );
 
     const submission = await this.prisma.projectSubmission.findUnique({
-      where: { projectId_userId: { projectId, userId } },
+      where: { projectId_userId: { projectId, userId: submissionUserId } },
       include: { project: true, user: true },
     });
     if (!submission) throw new NotFoundException('No submission found');
@@ -542,7 +540,6 @@ export class ProjectService {
             data,
           });
         } catch {
-          /* CodeBuild / CloudWatch unavailable or permission error */
         }
       }
       submissions = await this.prisma.projectSubmission.findMany({
@@ -1052,6 +1049,48 @@ export class ProjectService {
       );
     }
     return submission;
+  }
+
+  private async resolveSubmissionUserId(
+    courseId: bigint,
+    courseTeacherId: bigint,
+    actorId: bigint,
+    targetStudentId?: bigint,
+  ): Promise<bigint> {
+    const isTeacher = actorId === courseTeacherId;
+    if (isTeacher) {
+      if (!targetStudentId || targetStudentId === actorId) {
+        throw new ForbiddenException(
+          'Teacher must submit on behalf of an enrolled student',
+        );
+      }
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId: targetStudentId, courseId },
+        },
+      });
+      if (!enrollment) {
+        throw new ForbiddenException(
+          'Teacher can submit only for enrolled students',
+        );
+      }
+      return targetStudentId;
+    }
+
+    if (targetStudentId && targetStudentId !== actorId) {
+      throw new ForbiddenException('Students can submit only for themselves');
+    }
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: { userId: actorId, courseId },
+      },
+    });
+    if (!enrollment) {
+      throw new ForbiddenException(
+        'You must be enrolled in this course to submit',
+      );
+    }
+    return actorId;
   }
 
   private toCommentResponse(c: {

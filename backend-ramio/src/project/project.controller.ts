@@ -24,6 +24,14 @@ import { CreateFileCommentDto } from './dto/create-file-comment.dto';
 import { GithubSubmissionDto } from './dto/github-submission.dto';
 import { ProjectService } from './project.service';
 
+function parseOptionalId(raw: string | undefined): bigint | undefined {
+  if (!raw) return undefined;
+  if (!/^\d+$/.test(raw)) {
+    throw new BadRequestException(`Invalid id: ${raw}`);
+  }
+  return BigInt(raw);
+}
+
 @Controller('project')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
@@ -166,64 +174,81 @@ export class ProjectController {
   getSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
+    @Query('studentId') studentIdRaw?: string,
   ) {
-    return this.projectService.getSubmission(BigInt(id), user.id);
+    return this.projectService.getSubmission(
+      BigInt(id),
+      user.id,
+      parseOptionalId(studentIdRaw),
+    );
   }
 
   @Post(':id/submission')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   @UseInterceptors(FilesInterceptor('files', 1))
   createSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @UploadedFiles() files?: Express.Multer.File[],
+    @Body('studentId') studentIdRaw?: string,
   ) {
     return this.projectService.createSubmission(
       BigInt(id),
       user.id,
       files && files.length > 0 ? files : undefined,
+      parseOptionalId(studentIdRaw),
     );
   }
 
   @Patch(':id/submission')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   @UseInterceptors(FilesInterceptor('files', 1))
   updateSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @UploadedFiles() files?: Express.Multer.File[],
+    @Body('studentId') studentIdRaw?: string,
   ) {
     if (!files?.length) {
       throw new BadRequestException('Upload one project archive');
     }
-    return this.projectService.updateSubmission(BigInt(id), user.id, files);
+    return this.projectService.updateSubmission(
+      BigInt(id),
+      user.id,
+      files,
+      parseOptionalId(studentIdRaw),
+    );
   }
 
   @Post(':id/submission/github')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   createGithubSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @Body() dto: GithubSubmissionDto,
+    @Body('studentId') studentIdRaw?: string,
   ) {
     return this.projectService.createSubmissionFromGithub(
       BigInt(id),
       user.id,
       dto,
+      parseOptionalId(studentIdRaw),
     );
   }
 
   @Patch(':id/submission/github')
-  @Roles(UserRole.STUDENT)
+  @Roles(UserRole.STUDENT, UserRole.TEACHER)
   updateGithubSubmission(
     @Param('id', ParseIntPipe) id: number,
     @User() user: PrismaUser,
     @Body() dto: GithubSubmissionDto,
+    @Body('studentId') studentIdRaw?: string,
   ) {
     return this.projectService.updateSubmissionFromGithub(
       BigInt(id),
       user.id,
       dto,
+      parseOptionalId(studentIdRaw),
     );
   }
 

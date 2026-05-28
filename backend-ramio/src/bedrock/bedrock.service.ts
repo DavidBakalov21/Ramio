@@ -13,7 +13,6 @@ interface InvokeResponseBody {
   content?: Array<{ text: string }>;
 }
 
-/** Injected into LLM prompts so generated Python matches CodeTestService.runPythonTests (unittest discover only). */
 function pythonUnittestRamioConstraints(): string {
   return `
 Python / Ramio runner (mandatory for Python test output):

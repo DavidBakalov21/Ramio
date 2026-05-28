@@ -93,7 +93,6 @@ export default function AssignmentSandboxPage() {
       try {
         const res = await api.get<Assignment>(`/assignment/${assignmentId}`);
         setAssignment(res.data);
-        // Pick default language: assignment default if it has a test, else first available
         const tests = res.data.tests ?? [];
         const defaultHasTest = tests.some((t) => t.language === res.data.language);
         if (defaultHasTest) {
@@ -116,7 +115,7 @@ export default function AssignmentSandboxPage() {
     if (
       !assignmentId ||
       !assignment ||
-      user?.role !== 'STUDENT' ||
+      (user?.role !== 'STUDENT' && user?.role !== 'TEACHER') ||
       !assignment.submitted
     ) {
       return;
@@ -128,7 +127,6 @@ export default function AssignmentSandboxPage() {
         if (res.data.solutionContent != null) {
           setCode(res.data.solutionContent);
         }
-        // Restore the language the student submitted with
         if (res.data.language) {
           setSelectedLanguage(res.data.language as AssignmentLanguage);
         }
@@ -163,7 +161,12 @@ export default function AssignmentSandboxPage() {
         });
         setLastSubmitWasUpdate(true);
         setSubmitMessage('success');
-        showToast('Submission updated.', 'success');
+        showToast(
+          user?.role === 'TEACHER'
+            ? 'Teacher solution updated.'
+            : 'Submission updated.',
+          'success',
+        );
         setTimeout(() => setSubmitMessage(null), 4000);
       } else {
         await api.post(`/assignment/${assignmentId}/submission`, formData, {
@@ -172,7 +175,12 @@ export default function AssignmentSandboxPage() {
         setLastSubmitWasUpdate(false);
         setSubmitMessage('success');
         setAssignment((prev) => (prev ? { ...prev, submitted: true } : null));
-        showToast('Assignment submitted successfully.', 'success');
+        showToast(
+          user?.role === 'TEACHER'
+            ? 'Teacher solution submitted successfully.'
+            : 'Assignment submitted successfully.',
+          'success',
+        );
         setTimeout(() => setSubmitMessage(null), 4000);
       }
     } catch (err: unknown) {
@@ -233,6 +241,7 @@ export default function AssignmentSandboxPage() {
   };
 
   const isStudent = user?.role === 'STUDENT';
+  const isTeacher = user?.role === 'TEACHER';
   const isAssessed = isStudent && !!submission?.isChecked;
 
   const handleChatSend = async () => {
@@ -397,7 +406,6 @@ export default function AssignmentSandboxPage() {
                 </div>
               ) : (
                 <>
-                  {/* Language picker — always all languages, with test-availability indicator */}
                   <div className="mb-4">
                     <p className="mb-1.5 text-xs font-medium text-slate-600">Choose your language</p>
                     <div className="flex flex-wrap gap-2">
@@ -506,7 +514,7 @@ export default function AssignmentSandboxPage() {
                         {isRunning ? 'Running…' : 'Run tests'}
                       </button>
                     </div>
-                    {isStudent && (
+                    {(isStudent || isTeacher) && (
                       <button
                         type="button"
                         onClick={() => void handleSubmit()}
@@ -516,13 +524,23 @@ export default function AssignmentSandboxPage() {
                           !code.trim()
                             ? 'Write your solution first'
                             : assignment.submitted
-                              ? 'Update your submission'
-                              : 'Submit for grading'
+                              ? isTeacher
+                                ? 'Update teacher solution'
+                                : 'Update your submission'
+                              : isTeacher
+                                ? 'Submit teacher solution'
+                                : 'Submit for grading'
                         }
                       >
                         {isSubmitting
                           ? assignment.submitted ? 'Updating…' : 'Submitting…'
-                          : assignment.submitted ? 'Update submission' : 'Submit assignment'}
+                          : assignment.submitted
+                            ? isTeacher
+                              ? 'Update teacher solution'
+                              : 'Update submission'
+                            : isTeacher
+                              ? 'Submit teacher solution'
+                              : 'Submit assignment'}
                       </button>
                     )}
                   </div>

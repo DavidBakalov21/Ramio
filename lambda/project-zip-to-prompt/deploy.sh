@@ -1,11 +1,4 @@
 #!/usr/bin/env bash
-# Build deployment zip (dependencies + handler) and push to AWS Lambda.
-# Prerequisites: AWS CLI v2, credentials configured (aws configure or env vars).
-#
-# Usage:
-#   ./deploy.sh                    # defaults: ZipToPrompt, eu-north-1
-#   ./deploy.sh MyFunctionName     # custom function name
-#   ./deploy.sh ZipToPrompt us-east-1
 
 set -euo pipefail
 cd "$(dirname "$0")"

@@ -9,7 +9,7 @@ export type AddMaterialKind = 'FILE' | 'LINK';
 export interface AddMaterialFormData {
   kind: AddMaterialKind;
   title: string;
-  type: CourseMaterialType; // for files; LINK for links
+  type: CourseMaterialType;
   url?: string;
   file?: File;
 }

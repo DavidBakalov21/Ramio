@@ -1,7 +1,3 @@
-/**
- * Lambda: { bucket, key } → S3 GetObject → { ok, projectFilesXml, warnings }
- * Handler in AWS console: index.handler  |  Runtime: Node 20.x
- */
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import AdmZip from 'adm-zip';
 import path from 'node:path';
@@ -16,7 +12,6 @@ const IGNORE_LIST = [
   '.env',
 ];
 
-// Include common source files for Python, Java, C#, and JavaScript projects.
 const ALLOWED_EXT = [
   '.py',
   '.java',
@@ -46,7 +41,7 @@ const MAX_TOTAL_OUTPUT_CHARS = 320_000;
 function isSafeEntryName(entryName) {
   if (!entryName || entryName.length > 512) return false;
   const norm = entryName.replace(/\\/g, '/');
-  if (norm.startsWith('/') || /^[A-Za-z]:\//.test(norm)) return false;
+  if (norm.startsWith('/') || /^[A-Za-z]:\
   return !norm.split('/').some((s) => s === '..');
 }
 

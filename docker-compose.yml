@@ -1,14 +1,3 @@
-# Code runners: backend spawns `docker run` on the *host* daemon. On EC2/Compose you need:
-# 1) Docker CLI in the backend image (see backend-ramio/Dockerfile)
-# 2) Host Docker socket in the container
-# 3) A *host bind-mount* (not a named volume) for runner temp dirs so the host daemon can
-#    resolve the path when it spawns runner containers. Create it once on the host:
-#      sudo mkdir -p /opt/ramio-runner-work && sudo chown 1000:1000 /opt/ramio-runner-work
-#    docker-entrypoint.sh chowns the dir on every start as a safety net.
-# 4) Runner images: Python/Java use public Hub images (no local build needed).
-#    .NET (xUnit cache) and Node (Jest) require custom images — build once on the server:
-#      docker compose --profile runners build runner-dotnet runner-node
-#    Optional overrides: RUNNER_PYTHON_IMAGE, RUNNER_DOTNET_IMAGE, etc. in backend .env
 
 services:
   backend1:
@@ -59,7 +48,6 @@ services:
       - "127.0.0.1:3335:3333"
     restart: unless-stopped
 
-  # Optional local runners (non-root user in image). Default app images are public pulls; Node needs Jest here.
   runner-python:
     profiles: ["runners"]
     image: runner-python:3.12

@@ -10,7 +10,6 @@ export type QuizCodingGradingMode = 'MANUAL_ONLY' | 'TESTS_ONLY';
 
 export type QuizSubmissionStatus = 'IN_PROGRESS' | 'SUBMITTED';
 
-/** Open-ended text/code — no MC options; submission uses openText */
 export function isQuizOpenStyleQuestion(type: QuizQuestionType): boolean {
   return type === 'OPEN_ANSWER' || type === 'CODING_TASK';
 }
