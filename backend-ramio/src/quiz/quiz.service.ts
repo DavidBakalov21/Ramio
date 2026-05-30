@@ -25,6 +25,7 @@ import type { SaveQuizAnswersDto } from './dto/save-quiz-answers.dto';
 import type { AssessQuizSubmissionDto } from './dto/assess-quiz-submission.dto';
 import type { GenerateQuizDto } from './dto/generate-quiz.dto';
 import type { RunQuizCodingTaskDto } from './dto/run-quiz-coding-task.dto';
+import { calculatePoints } from './quiz-scoring';
 
 const QUIZ_IMAGES_BUCKET = 'ramio-images';
 const QUIZ_STORE_LOG_MAX_CHARS = 12_000;
@@ -1066,7 +1067,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       }
       const subAnswer = savedAnswers.find((a) => a.questionId === question.id);
       const selectedIds = subAnswer?.selectedAnswers.map((a) => a.id) ?? [];
-      const earned = this.calculatePoints(
+      const earned = calculatePoints(
         question,
         question.answers,
         selectedIds,
@@ -1246,30 +1247,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     }
   }
 
-  private calculatePoints(
-    question: { type: QuizQuestionType; points: number },
-    answers: { id: bigint; isCorrect: boolean }[],
-    selectedIds: bigint[],
-  ): number {
-    if (question.type === QuizQuestionType.ONE_ANSWER) {
-      const selected = answers.find((a) => selectedIds.includes(a.id));
-      return selected?.isCorrect ? question.points : 0;
-    }
-    if (question.type === QuizQuestionType.MULTI_ANSWER) {
-      const correctCount = answers.filter((a) => a.isCorrect).length;
-      if (correctCount === 0) return 0;
-      const pointPerAnswer = question.points / correctCount;
-      let score = 0;
-      for (const answer of answers) {
-        const isSelected = selectedIds.includes(answer.id);
-        if (isSelected && answer.isCorrect) score += pointPerAnswer;
-        else if (isSelected && !answer.isCorrect) score -= pointPerAnswer;
-      }
-      return Math.max(0, Math.round(score * 100) / 100);
-    }
-    return 0;
-  }
-
   private async recalculateSubmissionsForQuestion(questionId: bigint) {
     const question = await this.prisma.quizQuestion.findUnique({
       where: { id: questionId },
@@ -1292,7 +1269,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
 
     for (const subAnswer of subAnswers) {
       const selectedIds = subAnswer.selectedAnswers.map((a) => a.id);
-      const earned = this.calculatePoints(
+      const earned = calculatePoints(
         question,
         question.answers,
         selectedIds,

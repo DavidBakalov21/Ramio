@@ -72,20 +72,22 @@ export function parseTestCountsFromBuildLog(log: string): {
   const pytestLine = text.match(
     /=+\s*([\s\S]*?)\s+in\s+[\d.]+s\s*=+/,
   );
-  const pytestChunk = pytestLine ? pytestLine[1] : text;
-  let pPassed = 0;
-  let pFailed = 0;
-  let pSkipped = 0;
-  const pp = pytestChunk.match(/(\d+)\s+passed\b/i);
-  const pf = pytestChunk.match(/(\d+)\s+failed\b/i);
-  const ps = pytestChunk.match(/(\d+)\s+skipped\b/i);
-  const perror = pytestChunk.match(/(\d+)\s+error(?:s)?\b/i);
-  if (pp) pPassed = Number(pp[1]);
-  if (pf) pFailed = Number(pf[1]);
-  if (ps) pSkipped = Number(ps[1]);
-  if (perror) pFailed += Number(perror[1]);
-  if (pp || pf || ps || perror) {
-    return { passed: pPassed, failed: pFailed, skipped: pSkipped };
+  if (pytestLine) {
+    const pytestChunk = pytestLine[1];
+    let pPassed = 0;
+    let pFailed = 0;
+    let pSkipped = 0;
+    const pp = pytestChunk.match(/(\d+)\s+passed\b/i);
+    const pf = pytestChunk.match(/(\d+)\s+failed\b/i);
+    const ps = pytestChunk.match(/(\d+)\s+skipped\b/i);
+    const perror = pytestChunk.match(/(\d+)\s+error(?:s)?\b/i);
+    if (pp) pPassed = Number(pp[1]);
+    if (pf) pFailed = Number(pf[1]);
+    if (ps) pSkipped = Number(ps[1]);
+    if (perror) pFailed += Number(perror[1]);
+    if (pp || pf || ps || perror) {
+      return { passed: pPassed, failed: pFailed, skipped: pSkipped };
+    }
   }
 
   const ranMatch = text.match(/Ran (\d+) tests? in/m);
