@@ -44,7 +44,7 @@ const CODE_FILENAMES = new Set([
 
 const MAX_FILE_CONTENT_BYTES = 100 * 1024;
 
-function isCodeFile(entryName: string): boolean {
+export function isCodeFile(entryName: string): boolean {
   const parts = entryName.replace(/\\/g, '/').split('/');
   const filename = parts[parts.length - 1].toLowerCase();
   if (CODE_FILENAMES.has(filename)) return true;
@@ -59,7 +59,7 @@ const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 /** Space out CloudWatch reads when parsing never yields counts (avoids hammering Logs). */
 const CODEBUILD_METRICS_RETRY_MS = 30_000;
 
-function assertArchiveUpload(file: Express.Multer.File): void {
+export function assertArchiveUpload(file: Express.Multer.File): void {
   const raw = file.originalname ?? '';
   const name = raw.split(/[/\\]/).pop() ?? '';
   const lower = name.toLowerCase();

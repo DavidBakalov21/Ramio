@@ -25,7 +25,7 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmissionChatDto } from './dto/submission-chat.dto';
 
 
-function parseLanguage(raw: string | undefined): AssignmentLanguage | undefined {
+export function parseLanguage(raw: string | undefined): AssignmentLanguage | undefined {
   if (!raw) return undefined;
   const upper = raw.toUpperCase() as AssignmentLanguage;
   if (!Object.values(AssignmentLanguage).includes(upper)) {

@@ -12,7 +12,7 @@ import { StorageService } from '../storage/storage.service';
 const MATERIALS_BUCKET_KEY = 'S3_BUCKET_MATERIALS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 
-function inferType(input: {
+export function inferType(input: {
   mimeType?: string | null;
   name?: string | null;
 }): CourseMaterialType {
@@ -173,5 +173,3 @@ export class CourseMaterialService {
     };
   }
 }
-
-//ffff

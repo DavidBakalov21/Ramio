@@ -63,13 +63,13 @@ export function isTerminalCodeBuildStatus(status: string | null | undefined): bo
   return TERMINAL_CODEBUILD_STATUSES.has(status);
 }
 
-function normalizeLogGroupName(name: string): string {
+export function normalizeLogGroupName(name: string): string {
   const t = name.trim();
   if (!t) return t;
   return t.startsWith('/') ? t : `/${t}`;
 }
 
-function consoleUrlForBuild(build: Build): string | undefined {
+export function consoleUrlForBuild(build: Build): string | undefined {
   const arn = build.arn;
   const id = build.id;
   const projectName = build.projectName;

@@ -4,7 +4,7 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 
 const LAMBDA_ARN_KEY = 'GITHUB_REPO_TO_S3_LAMBDA_ARN';
 
-function regionFromLambdaArn(arn: string): string | undefined {
+export function regionFromLambdaArn(arn: string): string | undefined {
   const m = /^arn:aws:lambda:([^:]+):/.exec(arn);
   return m?.[1];
 }

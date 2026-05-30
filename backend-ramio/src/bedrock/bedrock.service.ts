@@ -33,7 +33,7 @@ class TestSolution(unittest.TestCase):
         self.assertIsNotNone(solution)`;
 }
 
-function toInferenceProfileId(modelId: string, region: string): string {
+export function toInferenceProfileId(modelId: string, region: string): string {
   if (
     modelId.startsWith('us.') ||
     modelId.startsWith('eu.') ||

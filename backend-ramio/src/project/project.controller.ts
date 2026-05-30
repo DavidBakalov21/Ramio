@@ -24,8 +24,8 @@ import { CreateFileCommentDto } from './dto/create-file-comment.dto';
 import { GithubSubmissionDto } from './dto/github-submission.dto';
 import { ProjectService } from './project.service';
 
-function parseOptionalId(raw: string | undefined): bigint | undefined {
-  if (!raw) return undefined;
+export function parseOptionalId(raw: string | undefined): bigint | undefined {
+  if (raw === undefined) return undefined;
   if (!/^\d+$/.test(raw)) {
     throw new BadRequestException(`Invalid id: ${raw}`);
   }

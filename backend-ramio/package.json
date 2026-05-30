@@ -92,8 +92,10 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "setupFilesAfterEnv": ["<rootDir>/jest-setup.ts"],
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1"
+      "^src/(.*)$": "<rootDir>/$1",
+      "^\\.\\./lib/strip-model-code\\.js$": "<rootDir>/lib/strip-model-code.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

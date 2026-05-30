@@ -10,7 +10,7 @@ import type { TestLanguage } from '../bedrock/bedrock.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { stripModelCodeOutput } from '../lib/strip-model-code.js';
 
-function dockerHostBindSource(hostPath: string): string {
+export function dockerHostBindSource(hostPath: string): string {
   const resolved = path.resolve(hostPath);
   if (process.platform === 'win32') {
     return resolved.replace(/\\/g, '/');
