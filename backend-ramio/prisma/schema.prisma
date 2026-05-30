@@ -274,7 +274,6 @@ model PendingEnrollment {
   @@unique([userId, courseId])
 }
 
-// ─── Quiz (Test Tasks) ────────────────────────────────────────────────────────
 
 enum QuizQuestionType {
   ONE_ANSWER
