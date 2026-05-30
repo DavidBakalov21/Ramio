@@ -276,6 +276,18 @@ export class StripeService {
           where: { stripeCustomerId: customerId },
         });
         if (!user) break;
+        const existing = await this.prisma.userSubscription.findUnique({
+          where: { stripeSubscriptionId: subscription.id },
+        });
+        if (
+          existing?.status === 'canceled' &&
+          StripeService.CANCEL_ELIGIBLE_STATUSES.has(subscription.status)
+        ) {
+          this.logger.warn(
+            `Ignoring stale customer.subscription.updated for canceled subscription ${subscription.id}`,
+          );
+          break;
+        }
         const priceId = subscription.items.data[0]?.price?.id ?? undefined;
         await this.upsertSubscription(
           subscription.id,
