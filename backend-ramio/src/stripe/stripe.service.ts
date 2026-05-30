@@ -150,21 +150,19 @@ export class StripeService {
   }
 
   private subscriptionPeriodEndDate(sub: Stripe.Subscription): Date {
+    if (typeof sub.ended_at === 'number' && sub.ended_at > 0) {
+      return new Date(sub.ended_at * 1000);
+    }
     const fromItem = sub.items?.data?.[0]?.current_period_end;
     const legacy = (sub as { current_period_end?: number }).current_period_end;
     const unix =
-      (typeof fromItem === 'number' && fromItem > 0
-        ? fromItem
-        : undefined) ??
-      (typeof legacy === 'number' && legacy > 0 ? legacy : undefined) ??
-      (typeof sub.ended_at === 'number' && sub.ended_at > 0
-        ? sub.ended_at
-        : undefined);
+      (typeof fromItem === 'number' && fromItem > 0 ? fromItem : undefined) ??
+      (typeof legacy === 'number' && legacy > 0 ? legacy : undefined);
     if (unix != null) {
       return new Date(unix * 1000);
     }
     this.logger.warn(
-      `Stripe subscription ${sub.id}: missing current_period_end on items; using current time`,
+      `Stripe subscription ${sub.id}: missing period end dates; using current time`,
     );
     return new Date();
   }
