@@ -43,6 +43,22 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## API documentation (OpenAPI / Swagger)
+
+Swagger UI is enabled by default when `NODE_ENV` is not `production`. Set `SWAGGER_ENABLED=true` to expose it in production, or `SWAGGER_ENABLED=false` to disable it locally.
+
+| Environment | Swagger UI | OpenAPI JSON |
+|-------------|------------|--------------|
+| Local backend | http://localhost:3333/swagger | http://localhost:3333/swagger-json |
+| Behind nginx (`/api` → backend) | https://ramio-lms.com/api/swagger | https://ramio-lms.com/api/swagger-json |
+
+The UI is mounted at `/swagger` on the backend. Nginx forwards `/api/*` to the backend root, so production Swagger is at `/api/swagger`.
+
+Optional env vars:
+
+- `SWAGGER_PATH` — mount path on the backend (default: `swagger`)
+- `SWAGGER_SERVER_URL` — OpenAPI `servers` entry for “Try it out” (production: `https://ramio-lms.com/api`)
+
 ## Run tests
 
 ```bash
