@@ -30,6 +30,7 @@ export default function SubscriptionPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,6 +50,16 @@ export default function SubscriptionPage() {
     };
     fetchUser();
   }, [router]);
+
+  const handleManageSubscription = async () => {
+    setIsRedirecting(true);
+    try {
+      const res = await api.post<{ url: string }>('/stripe/portal-session');
+      window.location.href = res.data.url;
+    } catch {
+      setIsRedirecting(false);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -95,11 +106,21 @@ export default function SubscriptionPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
+            {tier !== 'FREE' && (
+              <button
+                type="button"
+                onClick={() => void handleManageSubscription()}
+                disabled={isRedirecting}
+                className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isRedirecting ? 'Redirecting…' : 'Manage subscription'}
+              </button>
+            )}
             <Link
               href="/support"
-              className="rounded-full bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Manage via support page
+              {tier === 'FREE' ? 'Upgrade plan' : 'Support page'}
             </Link>
             <Link
               href="/courses"

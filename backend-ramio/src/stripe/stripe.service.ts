@@ -76,6 +76,29 @@ export class StripeService {
     return { url: session.url };
   }
 
+  async createPortalSession(user: User) {
+    const customerId = user.stripeCustomerId;
+    if (!customerId) {
+      throw new BadRequestException(
+        'No active subscription found.',
+      );
+    }
+    const frontend = this.config
+      .get<string>('FRONTEND_BASE_URL')
+      ?.replace(/\/$/, '');
+    if (!frontend) {
+      throw new ServiceUnavailableException(
+        'Portal session is not configured (FRONTEND_BASE_URL)',
+      );
+    }
+    const stripe = this.getStripe();
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${frontend}/subscription`,
+    });
+    return { url: session.url };
+  }
+
   async createSubscriptionCheckout(user: User, dto: SubscriptionCheckoutDto) {
     const priceId =
       dto.tier === 'PREMIUM'

@@ -27,6 +27,11 @@ export class StripeController {
     return this.stripeService.createSupportCheckout(user, dto);
   }
 
+  @Post('portal-session')
+  createPortalSession(@User() user: PrismaUser) {
+    return this.stripeService.createPortalSession(user);
+  }
+
   @Post('subscription-checkout')
   createSubscriptionCheckout(
     @User() user: PrismaUser,
