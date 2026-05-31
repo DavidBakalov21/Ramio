@@ -5,11 +5,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { useToast } from '@/app/components/utility/toast';
 import { AssignmentLanguage } from '@/app/interfaces/Assignment';
-import { ASSIGNMENT_LANGUAGE_MAP, getAssignmentLanguageFileExtension } from '@/app/constants/assignmentLanguages';
+import {
+  ASSIGNMENT_LANGUAGE_MAP,
+  getAssignmentLanguageFileExtension,
+} from '@/app/constants/assignmentLanguages';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { TeacherPageShell } from '@/app/components/layout/TeacherPageShell';
 
-const ALL_LANGUAGES = Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[];
+const ALL_LANGUAGES = Object.keys(
+  ASSIGNMENT_LANGUAGE_MAP,
+) as AssignmentLanguage[];
 
 const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   PYTHON: 'text/x-python',
@@ -34,11 +39,18 @@ export default function NewAssignmentPage() {
   const [points, setPoints] = useState(100);
   const [dueDate, setDueDate] = useState('');
 
-  const [activeTestTab, setActiveTestTab] = useState<AssignmentLanguage>('PYTHON');
+  const [activeTestTab, setActiveTestTab] =
+    useState<AssignmentLanguage>('PYTHON');
   const [testStates, setTestStates] = useState<
-    Record<AssignmentLanguage, { code: string; file: File | null; generating: boolean }>
+    Record<
+      AssignmentLanguage,
+      { code: string; file: File | null; generating: boolean }
+    >
   >(() => {
-    const init = {} as Record<AssignmentLanguage, { code: string; file: File | null; generating: boolean }>;
+    const init = {} as Record<
+      AssignmentLanguage,
+      { code: string; file: File | null; generating: boolean }
+    >;
     for (const lang of ALL_LANGUAGES) {
       init[lang] = { code: '', file: null, generating: false };
     }
@@ -49,7 +61,9 @@ export default function NewAssignmentPage() {
     if (!user?.role || !courseId) return;
     const checkCourseAccess = async () => {
       try {
-        const res = await api.get<{ isTeacher: boolean }>(`/course/${courseId}`);
+        const res = await api.get<{ isTeacher: boolean }>(
+          `/course/${courseId}`,
+        );
         setCourseAllowed(!!res.data.isTeacher);
       } catch {
         setCourseAllowed(false);
@@ -58,21 +72,32 @@ export default function NewAssignmentPage() {
     void checkCourseAccess();
   }, [user?.role, courseId]);
 
-  const setTestField = <K extends keyof typeof testStates[AssignmentLanguage]>(
+  const setTestField = <
+    K extends keyof (typeof testStates)[AssignmentLanguage],
+  >(
     lang: AssignmentLanguage,
     field: K,
-    value: typeof testStates[AssignmentLanguage][K],
+    value: (typeof testStates)[AssignmentLanguage][K],
   ) => {
-    setTestStates((prev) => ({ ...prev, [lang]: { ...prev[lang], [field]: value } }));
+    setTestStates((prev) => ({
+      ...prev,
+      [lang]: { ...prev[lang], [field]: value },
+    }));
   };
 
   const handleGenerateTest = async (lang: AssignmentLanguage) => {
     const desc = description.trim();
-    if (!desc) { setError('Enter a description first to generate tests.'); return; }
+    if (!desc) {
+      setError('Enter a description first to generate tests.');
+      return;
+    }
     setError('');
     setTestField(lang, 'generating', true);
     try {
-      const languageMap: Record<AssignmentLanguage, 'python' | 'javascript' | 'java' | 'csharp'> = {
+      const languageMap: Record<
+        AssignmentLanguage,
+        'python' | 'javascript' | 'java' | 'csharp'
+      > = {
         PYTHON: 'python',
         NODE_JS: 'javascript',
         JAVA: 'java',
@@ -95,11 +120,16 @@ export default function NewAssignmentPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) { setError('Title is required.'); return; }
+    if (!trimmedTitle) {
+      setError('Title is required.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
-      const dueDateSeconds = dueDate ? Math.floor(new Date(dueDate).getTime() / 1000) : null;
+      const dueDateSeconds = dueDate
+        ? Math.floor(new Date(dueDate).getTime() / 1000)
+        : null;
       const created = await api.post<{ id: string }>('/assignment', {
         title: trimmedTitle,
         description: description.trim() || undefined,
@@ -130,23 +160,43 @@ export default function NewAssignmentPage() {
       showToast('Assignment created.', 'success');
       router.push(`/courses/${courseId}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to create assignment.');
+      const msg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      setError(
+        Array.isArray(msg)
+          ? msg[0]
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to create assignment.',
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loadingUser || courseAllowed === null) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
+        Loading...
+      </div>
+    );
   }
   if (!user) return null;
   if (!courseAllowed) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Only course teacher can create assignments.</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
+        Only course teacher can create assignments.
+      </div>
+    );
   }
 
   return (
-    <TeacherPageShell user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut}>
+    <TeacherPageShell
+      user={user}
+      onLogout={handleLogout}
+      isLoggingOut={isLoggingOut}
+    >
       <button
         type="button"
         onClick={() => router.push(`/courses/${courseId}`)}
@@ -154,7 +204,9 @@ export default function NewAssignmentPage() {
       >
         ← Back to course
       </button>
-      <h1 className="text-xl font-semibold text-slate-900">Create assignment</h1>
+      <h1 className="text-xl font-semibold text-slate-900">
+        Create assignment
+      </h1>
 
       <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
         <input
@@ -194,11 +246,16 @@ export default function NewAssignmentPage() {
         <div className="rounded-xl border border-slate-200 bg-slate-50/50">
           <div className="border-b border-slate-200 px-3 pt-3">
             <p className="mb-2 text-xs font-medium text-slate-600">
-              Test files <span className="text-slate-400 font-normal">(optional — add one or more language tests)</span>
+              Test files{' '}
+              <span className="text-slate-400 font-normal">
+                (optional — add one or more language tests)
+              </span>
             </p>
             <div className="flex gap-1 flex-wrap">
               {ALL_LANGUAGES.map((lang) => {
-                const hasContent = !!(testStates[lang].file || testStates[lang].code.trim());
+                const hasContent = !!(
+                  testStates[lang].file || testStates[lang].code.trim()
+                );
                 return (
                   <button
                     key={lang}
@@ -243,7 +300,9 @@ export default function NewAssignmentPage() {
                   }}
                   rows={8}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm"
-                  placeholder={ASSIGNMENT_LANGUAGE_MAP[lang].testCodePlaceholder}
+                  placeholder={
+                    ASSIGNMENT_LANGUAGE_MAP[lang].testCodePlaceholder
+                  }
                 />
                 <button
                   type="button"

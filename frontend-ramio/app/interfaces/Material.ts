@@ -12,4 +12,3 @@ export interface CourseMaterial {
   createdAt: string;
   updatedAt: string;
 }
-

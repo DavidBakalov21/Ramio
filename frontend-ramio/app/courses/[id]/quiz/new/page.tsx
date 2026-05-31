@@ -15,7 +15,11 @@ import {
 import type { AssignmentLanguage } from '@/app/interfaces/Assignment';
 import { ASSIGNMENT_LANGUAGE_MAP } from '@/app/constants/assignmentLanguages';
 
-type AnswerDraft = { text: string; isCorrect: boolean; imageUrl: string | null };
+type AnswerDraft = {
+  text: string;
+  isCorrect: boolean;
+  imageUrl: string | null;
+};
 type QuestionDraft = {
   type: QuizQuestionType;
   text: string;
@@ -71,7 +75,10 @@ function blankQuestion(): QuestionDraft {
     text: '',
     points: 1,
     imageUrl: null,
-    answers: [{ text: '', isCorrect: true, imageUrl: null }, { text: '', isCorrect: false, imageUrl: null }],
+    answers: [
+      { text: '', isCorrect: true, imageUrl: null },
+      { text: '', isCorrect: false, imageUrl: null },
+    ],
   };
 }
 
@@ -93,42 +100,71 @@ export default function NewQuizPage() {
   const [allowReview, setAllowReview] = useState(true);
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(true);
   const [showPointsPerQuestion, setShowPointsPerQuestion] = useState(true);
-  const [questions, setQuestions] = useState<QuestionDraft[]>([blankQuestion()]);
+  const [questions, setQuestions] = useState<QuestionDraft[]>([
+    blankQuestion(),
+  ]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiQuestionCount, setAiQuestionCount] = useState('5');
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   useEffect(() => {
     if (!user?.role || !courseId) return;
-    api.get<{ isTeacher: boolean }>(`/course/${courseId}`)
+    api
+      .get<{ isTeacher: boolean }>(`/course/${courseId}`)
       .then((r) => setCourseAllowed(!!r.data.isTeacher))
       .catch(() => setCourseAllowed(false));
   }, [user?.role, courseId]);
 
   const updateQuestion = (qi: number, patch: Partial<QuestionDraft>) =>
-    setQuestions((prev) => prev.map((q, i) => (i === qi ? { ...q, ...patch } : q)));
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === qi ? { ...q, ...patch } : q)),
+    );
 
   const updateAnswer = (qi: number, ai: number, patch: Partial<AnswerDraft>) =>
     setQuestions((prev) =>
       prev.map((q, i) =>
-        i === qi ? { ...q, answers: q.answers.map((a, j) => (j === ai ? { ...a, ...patch } : a)) } : q,
+        i === qi
+          ? {
+              ...q,
+              answers: q.answers.map((a, j) =>
+                j === ai ? { ...a, ...patch } : a,
+              ),
+            }
+          : q,
       ),
     );
 
   const addAnswer = (qi: number) =>
     setQuestions((prev) =>
-      prev.map((q, i) => (i === qi ? { ...q, answers: [...q.answers, { text: '', isCorrect: false, imageUrl: null }] } : q)),
+      prev.map((q, i) =>
+        i === qi
+          ? {
+              ...q,
+              answers: [
+                ...q.answers,
+                { text: '', isCorrect: false, imageUrl: null },
+              ],
+            }
+          : q,
+      ),
     );
 
   const removeAnswer = (qi: number, ai: number) =>
     setQuestions((prev) =>
-      prev.map((q, i) => (i === qi ? { ...q, answers: q.answers.filter((_, j) => j !== ai) } : q)),
+      prev.map((q, i) =>
+        i === qi ? { ...q, answers: q.answers.filter((_, j) => j !== ai) } : q,
+      ),
     );
 
   const setOneCorrect = (qi: number, ai: number) =>
     setQuestions((prev) =>
       prev.map((q, i) =>
-        i === qi ? { ...q, answers: q.answers.map((a, j) => ({ ...a, isCorrect: j === ai })) } : q,
+        i === qi
+          ? {
+              ...q,
+              answers: q.answers.map((a, j) => ({ ...a, isCorrect: j === ai })),
+            }
+          : q,
       ),
     );
 
@@ -141,12 +177,14 @@ export default function NewQuizPage() {
           newQ.answers = [];
           newQ.codingTaskLanguage = newQ.codingTaskLanguage ?? 'PYTHON';
           newQ.codingTaskStarterCode =
-            newQ.codingTaskStarterCode ?? '# solution.py — define symbols your tests import.\n';
+            newQ.codingTaskStarterCode ??
+            '# solution.py — define symbols your tests import.\n';
           newQ.codingTaskTeacherTests =
             newQ.codingTaskTeacherTests ?? DEFAULT_PYTHON_TESTS;
           newQ.codingTaskGradingMode =
             newQ.codingTaskGradingMode ?? 'MANUAL_ONLY';
-          newQ.codingTaskAiReviewEnabled = newQ.codingTaskAiReviewEnabled ?? false;
+          newQ.codingTaskAiReviewEnabled =
+            newQ.codingTaskAiReviewEnabled ?? false;
           newQ.codingTaskAiReviewRubric = newQ.codingTaskAiReviewRubric ?? '';
         } else if (type === 'OPEN_ANSWER') {
           newQ.answers = [];
@@ -170,7 +208,10 @@ export default function NewQuizPage() {
         }
         if (type === 'ONE_ANSWER') {
           const first = newQ.answers.findIndex((a) => a.isCorrect);
-          newQ.answers = newQ.answers.map((a, j) => ({ ...a, isCorrect: j === (first >= 0 ? first : 0) }));
+          newQ.answers = newQ.answers.map((a, j) => ({
+            ...a,
+            isCorrect: j === (first >= 0 ? first : 0),
+          }));
         }
         return newQ;
       }),
@@ -180,7 +221,11 @@ export default function NewQuizPage() {
     const generatedQuestions: QuestionDraft[] = draft.questions.map((q) => {
       const answers: AnswerDraft[] = isQuizOpenStyleQuestion(q.type)
         ? []
-        : q.answers.map((a) => ({ text: a.text, isCorrect: a.isCorrect, imageUrl: null }));
+        : q.answers.map((a) => ({
+            text: a.text,
+            isCorrect: a.isCorrect,
+            imageUrl: null,
+          }));
       return {
         type: q.type,
         text: q.text,
@@ -191,14 +236,12 @@ export default function NewQuizPage() {
           ? {
               codingTaskLanguage: q.codingTaskLanguage ?? 'PYTHON',
               codingTaskStarterCode:
-                (q.codingTaskStarterCode?.trim() ||
-                  '# solution.py — define symbols your tests import.\n'),
+                q.codingTaskStarterCode?.trim() ||
+                '# solution.py — define symbols your tests import.\n',
               codingTaskTeacherTests:
-                (q.codingTaskTeacherTests?.trim() || DEFAULT_PYTHON_TESTS),
-              codingTaskGradingMode:
-                q.codingTaskGradingMode ?? 'MANUAL_ONLY',
-              codingTaskAiReviewEnabled:
-                !!q.codingTaskAiReviewEnabled,
+                q.codingTaskTeacherTests?.trim() || DEFAULT_PYTHON_TESTS,
+              codingTaskGradingMode: q.codingTaskGradingMode ?? 'MANUAL_ONLY',
+              codingTaskAiReviewEnabled: !!q.codingTaskAiReviewEnabled,
               codingTaskAiReviewRubric:
                 q.codingTaskAiReviewRubric?.trim() ?? '',
             }
@@ -232,9 +275,18 @@ export default function NewQuizPage() {
       applyGeneratedDraft(data);
       showToast('Quiz draft generated with AI.', 'success');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-      const resolved = Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to generate AI quiz draft.';
-      if (typeof resolved === 'string' && resolved.toLowerCase().includes('ai returned invalid quiz schema')) {
+      const msg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      const resolved = Array.isArray(msg)
+        ? msg[0]
+        : typeof msg === 'string'
+          ? msg
+          : 'Failed to generate AI quiz draft.';
+      if (
+        typeof resolved === 'string' &&
+        resolved.toLowerCase().includes('ai returned invalid quiz schema')
+      ) {
         const zodMessage = 'ai failed try again or change prompt';
         setError(zodMessage);
         showToast(zodMessage, 'error');
@@ -249,11 +301,20 @@ export default function NewQuizPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmedTitle = title.trim();
-    if (!trimmedTitle) { setError('Title is required.'); return; }
+    if (!trimmedTitle) {
+      setError('Title is required.');
+      return;
+    }
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      if (!q.text.trim()) { setError(`Question ${i + 1} text is required.`); return; }
-      if (q.points < 0) { setError(`Question ${i + 1} points cannot be negative.`); return; }
+      if (!q.text.trim()) {
+        setError(`Question ${i + 1} text is required.`);
+        return;
+      }
+      if (q.points < 0) {
+        setError(`Question ${i + 1} points cannot be negative.`);
+        return;
+      }
       if (q.type === 'CODING_TASK') {
         if (!q.codingTaskLanguage) {
           setError(`Question ${i + 1}: choose a programming language.`);
@@ -264,15 +325,26 @@ export default function NewQuizPage() {
           return;
         }
       } else if (!isQuizOpenStyleQuestion(q.type)) {
-        if (q.answers.length < 2) { setError(`Question ${i + 1} needs at least 2 answers.`); return; }
-        if (!q.answers.some((a) => a.isCorrect)) { setError(`Question ${i + 1} needs at least one correct answer.`); return; }
-        if (q.answers.some((a) => !a.text.trim())) { setError(`All answers in question ${i + 1} need text.`); return; }
+        if (q.answers.length < 2) {
+          setError(`Question ${i + 1} needs at least 2 answers.`);
+          return;
+        }
+        if (!q.answers.some((a) => a.isCorrect)) {
+          setError(`Question ${i + 1} needs at least one correct answer.`);
+          return;
+        }
+        if (q.answers.some((a) => !a.text.trim())) {
+          setError(`All answers in question ${i + 1} need text.`);
+          return;
+        }
       }
     }
     setError('');
     setSubmitting(true);
     try {
-      const deadlineTs = deadline ? Math.floor(new Date(deadline).getTime() / 1000) : undefined;
+      const deadlineTs = deadline
+        ? Math.floor(new Date(deadline).getTime() / 1000)
+        : undefined;
       const timeLimitVal = timeLimit ? Number(timeLimit) : undefined;
       await api.post('/quiz', {
         title: trimmedTitle,
@@ -289,19 +361,19 @@ export default function NewQuizPage() {
           points: q.points,
           order: i,
           imageUrl: q.imageUrl ?? undefined,
-          answers:
-            !isQuizOpenStyleQuestion(q.type)
-              ? q.answers.map((a, j) => ({
-                  text: a.text.trim(),
-                  isCorrect: a.isCorrect,
-                  order: j,
-                  imageUrl: a.imageUrl ?? undefined,
-                }))
-              : undefined,
+          answers: !isQuizOpenStyleQuestion(q.type)
+            ? q.answers.map((a, j) => ({
+                text: a.text.trim(),
+                isCorrect: a.isCorrect,
+                order: j,
+                imageUrl: a.imageUrl ?? undefined,
+              }))
+            : undefined,
           ...(q.type === 'CODING_TASK'
             ? {
                 codingTaskLanguage: q.codingTaskLanguage,
-                codingTaskStarterCode: q.codingTaskStarterCode?.trim() || undefined,
+                codingTaskStarterCode:
+                  q.codingTaskStarterCode?.trim() || undefined,
                 codingTaskTeacherTests: q.codingTaskTeacherTests!.trim(),
                 codingTaskGradingMode: q.codingTaskGradingMode,
                 codingTaskAiReviewEnabled: !!q.codingTaskAiReviewEnabled,
@@ -315,62 +387,132 @@ export default function NewQuizPage() {
       showToast('Quiz created.', 'success');
       router.push(`/courses/${courseId}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to create quiz.');
+      const msg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      setError(
+        Array.isArray(msg)
+          ? msg[0]
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to create quiz.',
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loadingUser || courseAllowed === null) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
+        Loading...
+      </div>
+    );
   }
   if (!user) return null;
   if (!courseAllowed) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">Only the course teacher can create quizzes.</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
+        Only the course teacher can create quizzes.
+      </div>
+    );
   }
 
   return (
-    <TeacherPageShell user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut}>
-      <button type="button" onClick={() => router.push(`/courses/${courseId}`)}
-        className="mb-3 self-start text-xs font-medium text-slate-500 hover:text-slate-700">
+    <TeacherPageShell
+      user={user}
+      onLogout={handleLogout}
+      isLoggingOut={isLoggingOut}
+    >
+      <button
+        type="button"
+        onClick={() => router.push(`/courses/${courseId}`)}
+        className="mb-3 self-start text-xs font-medium text-slate-500 hover:text-slate-700"
+      >
         ← Back to course
       </button>
       <h1 className="text-xl font-semibold text-slate-900">Create quiz</h1>
 
       <form onSubmit={handleSubmit} className="mt-5 grid gap-5">
         <div className="grid gap-3">
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Quiz title" maxLength={255}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-            placeholder="Quiz description (optional)" rows={2} maxLength={4000}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Quiz title"
+            maxLength={255}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Quiz description (optional)"
+            rows={2}
+            maxLength={4000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Time limit (minutes, optional)</label>
-              <input type="number" min={1} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)}
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Time limit (minutes, optional)
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value)}
                 placeholder="No limit"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Deadline (optional)</label>
-              <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+              <label className="mb-1 block text-xs font-medium text-slate-600">
+                Deadline (optional)
+              </label>
+              <input
+                type="datetime-local"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
             </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-700">Review visibility</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-700">
+            Review visibility
+          </p>
           <div className="flex flex-col gap-2">
-            {([
-              ['Allow students to view review page', allowReview, setAllowReview],
-              ['Show correct answers in review', showCorrectAnswers, setShowCorrectAnswers],
-              ['Show points per question in review', showPointsPerQuestion, setShowPointsPerQuestion],
-            ] as [string, boolean, (v: boolean) => void][]).map(([label, value, set]) => (
-              <label key={label} className="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} className="h-4 w-4 accent-violet-600" />
+            {(
+              [
+                [
+                  'Allow students to view review page',
+                  allowReview,
+                  setAllowReview,
+                ],
+                [
+                  'Show correct answers in review',
+                  showCorrectAnswers,
+                  setShowCorrectAnswers,
+                ],
+                [
+                  'Show points per question in review',
+                  showPointsPerQuestion,
+                  setShowPointsPerQuestion,
+                ],
+              ] as [string, boolean, (v: boolean) => void][]
+            ).map(([label, value, set]) => (
+              <label
+                key={label}
+                className="flex cursor-pointer items-center gap-2"
+              >
+                <input
+                  type="checkbox"
+                  checked={value}
+                  onChange={(e) => set(e.target.checked)}
+                  className="h-4 w-4 accent-violet-600"
+                />
                 <span className="text-sm text-slate-700">{label}</span>
               </label>
             ))}
@@ -378,9 +520,14 @@ export default function NewQuizPage() {
         </div>
 
         <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4">
-          <p className="text-sm font-semibold text-violet-900">Generate with AI</p>
+          <p className="text-sm font-semibold text-violet-900">
+            Generate with AI
+          </p>
           <p className="mt-1 text-xs text-violet-800/90">
-            Write freely—topic, difficulty, languages, roughly how many of each question style, coding vs multiple choice vs short answer. You don&apos;t need any special format; the assistant figures out structure. Generated content replaces your current draft.
+            Write freely—topic, difficulty, languages, roughly how many of each
+            question style, coding vs multiple choice vs short answer. You
+            don&apos;t need any special format; the assistant figures out
+            structure. Generated content replaces your current draft.
           </p>
           <div className="mt-3 grid gap-3">
             <textarea
@@ -393,7 +540,9 @@ export default function NewQuizPage() {
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-violet-900">Questions:</label>
+                <label className="text-xs font-medium text-violet-900">
+                  Questions:
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -418,130 +567,241 @@ export default function NewQuizPage() {
         <div className="flex flex-col gap-4">
           <p className="text-sm font-semibold text-slate-800">Questions</p>
           {questions.map((q, qi) => (
-            <div key={qi} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div
+              key={qi}
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
               <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-500">Question {qi + 1}</span>
+                <span className="text-xs font-semibold text-slate-500">
+                  Question {qi + 1}
+                </span>
                 {questions.length > 1 && (
-                  <button type="button" onClick={() => setQuestions((p) => p.filter((_, i) => i !== qi))}
-                    className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setQuestions((p) => p.filter((_, i) => i !== qi))
+                    }
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
                 )}
               </div>
 
-                <div className="grid gap-3">
-                <textarea value={q.text} onChange={(e) => updateQuestion(qi, { text: e.target.value })}
-                  placeholder="Question text" rows={2} maxLength={2000}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
-                <QuizImageUpload value={q.imageUrl} onChange={(url) => updateQuestion(qi, { imageUrl: url })} />
+              <div className="grid gap-3">
+                <textarea
+                  value={q.text}
+                  onChange={(e) => updateQuestion(qi, { text: e.target.value })}
+                  placeholder="Question text"
+                  rows={2}
+                  maxLength={2000}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                />
+                <QuizImageUpload
+                  value={q.imageUrl}
+                  onChange={(url) => updateQuestion(qi, { imageUrl: url })}
+                />
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <select value={q.type} onChange={(e) => changeQuestionType(qi, e.target.value as QuizQuestionType)}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
-                    {(Object.keys(QUESTION_TYPE_LABELS) as QuizQuestionType[]).map((t) => (
-                      <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
+                  <select
+                    value={q.type}
+                    onChange={(e) =>
+                      changeQuestionType(qi, e.target.value as QuizQuestionType)
+                    }
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+                  >
+                    {(
+                      Object.keys(QUESTION_TYPE_LABELS) as QuizQuestionType[]
+                    ).map((t) => (
+                      <option key={t} value={t}>
+                        {QUESTION_TYPE_LABELS[t]}
+                      </option>
                     ))}
                   </select>
                   <div className="flex items-center gap-1.5">
                     <label className="text-xs text-slate-600">Points:</label>
-                    <input type="number" min={0} step="any" value={q.points}
-                      onChange={(e) => updateQuestion(qi, { points: Number(e.target.value) })}
-                      className="w-20 rounded-xl border border-slate-200 px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none" />
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={q.points}
+                      onChange={(e) =>
+                        updateQuestion(qi, { points: Number(e.target.value) })
+                      }
+                      className="w-20 rounded-xl border border-slate-200 px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                    />
                   </div>
                 </div>
 
                 {!isQuizOpenStyleQuestion(q.type) && (
                   <div className="flex flex-col gap-2 mt-1">
                     <p className="text-xs text-slate-500">
-                      {q.type === 'ONE_ANSWER' ? 'Select one correct answer:' : 'Select all correct answers:'}
+                      {q.type === 'ONE_ANSWER'
+                        ? 'Select one correct answer:'
+                        : 'Select all correct answers:'}
                     </p>
                     {q.answers.map((a, ai) => (
-                      <div key={ai} className="flex flex-col gap-1.5 rounded-xl border border-slate-200 p-2">
+                      <div
+                        key={ai}
+                        className="flex flex-col gap-1.5 rounded-xl border border-slate-200 p-2"
+                      >
                         <div className="flex items-center gap-2">
                           {q.type === 'ONE_ANSWER' ? (
-                            <input type="radio" name={`q${qi}`} checked={a.isCorrect}
+                            <input
+                              type="radio"
+                              name={`q${qi}`}
+                              checked={a.isCorrect}
                               onChange={() => setOneCorrect(qi, ai)}
-                              className="h-4 w-4 shrink-0 accent-violet-600" />
+                              className="h-4 w-4 shrink-0 accent-violet-600"
+                            />
                           ) : (
-                            <input type="checkbox" checked={a.isCorrect}
-                              onChange={(e) => updateAnswer(qi, ai, { isCorrect: e.target.checked })}
-                              className="h-4 w-4 shrink-0 accent-violet-600" />
+                            <input
+                              type="checkbox"
+                              checked={a.isCorrect}
+                              onChange={(e) =>
+                                updateAnswer(qi, ai, {
+                                  isCorrect: e.target.checked,
+                                })
+                              }
+                              className="h-4 w-4 shrink-0 accent-violet-600"
+                            />
                           )}
-                          <input type="text" value={a.text}
-                            onChange={(e) => updateAnswer(qi, ai, { text: e.target.value })}
-                            placeholder={`Answer ${ai + 1}`} maxLength={1000}
-                            className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none" />
+                          <input
+                            type="text"
+                            value={a.text}
+                            onChange={(e) =>
+                              updateAnswer(qi, ai, { text: e.target.value })
+                            }
+                            placeholder={`Answer ${ai + 1}`}
+                            maxLength={1000}
+                            className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                          />
                           {q.answers.length > 2 && (
-                            <button type="button" onClick={() => removeAnswer(qi, ai)}
-                              className="shrink-0 text-xs text-slate-400 hover:text-red-500">✕</button>
+                            <button
+                              type="button"
+                              onClick={() => removeAnswer(qi, ai)}
+                              className="shrink-0 text-xs text-slate-400 hover:text-red-500"
+                            >
+                              ✕
+                            </button>
                           )}
                         </div>
-                        <QuizImageUpload value={a.imageUrl} onChange={(url) => updateAnswer(qi, ai, { imageUrl: url })} />
+                        <QuizImageUpload
+                          value={a.imageUrl}
+                          onChange={(url) =>
+                            updateAnswer(qi, ai, { imageUrl: url })
+                          }
+                        />
                       </div>
                     ))}
-                    <button type="button" onClick={() => addAnswer(qi)}
-                      className="self-start text-xs font-medium text-violet-600 hover:text-violet-800">
+                    <button
+                      type="button"
+                      onClick={() => addAnswer(qi)}
+                      className="self-start text-xs font-medium text-violet-600 hover:text-violet-800"
+                    >
                       + Add answer
                     </button>
                   </div>
                 )}
 
                 {q.type === 'OPEN_ANSWER' && (
-                  <p className="text-xs italic text-slate-500">Students write a text answer. You grade it manually.</p>
+                  <p className="text-xs italic text-slate-500">
+                    Students write a text answer. You grade it manually.
+                  </p>
                 )}
 
                 {q.type === 'CODING_TASK' && (
                   <div className="mt-1 grid gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
                     <p className="text-xs text-slate-600">
-                      Same Docker runners as course assignments (<code className="text-[11px]">solution.py</code> /
-                      {' '}<code className="text-[11px]">test_solution.py</code> for Python, etc.).
+                      Same Docker runners as course assignments (
+                      <code className="text-[11px]">solution.py</code> /{' '}
+                      <code className="text-[11px]">test_solution.py</code> for
+                      Python, etc.).
                     </p>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">Language</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        Language
+                      </label>
                       <select
                         value={q.codingTaskLanguage ?? 'PYTHON'}
                         onChange={(e) =>
                           updateQuestion(qi, {
-                            codingTaskLanguage: e.target.value as AssignmentLanguage,
-                          })}
-                        className="w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
-                        {(Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]).map((lang) => (
-                          <option key={lang} value={lang}>{ASSIGNMENT_LANGUAGE_MAP[lang].label}</option>
+                            codingTaskLanguage: e.target
+                              .value as AssignmentLanguage,
+                          })
+                        }
+                        className="w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+                      >
+                        {(
+                          Object.keys(
+                            ASSIGNMENT_LANGUAGE_MAP,
+                          ) as AssignmentLanguage[]
+                        ).map((lang) => (
+                          <option key={lang} value={lang}>
+                            {ASSIGNMENT_LANGUAGE_MAP[lang].label}
+                          </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">Starter code (shown to students)</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        Starter code (shown to students)
+                      </label>
                       <textarea
                         value={q.codingTaskStarterCode ?? ''}
                         onChange={(e) =>
-                          updateQuestion(qi, { codingTaskStarterCode: e.target.value })}
+                          updateQuestion(qi, {
+                            codingTaskStarterCode: e.target.value,
+                          })
+                        }
                         rows={5}
                         maxLength={100_000}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">Teacher unit tests</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        Teacher unit tests
+                      </label>
                       <textarea
                         value={q.codingTaskTeacherTests ?? ''}
                         onChange={(e) =>
-                          updateQuestion(qi, { codingTaskTeacherTests: e.target.value })}
+                          updateQuestion(qi, {
+                            codingTaskTeacherTests: e.target.value,
+                          })
+                        }
                         rows={10}
                         maxLength={100_000}
-                        placeholder={ASSIGNMENT_LANGUAGE_MAP[q.codingTaskLanguage ?? 'PYTHON'].testCodePlaceholder}
+                        placeholder={
+                          ASSIGNMENT_LANGUAGE_MAP[
+                            q.codingTaskLanguage ?? 'PYTHON'
+                          ].testCodePlaceholder
+                        }
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">Grading</label>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        Grading
+                      </label>
                       <select
                         value={q.codingTaskGradingMode ?? 'MANUAL_ONLY'}
                         onChange={(e) =>
                           updateQuestion(qi, {
-                            codingTaskGradingMode: e.target.value as QuizCodingGradingMode,
-                          })}
-                        className="w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
-                        {(Object.keys(CODING_GRADING_LABELS) as QuizCodingGradingMode[]).map((m) => (
-                          <option key={m} value={m}>{CODING_GRADING_LABELS[m]}</option>
+                            codingTaskGradingMode: e.target
+                              .value as QuizCodingGradingMode,
+                          })
+                        }
+                        className="w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+                      >
+                        {(
+                          Object.keys(
+                            CODING_GRADING_LABELS,
+                          ) as QuizCodingGradingMode[]
+                        ).map((m) => (
+                          <option key={m} value={m}>
+                            {CODING_GRADING_LABELS[m]}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -552,10 +812,13 @@ export default function NewQuizPage() {
                         onChange={(e) =>
                           updateQuestion(qi, {
                             codingTaskAiReviewEnabled: e.target.checked,
-                          })}
+                          })
+                        }
                         className="h-4 w-4 accent-violet-600"
                       />
-                      <span className="text-sm text-slate-700">AI code review after submit</span>
+                      <span className="text-sm text-slate-700">
+                        AI code review after submit
+                      </span>
                     </label>
                     {q.codingTaskAiReviewEnabled && (
                       <div>
@@ -563,12 +826,16 @@ export default function NewQuizPage() {
                           AI review hints (optional)
                         </label>
                         <p className="mb-1.5 text-xs text-slate-500">
-                          Extra guidance sent to the model with the problem and test output.
+                          Extra guidance sent to the model with the problem and
+                          test output.
                         </p>
                         <textarea
                           value={q.codingTaskAiReviewRubric ?? ''}
                           onChange={(e) =>
-                            updateQuestion(qi, { codingTaskAiReviewRubric: e.target.value })}
+                            updateQuestion(qi, {
+                              codingTaskAiReviewRubric: e.target.value,
+                            })
+                          }
                           rows={2}
                           maxLength={4000}
                           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
@@ -581,8 +848,11 @@ export default function NewQuizPage() {
             </div>
           ))}
 
-          <button type="button" onClick={() => setQuestions((p) => [...p, blankQuestion()])}
-            className="self-start rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50">
+          <button
+            type="button"
+            onClick={() => setQuestions((p) => [...p, blankQuestion()])}
+            className="self-start rounded-full border border-violet-300 bg-white px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50"
+          >
             + Add question
           </button>
         </div>
@@ -590,12 +860,18 @@ export default function NewQuizPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => router.push(`/courses/${courseId}`)}
-            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <button
+            type="button"
+            onClick={() => router.push(`/courses/${courseId}`)}
+            className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={submitting}
-            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
             {submitting ? 'Creating…' : 'Create quiz'}
           </button>
         </div>

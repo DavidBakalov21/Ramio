@@ -44,4 +44,3 @@ export function useRequireUser() {
 
   return { user, loadingUser, isLoggingOut, handleLogout };
 }
-

@@ -88,7 +88,10 @@ export class CourseController {
   }
 
   @Get(':id/materials')
-  getMaterials(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
+  getMaterials(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
     return this.materialService.list(BigInt(id), user.id);
   }
 
@@ -140,7 +143,11 @@ export class CourseController {
     @Param('userId', ParseIntPipe) userId: number,
     @User() user: PrismaUser,
   ) {
-    return this.courseService.removeEnrollment(BigInt(id), BigInt(userId), user.id);
+    return this.courseService.removeEnrollment(
+      BigInt(id),
+      BigInt(userId),
+      user.id,
+    );
   }
 
   @Get(':id/student-results')

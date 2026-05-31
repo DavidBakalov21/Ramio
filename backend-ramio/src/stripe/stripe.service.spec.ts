@@ -75,7 +75,9 @@ describe('StripeService.handleWebhook', () => {
       status: 'active',
       customer: customerId,
       items: {
-        data: [{ current_period_end: periodEndUnix, price: { id: premiumPriceId } }],
+        data: [
+          { current_period_end: periodEndUnix, price: { id: premiumPriceId } },
+        ],
       },
     });
     mockSubscriptionsCancel.mockResolvedValue({});
@@ -127,7 +129,12 @@ describe('StripeService.handleWebhook', () => {
           customer: customerId,
           ended_at: periodEndUnix,
           items: {
-            data: [{ current_period_end: periodEndUnix, price: { id: premiumPriceId } }],
+            data: [
+              {
+                current_period_end: periodEndUnix,
+                price: { id: premiumPriceId },
+              },
+            ],
           },
         },
       },
@@ -216,8 +223,7 @@ describe('StripeService.handleWebhook', () => {
       await dispatch(subscriptionDeletedEvent());
       await dispatch(subscriptionUpdatedEvent('active'));
 
-      const lastUpsert =
-        prisma.userSubscription.upsert.mock.calls.at(-1)?.[0];
+      const lastUpsert = prisma.userSubscription.upsert.mock.calls.at(-1)?.[0];
       expect(lastUpsert?.update?.status ?? lastUpsert?.create?.status).toBe(
         'canceled',
       );

@@ -16,9 +16,7 @@ export class RamioStack extends cdk.Stack {
       (this.node.tryGetContext('dbAccessCidr') as string | undefined) ??
       sshCidr;
 
-    const gravitonInstance = /^(t4g|m7g|c7g|r7g|g5g)/i.test(
-      ec2InstanceTypeId,
-    );
+    const gravitonInstance = /^(t4g|m7g|c7g|r7g|g5g)/i.test(ec2InstanceTypeId);
     const ubuntuSsmParameter = gravitonInstance
       ? '/aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id'
       : '/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id';
@@ -164,7 +162,8 @@ export class RamioStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'Ec2InstanceId', { value: instance.instanceId });
     new cdk.CfnOutput(this, 'Ec2PublicIp', {
       value: instance.instancePublicIp,
-      description: 'Instance public IP attribute (may be empty when using Elastic IP)',
+      description:
+        'Instance public IP attribute (may be empty when using Elastic IP)',
     });
     new cdk.CfnOutput(this, 'Ec2ElasticIp', {
       value: appElasticIp.ref,

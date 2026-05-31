@@ -49,11 +49,17 @@ export function EditProjectModal({
   const [assessmentPrompt, setAssessmentPrompt] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [validationError, setValidationError] = useState('');
-  const [submissions, setSubmissions] = useState<ProjectSubmissionListItem[]>([]);
+  const [submissions, setSubmissions] = useState<ProjectSubmissionListItem[]>(
+    [],
+  );
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [assessModalOpen, setAssessModalOpen] = useState(false);
-  const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(null);
-  const [codeBuildLoadingId, setCodeBuildLoadingId] = useState<string | null>(null);
+  const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(
+    null,
+  );
+  const [codeBuildLoadingId, setCodeBuildLoadingId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isOpen && project) {
@@ -61,7 +67,11 @@ export function EditProjectModal({
       setDescription(project.description ?? '');
       setPoints(project.points);
       setLanguage(project.language ?? 'PYTHON');
-      setDueDate(project.dueDate ? new Date(project.dueDate).toISOString().slice(0, 10) : '');
+      setDueDate(
+        project.dueDate
+          ? new Date(project.dueDate).toISOString().slice(0, 10)
+          : '',
+      );
       setAssessmentPrompt(project.assessmentPrompt ?? '');
       setValidationError('');
       setSubmissions([]);
@@ -136,9 +146,9 @@ export function EditProjectModal({
   const handleAssessSaved = useCallback(() => {
     if (project) {
       void api
-        .get<ProjectSubmissionListItem[]>(
-          `/project/${project.id}/submissions?syncCodeBuild=1`,
-        )
+        .get<
+          ProjectSubmissionListItem[]
+        >(`/project/${project.id}/submissions?syncCodeBuild=1`)
         .then((res) => {
           setSubmissions(res.data);
         });
@@ -149,16 +159,23 @@ export function EditProjectModal({
     if (!project) return;
     setCodeBuildLoadingId(submissionId);
     try {
-      await api.post(`/project/${project.id}/submission/${submissionId}/codebuild-run`);
+      await api.post(
+        `/project/${project.id}/submission/${submissionId}/codebuild-run`,
+      );
       const res = await api.get<ProjectSubmissionListItem[]>(
         `/project/${project.id}/submissions?syncCodeBuild=1`,
       );
       setSubmissions(res.data);
       showToast('CodeBuild run started.', 'success');
     } catch (err: unknown) {
-      const res = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data?.message;
-      const msg = Array.isArray(res) ? res[0] : typeof res === 'string' ? res : 'Could not start CodeBuild';
+      const res = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      const msg = Array.isArray(res)
+        ? res[0]
+        : typeof res === 'string'
+          ? res
+          : 'Could not start CodeBuild';
       showToast(msg, 'error');
     } finally {
       setCodeBuildLoadingId(null);
@@ -167,7 +184,8 @@ export function EditProjectModal({
 
   const handleDelete = async () => {
     if (!project || !onDelete) return;
-    if (!confirm(`Delete project "${project.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete project "${project.title}"? This cannot be undone.`))
+      return;
     setDeleting(true);
     try {
       await onDelete(project.id);
@@ -190,7 +208,10 @@ export function EditProjectModal({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="edit-project-title" className="text-lg font-semibold text-slate-900">
+        <h2
+          id="edit-project-title"
+          className="text-lg font-semibold text-slate-900"
+        >
           Edit project
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -230,7 +251,10 @@ export function EditProjectModal({
             />
           </div>
           <div>
-            <label htmlFor="edit-project-language" className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="edit-project-language"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Language / CodeBuild stack
             </label>
             <select
@@ -249,7 +273,10 @@ export function EditProjectModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="edit-project-points" className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="edit-project-points"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 Points
               </label>
               <input
@@ -263,7 +290,10 @@ export function EditProjectModal({
               />
             </div>
             <div>
-              <label htmlFor="edit-project-due" className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="edit-project-due"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 Due date <span className="text-slate-400">(optional)</span>
               </label>
               <input
@@ -277,8 +307,12 @@ export function EditProjectModal({
             </div>
           </div>
           <div>
-            <label htmlFor="edit-project-prompt" className="mb-1 block text-xs font-medium text-slate-600">
-              Assessment notes <span className="text-slate-400">(optional)</span>
+            <label
+              htmlFor="edit-project-prompt"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
+              Assessment notes{' '}
+              <span className="text-slate-400">(optional)</span>
             </label>
             <textarea
               id="edit-project-prompt"
@@ -292,7 +326,9 @@ export function EditProjectModal({
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
+            <p className="mb-2 text-xs font-medium text-slate-600">
+              Submissions
+            </p>
             {submissionsLoading ? (
               <p className="text-xs text-slate-500">Loading submissions…</p>
             ) : submissions.length === 0 ? (
@@ -304,7 +340,7 @@ export function EditProjectModal({
                   const cbLabel =
                     s.codeBuildStatus === 'IN_PROGRESS' && s.codeBuildPhase
                       ? `${s.codeBuildStatus} · ${s.codeBuildPhase}`
-                      : s.codeBuildStatus ?? '—';
+                      : (s.codeBuildStatus ?? '—');
                   const passed = s.codeBuildTestsPassed;
                   const failed = s.codeBuildTestsFailed;
                   const skipped = s.codeBuildTestsSkipped;
@@ -332,12 +368,17 @@ export function EditProjectModal({
                           {s.user.username || s.user.email}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {s.isChecked ? `${s.points} pts · Checked` : 'Not assessed yet'}
+                          {s.isChecked
+                            ? `${s.points} pts · Checked`
+                            : 'Not assessed yet'}
                         </p>
                         <p className="mt-1 text-[11px] text-slate-400">
                           CodeBuild: {cbLabel}
                           {testSummary ? (
-                            <span className="text-slate-500"> — {testSummary}</span>
+                            <span className="text-slate-500">
+                              {' '}
+                              — {testSummary}
+                            </span>
                           ) : null}
                           {s.codeBuildTestMetricsAt &&
                           s.codeBuildStatus !== 'IN_PROGRESS' &&
@@ -429,7 +470,9 @@ export function EditProjectModal({
 
   return (
     <>
-      {typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null}
+      {typeof document !== 'undefined'
+        ? createPortal(modalContent, document.body)
+        : null}
       <AssessProjectSubmissionModal
         isOpen={assessModalOpen}
         submissionId={assessSubmissionId}

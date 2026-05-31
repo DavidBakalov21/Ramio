@@ -58,7 +58,10 @@ export function QuizImageUpload({ value, onChange }: QuizImageUploadProps) {
           </div>
           <button
             type="button"
-            onClick={() => { onChange(null); if (inputRef.current) inputRef.current.value = ''; }}
+            onClick={() => {
+              onChange(null);
+              if (inputRef.current) inputRef.current.value = '';
+            }}
             className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
             title="Remove image"
           >
@@ -81,7 +84,10 @@ export function QuizImageUpload({ value, onChange }: QuizImageUploadProps) {
         type="file"
         accept=".jpg,.jpeg,.png,.webp,.gif"
         className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+        }}
       />
     </div>
   );

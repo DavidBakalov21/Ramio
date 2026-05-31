@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 
@@ -21,7 +25,8 @@ export class ProjectZipToPromptService {
   private readonly lambdaClient: LambdaClient | null;
 
   constructor(private readonly config: ConfigService) {
-    this.lambdaArn = this.config.get<string>(LAMBDA_ARN_KEY)?.trim() || undefined;
+    this.lambdaArn =
+      this.config.get<string>(LAMBDA_ARN_KEY)?.trim() || undefined;
     const region = this.lambdaArn
       ? regionFromLambdaArn(this.lambdaArn)
       : undefined;
@@ -43,7 +48,6 @@ export class ProjectZipToPromptService {
     }
   }
 
-
   async buildProjectFilesXmlFromS3(
     bucket: string,
     key: string,
@@ -62,9 +66,7 @@ export class ProjectZipToPromptService {
       }
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Lambda zip parser failed: ${msg}`);
-      throw new ServiceUnavailableException(
-        `ZIP parser Lambda failed: ${msg}`,
-      );
+      throw new ServiceUnavailableException(`ZIP parser Lambda failed: ${msg}`);
     }
   }
 
@@ -80,9 +82,7 @@ export class ProjectZipToPromptService {
       }),
     );
 
-    const raw = res.Payload
-      ? Buffer.from(res.Payload).toString('utf8')
-      : '';
+    const raw = res.Payload ? Buffer.from(res.Payload).toString('utf8') : '';
     if (!raw) {
       throw new Error('Empty Lambda response');
     }
@@ -94,8 +94,7 @@ export class ProjectZipToPromptService {
         if (errBody.errorMessage) {
           detail = errBody.errorMessage;
         }
-      } catch {
-      }
+      } catch {}
       throw new Error(detail);
     }
 

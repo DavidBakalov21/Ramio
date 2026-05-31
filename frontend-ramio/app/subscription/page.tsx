@@ -7,7 +7,10 @@ import { api } from '@/lib/axios';
 import { Navbar } from '@/app/components/Navbar';
 import { User, UserSubscriptionTier } from '@/app/interfaces/User';
 
-const tierInfo: Record<UserSubscriptionTier, { title: string; badgeClass: string; note: string }> = {
+const tierInfo: Record<
+  UserSubscriptionTier,
+  { title: string; badgeClass: string; note: string }
+> = {
   FREE: {
     title: 'Free',
     badgeClass: 'bg-slate-100 text-slate-700',
@@ -90,15 +93,22 @@ export default function SubscriptionPage() {
       <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 px-4 py-8">
         <section className="w-full rounded-[1.9rem] bg-white/85 p-8 shadow-xl ring-1 ring-white/60 backdrop-blur-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">Your subscription</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Your subscription
+          </h1>
           <p className="mt-2 text-sm text-slate-600">
-            This page shows your current Ramio plan based on synced Stripe webhook data.
+            This page shows your current Ramio plan based on synced Stripe
+            webhook data.
           </p>
 
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-            <p className="text-xs uppercase tracking-wider text-slate-500">Current plan</p>
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Current plan
+            </p>
             <div className="mt-2 flex items-center gap-3">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${tierInfo[tier].badgeClass}`}>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${tierInfo[tier].badgeClass}`}
+              >
                 {tierInfo[tier].title}
               </span>
               <p className="text-sm text-slate-600">{tierInfo[tier].note}</p>

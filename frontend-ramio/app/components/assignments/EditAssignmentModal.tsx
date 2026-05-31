@@ -52,13 +52,19 @@ export function EditAssignmentModal({
   const [submissions, setSubmissions] = useState<SubmissionListItem[]>([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [assessModalOpen, setAssessModalOpen] = useState(false);
-  const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(null);
+  const [assessSubmissionId, setAssessSubmissionId] = useState<string | null>(
+    null,
+  );
 
   const fetchTestCode = useCallback(async (assignmentId: string) => {
     setTestCodeLoading(true);
     try {
-      const res = await api.get<string>(`/assignment/${assignmentId}/test-file`);
-      setNewTestCode(typeof res.data === 'string' ? res.data : String(res.data ?? ''));
+      const res = await api.get<string>(
+        `/assignment/${assignmentId}/test-file`,
+      );
+      setNewTestCode(
+        typeof res.data === 'string' ? res.data : String(res.data ?? ''),
+      );
     } catch {
       setNewTestCode('');
     } finally {
@@ -73,7 +79,9 @@ export function EditAssignmentModal({
       setPoints(assignment.points);
       setLanguage(assignment.language);
       setDueDate(
-        assignment.dueDate ? new Date(assignment.dueDate).toISOString().slice(0, 10) : '',
+        assignment.dueDate
+          ? new Date(assignment.dueDate).toISOString().slice(0, 10)
+          : '',
       );
       setNewTestFile(null);
       setValidationError('');
@@ -93,7 +101,9 @@ export function EditAssignmentModal({
       const fetchSubmissions = async () => {
         setSubmissionsLoading(true);
         try {
-          const res = await api.get<SubmissionListItem[]>(`/assignment/${assignment.id}/submissions`);
+          const res = await api.get<SubmissionListItem[]>(
+            `/assignment/${assignment.id}/submissions`,
+          );
           setSubmissions(res.data);
         } catch {
           setSubmissions([]);
@@ -146,15 +156,22 @@ export function EditAssignmentModal({
 
   const handleAssessSaved = useCallback(() => {
     if (assignment) {
-      api.get<SubmissionListItem[]>(`/assignment/${assignment.id}/submissions`).then((res) => {
-        setSubmissions(res.data);
-      });
+      api
+        .get<SubmissionListItem[]>(`/assignment/${assignment.id}/submissions`)
+        .then((res) => {
+          setSubmissions(res.data);
+        });
     }
   }, [assignment]);
 
   const handleDelete = async () => {
     if (!assignment || !onDelete) return;
-    if (!confirm(`Delete assignment "${assignment.title}"? This cannot be undone.`)) return;
+    if (
+      !confirm(
+        `Delete assignment "${assignment.title}"? This cannot be undone.`,
+      )
+    )
+      return;
     setDeleting(true);
     try {
       await onDelete(assignment.id);
@@ -179,7 +196,10 @@ export function EditAssignmentModal({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="edit-assignment-title" className="text-lg font-semibold text-slate-900">
+        <h2
+          id="edit-assignment-title"
+          className="text-lg font-semibold text-slate-900"
+        >
           Edit assignment
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -265,11 +285,15 @@ export function EditAssignmentModal({
             <select
               id="edit-assignment-language"
               value={language}
-              onChange={(e) => setLanguage(e.target.value as AssignmentLanguage)}
+              onChange={(e) =>
+                setLanguage(e.target.value as AssignmentLanguage)
+              }
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}
             >
-              {(Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]).map((lang) => (
+              {(
+                Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]
+              ).map((lang) => (
                 <option key={lang} value={lang}>
                   {ASSIGNMENT_LANGUAGE_MAP[lang].label}
                 </option>
@@ -310,7 +334,9 @@ export function EditAssignmentModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-400">
-                {primaryTestFile ? 'Edit test code below:' : 'or paste new test code:'}
+                {primaryTestFile
+                  ? 'Edit test code below:'
+                  : 'or paste new test code:'}
               </p>
               <textarea
                 value={newTestCode}
@@ -332,7 +358,9 @@ export function EditAssignmentModal({
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
+            <p className="mb-2 text-xs font-medium text-slate-600">
+              Submissions
+            </p>
             {submissionsLoading ? (
               <p className="text-xs text-slate-500">Loading submissions…</p>
             ) : submissions.length === 0 ? (
@@ -409,7 +437,9 @@ export function EditAssignmentModal({
 
   return (
     <>
-      {typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null}
+      {typeof document !== 'undefined'
+        ? createPortal(modalContent, document.body)
+        : null}
       <AssessSubmissionModal
         isOpen={assessModalOpen}
         submissionId={assessSubmissionId}

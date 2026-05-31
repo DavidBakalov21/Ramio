@@ -46,9 +46,7 @@ class TestQuiz(unittest.TestCase):
 `;
 const FALLBACK_AI_CODING_PYTHON_STARTER = `# solution.py — define symbols your tests import.\n`;
 
-function fallbackGeneratedTeacherTests(
-  lang: AssignmentLanguage,
-): string {
+function fallbackGeneratedTeacherTests(lang: AssignmentLanguage): string {
   switch (lang) {
     case AssignmentLanguage.PYTHON:
       return FALLBACK_AI_CODING_PYTHON_TESTS;
@@ -134,14 +132,10 @@ const GeneratedQuizQuestionSchema = z
       q.codingTaskAiReviewEnabled !== undefined ||
       (q.codingTaskAiReviewRubric !== undefined &&
         q.codingTaskAiReviewRubric.trim().length > 0);
-    if (
-      q.type !== QuizQuestionType.CODING_TASK &&
-      hasCodingField
-    ) {
+    if (q.type !== QuizQuestionType.CODING_TASK && hasCodingField) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message:
-          'codingTask* keys are only allowed when type is CODING_TASK',
+        message: 'codingTask* keys are only allowed when type is CODING_TASK',
         path: ['type'],
       });
     }
@@ -165,7 +159,6 @@ export class QuizService {
     private readonly bedrock: BedrockService,
     private readonly codeTestService: CodeTestService,
   ) {}
-
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
     if (!ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
@@ -200,7 +193,6 @@ export class QuizService {
     );
     return { url };
   }
-
 
   async create(teacherId: bigint, dto: CreateQuizDto) {
     await this.assertTeacherOwnsCourse(BigInt(dto.courseId), teacherId);
@@ -242,14 +234,16 @@ export class QuizService {
             imageUrl: q.imageUrl ?? null,
             ...(q.type === QuizQuestionType.CODING_TASK
               ? {
-                  codingTaskLanguage: q.codingTaskLanguage as AssignmentLanguage,
+                  codingTaskLanguage:
+                    q.codingTaskLanguage as AssignmentLanguage,
                   codingTaskStarterCode: q.codingTaskStarterCode ?? null,
                   codingTaskTeacherTests:
                     q.codingTaskTeacherTests?.trim() ?? null,
                   codingTaskGradingMode:
                     q.codingTaskGradingMode ??
                     QuizCodingGradingMode.MANUAL_ONLY,
-                  codingTaskAiReviewEnabled: q.codingTaskAiReviewEnabled ?? false,
+                  codingTaskAiReviewEnabled:
+                    q.codingTaskAiReviewEnabled ?? false,
                   codingTaskAiReviewRubric: q.codingTaskAiReviewRubric ?? null,
                 }
               : {}),
@@ -347,7 +341,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-
   async findByCourse(courseId: bigint, userId: bigint) {
     await this.assertCanAccessCourse(courseId, userId);
 
@@ -386,7 +379,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     });
   }
 
-
   async findOne(quizId: bigint, userId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -407,7 +399,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
 
     return this.toQuizResponse(quiz, isTeacher);
   }
-
 
   async startQuiz(quizId: bigint, studentId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -462,7 +453,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-
   async saveAnswers(
     quizId: bigint,
     studentId: bigint,
@@ -479,7 +469,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     await this.upsertAnswers(submission.id, dto);
     return { success: true };
   }
-
 
   async submitQuiz(quizId: bigint, studentId: bigint, dto: SaveQuizAnswersDto) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -529,7 +518,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       submittedAt: updated.submittedAt?.toISOString() ?? null,
     };
   }
-
 
   async confirmSubmit(quizId: bigint, studentId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -673,7 +661,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return run;
   }
 
-
   async getOwnSubmission(quizId: bigint, userId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -700,7 +687,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
 
     return this.toStudentSubmissionResponse(quiz, submission);
   }
-
 
   async getSubmissionsByQuiz(quizId: bigint, teacherId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -752,7 +738,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       };
     });
   }
-
 
   async getSubmissionById(submissionId: bigint, teacherId: bigint) {
     const submission = await this.prisma.quizSubmission.findUnique({
@@ -839,7 +824,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     };
   }
 
-
   async assessSubmission(
     submissionId: bigint,
     teacherId: bigint,
@@ -905,7 +889,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
 
     return { id: updated.id.toString(), totalPoints: updated.totalPoints };
   }
-
 
   async update(quizId: bigint, teacherId: bigint, dto: UpdateQuizDto) {
     const quiz = await this.prisma.quiz.findUnique({
@@ -1005,7 +988,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     return this.toQuizResponse(updated, true);
   }
 
-
   async remove(quizId: bigint, teacherId: bigint) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -1018,7 +1000,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     await this.prisma.quiz.delete({ where: { id: quizId } });
     return { success: true };
   }
-
 
   private truncateForQuizStore(raw: string): string {
     if (raw.length <= QUIZ_STORE_LOG_MAX_CHARS) return raw;
@@ -1067,11 +1048,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       }
       const subAnswer = savedAnswers.find((a) => a.questionId === question.id);
       const selectedIds = subAnswer?.selectedAnswers.map((a) => a.id) ?? [];
-      const earned = calculatePoints(
-        question,
-        question.answers,
-        selectedIds,
-      );
+      const earned = calculatePoints(question, question.answers, selectedIds);
       await this.prisma.quizSubmissionAnswer.upsert({
         where: {
           submissionId_questionId: {
@@ -1269,11 +1246,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
 
     for (const subAnswer of subAnswers) {
       const selectedIds = subAnswer.selectedAnswers.map((a) => a.id);
-      const earned = calculatePoints(
-        question,
-        question.answers,
-        selectedIds,
-      );
+      const earned = calculatePoints(question, question.answers, selectedIds);
       await this.prisma.quizSubmissionAnswer.update({
         where: { id: subAnswer.id },
         data: { pointsEarned: earned },
@@ -1405,8 +1378,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     }
 
     if (validType === QuizQuestionType.CODING_TASK) {
-      const lang =
-        source.codingTaskLanguage ?? AssignmentLanguage.PYTHON;
+      const lang = source.codingTaskLanguage ?? AssignmentLanguage.PYTHON;
       return {
         type: validType,
         text,
@@ -1423,10 +1395,8 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
           fallbackGeneratedTeacherTests(lang)
         ).slice(0, 100_000),
         codingTaskGradingMode:
-          source.codingTaskGradingMode ??
-          QuizCodingGradingMode.MANUAL_ONLY,
-        codingTaskAiReviewEnabled:
-          source.codingTaskAiReviewEnabled ?? false,
+          source.codingTaskGradingMode ?? QuizCodingGradingMode.MANUAL_ONLY,
+        codingTaskAiReviewEnabled: source.codingTaskAiReviewEnabled ?? false,
         codingTaskAiReviewRubric:
           source.codingTaskAiReviewRubric?.trim().slice(0, 4000) ?? null,
       };
@@ -1513,7 +1483,8 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
               ...(includeCorrectAnswers
                 ? {
                     codingTaskTeacherTests: q.codingTaskTeacherTests ?? null,
-                    codingTaskAiReviewRubric: q.codingTaskAiReviewRubric ?? null,
+                    codingTaskAiReviewRubric:
+                      q.codingTaskAiReviewRubric ?? null,
                   }
                 : {}),
             }
@@ -1621,7 +1592,6 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       questions,
     };
   }
-
 
   async deleteSubmission(submissionId: bigint, teacherId: bigint) {
     const submission = await this.prisma.quizSubmission.findUnique({

@@ -70,7 +70,9 @@ function convertZipBuffer(zipBuffer) {
 
   for (const zipEntry of entries) {
     if (scanned >= MAX_ZIP_ENTRIES_SCANNED) {
-      warnings.push(`Stopped scanning after ${MAX_ZIP_ENTRIES_SCANNED} zip entries`);
+      warnings.push(
+        `Stopped scanning after ${MAX_ZIP_ENTRIES_SCANNED} zip entries`,
+      );
       break;
     }
     scanned++;
@@ -102,7 +104,9 @@ function convertZipBuffer(zipBuffer) {
     }
 
     if (content.length > MAX_SINGLE_FILE_BYTES) {
-      warnings.push(`Skipped large file (${content.length} bytes): ${entryName}`);
+      warnings.push(
+        `Skipped large file (${content.length} bytes): ${entryName}`,
+      );
       continue;
     }
 

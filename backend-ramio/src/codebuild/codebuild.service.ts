@@ -58,7 +58,9 @@ const TERMINAL_CODEBUILD_STATUSES = new Set([
   'STOPPED',
 ]);
 
-export function isTerminalCodeBuildStatus(status: string | null | undefined): boolean {
+export function isTerminalCodeBuildStatus(
+  status: string | null | undefined,
+): boolean {
   if (!status) return false;
   return TERMINAL_CODEBUILD_STATUSES.has(status);
 }
@@ -281,7 +283,12 @@ export class CodeBuildService {
         await this.fetchBuildLinesMatching(groupName, streamName, 'passed', 80),
         await this.fetchBuildLinesMatching(groupName, streamName, 'failed', 80),
         await this.fetchBuildLinesMatching(groupName, streamName, 'Tests:', 80),
-        await this.fetchBuildLinesMatching(groupName, streamName, 'test session', 80),
+        await this.fetchBuildLinesMatching(
+          groupName,
+          streamName,
+          'test session',
+          80,
+        ),
       ].filter(Boolean) as string[];
       const merged = snippets.length ? snippets.join('\n') : null;
       if (merged) {

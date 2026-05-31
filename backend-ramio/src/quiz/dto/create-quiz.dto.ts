@@ -68,7 +68,9 @@ export class CreateQuizQuestionDto {
   @Type(() => CreateQuizAnswerDto)
   answers?: CreateQuizAnswerDto[];
 
-  @ValidateIf((q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK)
+  @ValidateIf(
+    (q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK,
+  )
   @IsEnum(AssignmentLanguage)
   codingTaskLanguage?: AssignmentLanguage;
 
@@ -77,7 +79,9 @@ export class CreateQuizQuestionDto {
   @MaxLength(100_000)
   codingTaskStarterCode?: string;
 
-  @ValidateIf((q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK)
+  @ValidateIf(
+    (q: CreateQuizQuestionDto) => q.type === QuizQuestionType.CODING_TASK,
+  )
   @IsString()
   @MaxLength(100_000)
   codingTaskTeacherTests?: string;

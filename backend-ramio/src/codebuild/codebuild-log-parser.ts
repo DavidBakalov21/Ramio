@@ -1,4 +1,3 @@
-
 function stripAnsi(text: string): string {
   return text.replace(/\u001b\[[\d;?]*[\dA-Za-z]/g, '');
 }
@@ -69,9 +68,7 @@ export function parseTestCountsFromBuildLog(log: string): {
     };
   }
 
-  const pytestLine = text.match(
-    /=+\s*([\s\S]*?)\s+in\s+[\d.]+s\s*=+/,
-  );
+  const pytestLine = text.match(/=+\s*([\s\S]*?)\s+in\s+[\d.]+s\s*=+/);
   if (pytestLine) {
     const pytestChunk = pytestLine[1];
     let pPassed = 0;

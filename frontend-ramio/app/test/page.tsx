@@ -56,7 +56,11 @@ export default function TestPage() {
             <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
               test_solution.py
             </code>
-            . Use <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">from solution import ...</code> in your tests.
+            . Use{' '}
+            <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
+              from solution import ...
+            </code>{' '}
+            in your tests.
           </p>
         </header>
 
@@ -72,7 +76,9 @@ export default function TestPage() {
               id="tests"
               value={tests}
               onChange={(e) => setTests(e.target.value)}
-              placeholder={'import unittest\nfrom solution import add\n\nclass TestAdd(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(1, 2), 3)'}
+              placeholder={
+                'import unittest\nfrom solution import add\n\nclass TestAdd(unittest.TestCase):\n    def test_add(self):\n        self.assertEqual(add(1, 2), 3)'
+              }
               rows={16}
               className="block w-full resize-y rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500"
             />

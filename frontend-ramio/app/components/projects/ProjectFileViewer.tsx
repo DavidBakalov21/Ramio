@@ -60,7 +60,8 @@ export function ProjectFileViewer({
         setSelectedPath(res.data.files[0].path);
       }
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = (e as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
       setTreeError(msg ?? 'Failed to load file tree');
     } finally {
       setLoadingTree(false);
@@ -77,7 +78,8 @@ export function ProjectFileViewer({
       setHasGitHistory(res.data.hasGitHistory);
       setCommits(res.data.commits);
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = (e as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
       setCommitsError(msg ?? 'Failed to load commit history');
       setHasGitHistory(false);
       setCommits([]);
@@ -121,19 +123,27 @@ export function ProjectFileViewer({
         setFileTruncated(res.data.truncated);
       })
       .catch((e: unknown) => {
-        const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        const msg = (e as { response?: { data?: { message?: string } } })
+          ?.response?.data?.message;
         setFileError(msg ?? 'Failed to load file content');
       })
       .finally(() => setLoadingFile(false));
   }, [submissionId, selectedPath, view]);
 
-  const handleAddComment = async (lineStart: number, lineEnd: number, body: string) => {
-    await api.post<FileComment>(`/project/submission/${submissionId}/comments`, {
-      filePath: selectedPath,
-      lineStart,
-      lineEnd: lineEnd !== lineStart ? lineEnd : undefined,
-      body,
-    });
+  const handleAddComment = async (
+    lineStart: number,
+    lineEnd: number,
+    body: string,
+  ) => {
+    await api.post<FileComment>(
+      `/project/submission/${submissionId}/comments`,
+      {
+        filePath: selectedPath,
+        lineStart,
+        lineEnd: lineEnd !== lineStart ? lineEnd : undefined,
+        body,
+      },
+    );
     await fetchComments();
   };
 

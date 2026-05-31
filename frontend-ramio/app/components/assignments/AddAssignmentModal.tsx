@@ -59,7 +59,10 @@ export function AddAssignmentModal({
     setGenerateError('');
     setGeneratingTests(true);
     try {
-      const languageMap: Record<AssignmentLanguage, 'python' | 'javascript' | 'java' | 'csharp'> = {
+      const languageMap: Record<
+        AssignmentLanguage,
+        'python' | 'javascript' | 'java' | 'csharp'
+      > = {
         PYTHON: 'python',
         NODE_JS: 'javascript',
         JAVA: 'java',
@@ -74,11 +77,15 @@ export function AddAssignmentModal({
       );
       setTestCode(res.data.tests ?? '');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string | string[] } } })
-          ?.response?.data?.message;
+      const msg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
       setGenerateError(
-        Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to generate tests.',
+        Array.isArray(msg)
+          ? msg[0]
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to generate tests.',
       );
     } finally {
       setGeneratingTests(false);
@@ -125,12 +132,18 @@ export function AddAssignmentModal({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="add-assignment-title" className="text-lg font-semibold text-slate-900">
+        <h2
+          id="add-assignment-title"
+          className="text-lg font-semibold text-slate-900"
+        >
           Add assignment
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="add-assignment-title-input" className="block text-xs font-medium text-slate-600 mb-1">
+            <label
+              htmlFor="add-assignment-title-input"
+              className="block text-xs font-medium text-slate-600 mb-1"
+            >
               Title
             </label>
             <input
@@ -146,7 +159,10 @@ export function AddAssignmentModal({
             />
           </div>
           <div>
-            <label htmlFor="add-assignment-description" className="block text-xs font-medium text-slate-600 mb-1">
+            <label
+              htmlFor="add-assignment-description"
+              className="block text-xs font-medium text-slate-600 mb-1"
+            >
               Description <span className="text-slate-400">(optional)</span>
             </label>
             <textarea
@@ -162,7 +178,10 @@ export function AddAssignmentModal({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="add-assignment-points" className="block text-xs font-medium text-slate-600 mb-1">
+              <label
+                htmlFor="add-assignment-points"
+                className="block text-xs font-medium text-slate-600 mb-1"
+              >
                 Points
               </label>
               <input
@@ -176,17 +195,24 @@ export function AddAssignmentModal({
               />
             </div>
             <div>
-              <label htmlFor="add-assignment-language" className="block text-xs font-medium text-slate-600 mb-1">
+              <label
+                htmlFor="add-assignment-language"
+                className="block text-xs font-medium text-slate-600 mb-1"
+              >
                 Language
               </label>
               <select
                 id="add-assignment-language"
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as AssignmentLanguage)}
+                onChange={(e) =>
+                  setLanguage(e.target.value as AssignmentLanguage)
+                }
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                 disabled={isSubmitting}
               >
-                {(Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]).map((lang) => (
+                {(
+                  Object.keys(ASSIGNMENT_LANGUAGE_MAP) as AssignmentLanguage[]
+                ).map((lang) => (
                   <option key={lang} value={lang}>
                     {ASSIGNMENT_LANGUAGE_MAP[lang].label}
                   </option>
@@ -196,13 +222,18 @@ export function AddAssignmentModal({
           </div>
           <div>
             <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor="add-assignment-test-code" className="block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="add-assignment-test-code"
+                className="block text-xs font-medium text-slate-600"
+              >
                 Test code <span className="text-slate-400">(optional)</span>
               </label>
               <button
                 type="button"
                 onClick={handleGenerateTests}
-                disabled={isSubmitting || generatingTests || !description.trim()}
+                disabled={
+                  isSubmitting || generatingTests || !description.trim()
+                }
                 className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100 disabled:opacity-50 disabled:pointer-events-none"
               >
                 {generatingTests ? 'Generating…' : 'Generate from description'}
@@ -218,7 +249,9 @@ export function AddAssignmentModal({
               id="add-assignment-test-code"
               value={testCode}
               onChange={(e) => setTestCode(e.target.value)}
-              placeholder={ASSIGNMENT_LANGUAGE_MAP[language].testCodePlaceholder}
+              placeholder={
+                ASSIGNMENT_LANGUAGE_MAP[language].testCodePlaceholder
+              }
               rows={10}
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}

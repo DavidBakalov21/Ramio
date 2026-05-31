@@ -1,4 +1,10 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateCourseMaterialFileDto {
   @IsOptional()
@@ -12,4 +18,3 @@ export class CreateCourseMaterialFileDto {
   @IsIn(['PDF', 'VIDEO', 'FILE'])
   type?: 'PDF' | 'VIDEO' | 'FILE';
 }
-

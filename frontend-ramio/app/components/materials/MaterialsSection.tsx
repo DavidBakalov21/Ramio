@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
-import type { CourseMaterial, CourseMaterialType } from '@/app/interfaces/Material';
+import type {
+  CourseMaterial,
+  CourseMaterialType,
+} from '@/app/interfaces/Material';
 import { AddMaterialModal, type AddMaterialFormData } from './AddMaterialModal';
 import { useToast } from '@/app/components/utility/toast';
 import {
@@ -28,7 +31,10 @@ function IconForType({ type }: { type: CourseMaterialType }) {
   return <File className={cls} />;
 }
 
-export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps) {
+export function MaterialsSection({
+  courseId,
+  isTeacher,
+}: MaterialsSectionProps) {
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -42,7 +48,9 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
   const fetchMaterials = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<CourseMaterial[]>(`/course/${courseId}/materials`);
+      const res = await api.get<CourseMaterial[]>(
+        `/course/${courseId}/materials`,
+      );
       setMaterials(res.data);
     } catch {
       setMaterials([]);
@@ -84,11 +92,14 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
         closeModal();
         showToast('Material added.', 'success');
       } catch (err: unknown) {
-        const msg =
-          (err as { response?: { data?: { message?: string | string[] } } })
-            ?.response?.data?.message;
-        const resolved =
-          Array.isArray(msg) ? msg[0] : typeof msg === 'string' ? msg : 'Failed to add material';
+        const msg = (
+          err as { response?: { data?: { message?: string | string[] } } }
+        )?.response?.data?.message;
+        const resolved = Array.isArray(msg)
+          ? msg[0]
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to add material';
         setError(resolved);
         showToast(resolved, 'error');
       } finally {
@@ -137,7 +148,9 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
   return (
     <section className="mb-8 flex w-full flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-slate-900">Lecture materials</h2>
+        <h2 className="text-lg font-semibold text-slate-900">
+          Lecture materials
+        </h2>
         {isTeacher && (
           <button
             type="button"
@@ -160,7 +173,9 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
             >
               <button
                 type="button"
-                onClick={() => router.push(`/courses/${courseId}/materials/${m.id}`)}
+                onClick={() =>
+                  router.push(`/courses/${courseId}/materials/${m.id}`)
+                }
                 className="flex flex-1 items-center gap-3 text-left"
                 title="Open material"
               >
@@ -187,7 +202,9 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => router.push(`/courses/${courseId}/materials/${m.id}`)}
+                  onClick={() =>
+                    router.push(`/courses/${courseId}/materials/${m.id}`)
+                  }
                   className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   <span className="inline-flex items-center gap-1">
@@ -225,4 +242,3 @@ export function MaterialsSection({ courseId, isTeacher }: MaterialsSectionProps)
     </section>
   );
 }
-

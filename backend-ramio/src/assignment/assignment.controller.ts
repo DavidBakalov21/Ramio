@@ -24,8 +24,9 @@ import { RunAssignmentDto } from './dto/run-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { SubmissionChatDto } from './dto/submission-chat.dto';
 
-
-export function parseLanguage(raw: string | undefined): AssignmentLanguage | undefined {
+export function parseLanguage(
+  raw: string | undefined,
+): AssignmentLanguage | undefined {
   if (!raw) return undefined;
   const upper = raw.toUpperCase() as AssignmentLanguage;
   if (!Object.values(AssignmentLanguage).includes(upper)) {
@@ -101,7 +102,6 @@ export class AssignmentController {
   ) {
     return this.assignmentService.findByCourse(BigInt(courseId), user.id);
   }
-
 
   @Get(':id/test-files')
   @Roles(UserRole.TEACHER)
@@ -179,7 +179,6 @@ export class AssignmentController {
       lang,
     );
   }
-
 
   @Get(':id/submission')
   getSubmission(

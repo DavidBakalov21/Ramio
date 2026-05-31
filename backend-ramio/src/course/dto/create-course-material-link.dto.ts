@@ -11,4 +11,3 @@ export class CreateCourseMaterialLinkDto {
   @MaxLength(2048)
   url!: string;
 }
-

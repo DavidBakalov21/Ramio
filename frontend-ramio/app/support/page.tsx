@@ -29,7 +29,12 @@ function SupportPageContent() {
         typeof window !== 'undefined' && sessionStorage.getItem(flagKey);
       if (!already && typeof window !== 'undefined') {
         sessionStorage.setItem(flagKey, '1');
-        showToast(support === 'thanks' ? 'Thank you for your support!' : 'Payment was cancelled.', support === 'thanks' ? 'success' : 'info');
+        showToast(
+          support === 'thanks'
+            ? 'Thank you for your support!'
+            : 'Payment was cancelled.',
+          support === 'thanks' ? 'success' : 'info',
+        );
       }
       router.replace('/support', { scroll: false });
       return;
@@ -40,10 +45,18 @@ function SupportPageContent() {
         typeof window !== 'undefined' && sessionStorage.getItem(flagKey);
       if (!already && typeof window !== 'undefined') {
         sessionStorage.setItem(flagKey, '1');
-        showToast(sub === 'success' ? 'Subscription activated!' : 'Subscription cancelled.', sub === 'success' ? 'success' : 'info');
+        showToast(
+          sub === 'success'
+            ? 'Subscription activated!'
+            : 'Subscription cancelled.',
+          sub === 'success' ? 'success' : 'info',
+        );
       }
       if (sub === 'success') {
-        api.get<User>('/me').then((res) => setUser(res.data)).catch(() => {});
+        api
+          .get<User>('/me')
+          .then((res) => setUser(res.data))
+          .catch(() => {});
       }
       router.replace('/support', { scroll: false });
     }
@@ -72,14 +85,18 @@ function SupportPageContent() {
     const setLoading = tier === 'PRO' ? setProLoading : setPremiumLoading;
     setLoading(true);
     try {
-      const { data } = await api.post<{ url: string }>('/stripe/subscription-checkout', { tier });
+      const { data } = await api.post<{ url: string }>(
+        '/stripe/subscription-checkout',
+        { tier },
+      );
       if (data?.url) {
         window.location.href = data.url;
       }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : null;
       showToast((msg as string) || 'Could not start subscription', 'error');
     } finally {
@@ -90,14 +107,18 @@ function SupportPageContent() {
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     try {
-      const { data } = await api.post<{ url: string }>('/stripe/support-checkout', {});
+      const { data } = await api.post<{ url: string }>(
+        '/stripe/support-checkout',
+        {},
+      );
       if (data?.url) {
         window.location.href = data.url;
       }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : null;
       showToast((msg as string) || 'Could not start checkout', 'error');
     } finally {
@@ -136,17 +157,24 @@ function SupportPageContent() {
           >
             ← Back to courses
           </Link>
-          <h1 className="text-xl font-semibold text-slate-900">Support Ramio</h1>
+          <h1 className="text-xl font-semibold text-slate-900">
+            Support Ramio
+          </h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            One-time contribution or upgrade to Ramio Pro. Payments are processed securely by Stripe.
+            One-time contribution or upgrade to Ramio Pro. Payments are
+            processed securely by Stripe.
           </p>
 
-          {user.subscriptionTier === 'PRO' || user.subscriptionTier === 'PREMIUM' ? (
+          {user.subscriptionTier === 'PRO' ||
+          user.subscriptionTier === 'PREMIUM' ? (
             <div className="mt-6 rounded-xl border border-green-200 bg-green-50/70 px-4 py-3 text-sm text-green-900">
               <p className="font-semibold">
-                You have Ramio {user.subscriptionTier === 'PREMIUM' ? 'Premium' : 'Pro'}
+                You have Ramio{' '}
+                {user.subscriptionTier === 'PREMIUM' ? 'Premium' : 'Pro'}
               </p>
-              <p className="mt-1 text-xs text-green-700">Thank you for your support.</p>
+              <p className="mt-1 text-xs text-green-700">
+                Thank you for your support.
+              </p>
               {user.subscriptionTier === 'PRO' && (
                 <button
                   type="button"
@@ -161,8 +189,12 @@ function SupportPageContent() {
           ) : (
             <div className="mt-6 space-y-4">
               <div className="rounded-xl border border-violet-200/80 bg-violet-50/50 px-4 py-4">
-                <p className="text-sm font-semibold text-slate-900">Ramio Pro</p>
-                <p className="mt-1 text-xs text-slate-600">Monthly subscription.</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  Ramio Pro
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Monthly subscription.
+                </p>
                 <button
                   type="button"
                   onClick={() => handleSubscriptionCheckout('PRO')}
@@ -173,8 +205,12 @@ function SupportPageContent() {
                 </button>
               </div>
               <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 px-4 py-4">
-                <p className="text-sm font-semibold text-slate-900">Ramio Premium</p>
-                <p className="mt-1 text-xs text-slate-600">Full access with premium benefits.</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  Ramio Premium
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Full access with premium benefits.
+                </p>
                 <button
                   type="button"
                   onClick={() => handleSubscriptionCheckout('PREMIUM')}
@@ -188,8 +224,12 @@ function SupportPageContent() {
           )}
 
           <div className="mt-8 pt-6 border-t border-slate-200/80">
-            <p className="text-sm font-medium text-slate-700">One-time contribution</p>
-            <p className="mt-1 text-xs text-slate-600">Support our work with a single payment.</p>
+            <p className="text-sm font-medium text-slate-700">
+              One-time contribution
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              Support our work with a single payment.
+            </p>
             <button
               type="button"
               onClick={handleCheckout}

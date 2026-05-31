@@ -126,7 +126,8 @@ describe('parseTestCountsFromBuildLog', () => {
 
   describe('.NET test output', () => {
     it('parses Failed! summary line', () => {
-      const log = 'Failed!  - Failed:     1, Passed:     4, Skipped:     0, Total:     5';
+      const log =
+        'Failed!  - Failed:     1, Passed:     4, Skipped:     0, Total:     5';
       expect(parseTestCountsFromBuildLog(log)).toEqual({
         passed: 4,
         failed: 1,
@@ -135,7 +136,8 @@ describe('parseTestCountsFromBuildLog', () => {
     });
 
     it('parses Passed! summary line', () => {
-      const log = 'Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4';
+      const log =
+        'Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4';
       expect(parseTestCountsFromBuildLog(log)).toEqual({
         passed: 4,
         failed: 0,

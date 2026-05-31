@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #f3f4ff;
@@ -14,6 +14,11 @@
 
 body {
   @apply min-h-screen bg-gradient-to-b from-[#E0E7FF] via-[#EEF2FF] to-[#C7D2FE] text-slate-900 antialiased;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }

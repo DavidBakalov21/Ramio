@@ -6,7 +6,11 @@ import { api } from '@/lib/axios';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { Navbar } from '@/app/components/Navbar';
 import { motion } from 'framer-motion';
-import { OwnQuizSubmission, Quiz, isQuizOpenStyleQuestion } from '@/app/interfaces/Quiz';
+import {
+  OwnQuizSubmission,
+  Quiz,
+  isQuizOpenStyleQuestion,
+} from '@/app/interfaces/Quiz';
 
 export default function ConfirmQuizSubmitPage() {
   const params = useParams();
@@ -52,7 +56,8 @@ export default function ConfirmQuizSubmitPage() {
       await api.post(`/quiz/${quizId}/confirm-submit`);
       router.replace(`/courses/${courseId}/quiz/${quizId}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      const msg = (err as { response?: { data?: { message?: string } } })
+        ?.response?.data?.message;
       setError(msg || 'Failed to submit. Please try again.');
       setSubmitting(false);
     }
@@ -61,8 +66,16 @@ export default function ConfirmQuizSubmitPage() {
   if (loadingUser || loading) {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
-        {user && <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />}
-        <div className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading…</div>
+        {user && (
+          <Navbar
+            user={user}
+            onLogout={handleLogout}
+            isLoggingOut={isLoggingOut}
+          />
+        )}
+        <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
+          Loading…
+        </div>
       </div>
     );
   }
@@ -92,12 +105,18 @@ export default function ConfirmQuizSubmitPage() {
           <div className="mt-5 space-y-2">
             <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
               <span className="text-sm text-slate-600">Questions answered</span>
-              <span className="text-sm font-semibold text-slate-900">{answeredCount} / {totalQuestions}</span>
+              <span className="text-sm font-semibold text-slate-900">
+                {answeredCount} / {totalQuestions}
+              </span>
             </div>
             {unanswered > 0 && (
               <div className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-3">
-                <span className="text-sm text-amber-700">Unanswered questions</span>
-                <span className="text-sm font-semibold text-amber-800">{unanswered}</span>
+                <span className="text-sm text-amber-700">
+                  Unanswered questions
+                </span>
+                <span className="text-sm font-semibold text-amber-800">
+                  {unanswered}
+                </span>
               </div>
             )}
           </div>
@@ -111,7 +130,9 @@ export default function ConfirmQuizSubmitPage() {
           <div className="mt-6 flex gap-3">
             <button
               type="button"
-              onClick={() => router.push(`/courses/${courseId}/quiz/${quizId}/take`)}
+              onClick={() =>
+                router.push(`/courses/${courseId}/quiz/${quizId}/take`)
+              }
               disabled={submitting}
               className="flex-1 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >

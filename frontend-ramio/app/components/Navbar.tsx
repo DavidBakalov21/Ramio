@@ -10,7 +10,8 @@ interface NavbarProps {
 }
 
 export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
-  const initial = user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
+  const initial =
+    user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?';
   const profileHref = `/users/${user.id}`;
 
   return (
@@ -28,7 +29,9 @@ export function Navbar({ user, onLogout, isLoggingOut = false }: NavbarProps) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-lg font-semibold text-violet-600">{initial}</span>
+              <span className="text-lg font-semibold text-violet-600">
+                {initial}
+              </span>
             )}
           </Link>
           <div>

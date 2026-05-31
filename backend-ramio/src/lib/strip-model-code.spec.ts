@@ -59,6 +59,8 @@ describe('stripModelCodeOutput', () => {
 
   it('plain text, no fence, not Python-looking → returned trimmed, unchanged', () => {
     const input = '  This is just prose with no code.  ';
-    expect(stripModelCodeOutput(input)).toBe('This is just prose with no code.');
+    expect(stripModelCodeOutput(input)).toBe(
+      'This is just prose with no code.',
+    );
   });
 });

@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { PROJECT_LANGUAGE_OPTIONS, type ProjectLanguage } from '@/app/interfaces/Project';
+import {
+  PROJECT_LANGUAGE_OPTIONS,
+  type ProjectLanguage,
+} from '@/app/interfaces/Project';
 
 export interface AddProjectFormData {
   title: string;
@@ -90,15 +93,22 @@ export function AddProjectModal({
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="add-project-title" className="text-lg font-semibold text-slate-900">
+        <h2
+          id="add-project-title"
+          className="text-lg font-semibold text-slate-900"
+        >
           Add project
         </h2>
         <p className="mt-1 text-xs text-slate-500">
-          Students upload one archive (.zip, .tar.gz, etc.) instead of using the code sandbox.
+          Students upload one archive (.zip, .tar.gz, etc.) instead of using the
+          code sandbox.
         </p>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="add-project-title-input" className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="add-project-title-input"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Title
             </label>
             <input
@@ -114,7 +124,10 @@ export function AddProjectModal({
             />
           </div>
           <div>
-            <label htmlFor="add-project-description" className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="add-project-description"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Description <span className="text-slate-400">(optional)</span>
             </label>
             <textarea
@@ -129,7 +142,10 @@ export function AddProjectModal({
             />
           </div>
           <div>
-            <label htmlFor="add-project-language" className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="add-project-language"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Language / CodeBuild stack
             </label>
             <select
@@ -146,12 +162,16 @@ export function AddProjectModal({
               ))}
             </select>
             <p className="mt-1 text-[11px] text-slate-400">
-              Chooses which AWS CodeBuild project runs for &quot;Run tests&quot; (see CODEBUILD_PROJECT_* env vars).
+              Chooses which AWS CodeBuild project runs for &quot;Run tests&quot;
+              (see CODEBUILD_PROJECT_* env vars).
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="add-project-points" className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="add-project-points"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 Points
               </label>
               <input
@@ -165,7 +185,10 @@ export function AddProjectModal({
               />
             </div>
             <div>
-              <label htmlFor="add-project-due" className="mb-1 block text-xs font-medium text-slate-600">
+              <label
+                htmlFor="add-project-due"
+                className="mb-1 block text-xs font-medium text-slate-600"
+              >
                 Due date <span className="text-slate-400">(optional)</span>
               </label>
               <input
@@ -179,8 +202,12 @@ export function AddProjectModal({
             </div>
           </div>
           <div>
-            <label htmlFor="add-project-prompt" className="mb-1 block text-xs font-medium text-slate-600">
-              Assessment notes <span className="text-slate-400">(optional, for you)</span>
+            <label
+              htmlFor="add-project-prompt"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
+              Assessment notes{' '}
+              <span className="text-slate-400">(optional, for you)</span>
             </label>
             <textarea
               id="add-project-prompt"

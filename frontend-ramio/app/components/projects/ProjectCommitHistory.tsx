@@ -46,7 +46,10 @@ export function ProjectCommitHistory({
   }
 
   return (
-    <ul className="divide-y divide-slate-100 overflow-y-auto" style={{ maxHeight: '560px' }}>
+    <ul
+      className="divide-y divide-slate-100 overflow-y-auto"
+      style={{ maxHeight: '560px' }}
+    >
       {commits.map((commit) => (
         <li key={commit.oid} className="px-4 py-3 hover:bg-slate-50/80">
           <div className="flex items-start gap-3">

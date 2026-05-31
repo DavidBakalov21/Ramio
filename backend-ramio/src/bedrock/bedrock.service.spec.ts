@@ -9,11 +9,15 @@ describe('toInferenceProfileId', () => {
   const modelId = 'anthropic.claude-haiku-4-5-20251001-v1:0';
 
   it('passes through us.-prefixed model ids', () => {
-    expect(toInferenceProfileId('us.my-model', 'eu-north-1')).toBe('us.my-model');
+    expect(toInferenceProfileId('us.my-model', 'eu-north-1')).toBe(
+      'us.my-model',
+    );
   });
 
   it('passes through eu.-prefixed model ids', () => {
-    expect(toInferenceProfileId('eu.my-model', 'us-east-1')).toBe('eu.my-model');
+    expect(toInferenceProfileId('eu.my-model', 'us-east-1')).toBe(
+      'eu.my-model',
+    );
   });
 
   it('passes through apac.-prefixed model ids', () => {
@@ -31,7 +35,9 @@ describe('toInferenceProfileId', () => {
   });
 
   it('ap-southeast-1 → apac. prefix', () => {
-    expect(toInferenceProfileId(modelId, 'ap-southeast-1')).toBe(`apac.${modelId}`);
+    expect(toInferenceProfileId(modelId, 'ap-southeast-1')).toBe(
+      `apac.${modelId}`,
+    );
   });
 
   it('unknown region defaults to us.', () => {

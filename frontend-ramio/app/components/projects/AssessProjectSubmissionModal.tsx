@@ -18,7 +18,9 @@ export function AssessProjectSubmissionModal({
   onClose,
   onSaved,
 }: AssessProjectSubmissionModalProps) {
-  const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(null);
+  const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [points, setPoints] = useState(0);
@@ -75,7 +77,8 @@ export function AssessProjectSubmissionModal({
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message
           : null;
       setError((msg as string) || 'Failed to save assessment');
     } finally {
@@ -107,8 +110,8 @@ export function AssessProjectSubmissionModal({
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response?.data
-              ?.message
+          ? (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message
           : null;
       setError((msg as string) || 'Failed to get AI feedback');
     } finally {
@@ -116,8 +119,7 @@ export function AssessProjectSubmissionModal({
     }
   };
 
-  const isZipArchive =
-    !!submission?.name?.toLowerCase().endsWith('.zip');
+  const isZipArchive = !!submission?.name?.toLowerCase().endsWith('.zip');
 
   if (!isOpen) return null;
 
@@ -134,7 +136,10 @@ export function AssessProjectSubmissionModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
-          <h2 id="assess-project-title" className="text-lg font-semibold text-slate-900">
+          <h2
+            id="assess-project-title"
+            className="text-lg font-semibold text-slate-900"
+          >
             Assess project submission
           </h2>
           {submission && (
@@ -176,7 +181,10 @@ export function AssessProjectSubmissionModal({
                 </div>
               )}
               <div>
-                <label htmlFor="assess-project-feedback" className="mb-1 block text-xs font-medium text-slate-600">
+                <label
+                  htmlFor="assess-project-feedback"
+                  className="mb-1 block text-xs font-medium text-slate-600"
+                >
                   Feedback
                 </label>
                 <textarea
@@ -192,7 +200,9 @@ export function AssessProjectSubmissionModal({
                   <button
                     type="button"
                     onClick={() => void handleGenerateAiFeedback()}
-                    disabled={isGeneratingAi || isSaving || !submission || !isZipArchive}
+                    disabled={
+                      isGeneratingAi || isSaving || !submission || !isZipArchive
+                    }
                     className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isGeneratingAi ? 'Asking AI…' : 'Ask AI from zip contents'}
@@ -205,7 +215,10 @@ export function AssessProjectSubmissionModal({
                 </div>
               </div>
               <div>
-                <label htmlFor="assess-project-points" className="mb-1 block text-xs font-medium text-slate-600">
+                <label
+                  htmlFor="assess-project-points"
+                  className="mb-1 block text-xs font-medium text-slate-600"
+                >
                   Points
                 </label>
                 <input
@@ -219,7 +232,9 @@ export function AssessProjectSubmissionModal({
                   disabled={isSaving}
                 />
                 {submission.project?.points != null && (
-                  <span className="ml-2 text-xs text-slate-500">/ {submission.project.points} max</span>
+                  <span className="ml-2 text-xs text-slate-500">
+                    / {submission.project.points} max
+                  </span>
                 )}
               </div>
               {error && <p className="text-sm text-red-600">{error}</p>}

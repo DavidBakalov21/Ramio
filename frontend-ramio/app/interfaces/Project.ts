@@ -1,6 +1,9 @@
 export type ProjectLanguage = 'DOTNET' | 'PYTHON' | 'JAVA' | 'NODE_JS';
 
-export const PROJECT_LANGUAGE_OPTIONS: { value: ProjectLanguage; label: string }[] = [
+export const PROJECT_LANGUAGE_OPTIONS: {
+  value: ProjectLanguage;
+  label: string;
+}[] = [
   { value: 'PYTHON', label: 'Python' },
   { value: 'NODE_JS', label: 'Node.js' },
   { value: 'JAVA', label: 'Java' },

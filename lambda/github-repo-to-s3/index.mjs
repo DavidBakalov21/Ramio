@@ -50,7 +50,11 @@ async function cloneRepo(cloneUrl, workDir, branch) {
     const msg = err instanceof Error ? err.message : String(err);
     const detail = stderr.trim() || msg;
 
-    if (/Authentication failed|could not read Username|Repository not found/i.test(detail)) {
+    if (
+      /Authentication failed|could not read Username|Repository not found/i.test(
+        detail,
+      )
+    ) {
       throw new Error(
         'Repository not found, is private, or credentials are required. Only public repos are supported.',
       );

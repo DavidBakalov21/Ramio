@@ -19,7 +19,6 @@
   <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
 </p>
 
-
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
@@ -47,9 +46,9 @@ $ npm run start:prod
 
 Swagger UI is enabled by default when `NODE_ENV` is not `production`. Set `SWAGGER_ENABLED=true` to expose it in production, or `SWAGGER_ENABLED=false` to disable it locally.
 
-| Environment | Swagger UI | OpenAPI JSON |
-|-------------|------------|--------------|
-| Local backend | http://localhost:3333/swagger | http://localhost:3333/swagger-json |
+| Environment                     | Swagger UI                        | OpenAPI JSON                           |
+| ------------------------------- | --------------------------------- | -------------------------------------- |
+| Local backend                   | http://localhost:3333/swagger     | http://localhost:3333/swagger-json     |
 | Behind nginx (`/api` → backend) | https://ramio-lms.com/api/swagger | https://ramio-lms.com/api/swagger-json |
 
 The UI is mounted at `/swagger` on the backend. Nginx forwards `/api/*` to the backend root, so production Swagger is at `/api/swagger`.

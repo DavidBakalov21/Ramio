@@ -41,11 +41,15 @@ describe('isTerminalCodeBuildStatus', () => {
 
 describe('normalizeLogGroupName', () => {
   it('adds leading slash when missing', () => {
-    expect(normalizeLogGroupName('codebuild/my-group')).toBe('/codebuild/my-group');
+    expect(normalizeLogGroupName('codebuild/my-group')).toBe(
+      '/codebuild/my-group',
+    );
   });
 
   it('leaves existing leading slash alone', () => {
-    expect(normalizeLogGroupName('/codebuild/my-group')).toBe('/codebuild/my-group');
+    expect(normalizeLogGroupName('/codebuild/my-group')).toBe(
+      '/codebuild/my-group',
+    );
   });
 
   it('empty string stays empty', () => {
@@ -76,7 +80,9 @@ describe('consoleUrlForBuild', () => {
   });
 
   it('returns undefined when projectName is missing', () => {
-    expect(consoleUrlForBuild({ ...build, projectName: undefined })).toBeUndefined();
+    expect(
+      consoleUrlForBuild({ ...build, projectName: undefined }),
+    ).toBeUndefined();
   });
 
   it('returns undefined for a malformed ARN', () => {

@@ -10,7 +10,11 @@ interface ProjectCodeViewerProps {
   truncated: boolean;
   comments: FileComment[];
   isTeacher: boolean;
-  onAddComment: (lineStart: number, lineEnd: number, body: string) => Promise<void>;
+  onAddComment: (
+    lineStart: number,
+    lineEnd: number,
+    body: string,
+  ) => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
 }
 
@@ -39,13 +43,16 @@ export function ProjectCodeViewer({
   const lines = content.split('\n');
   const totalLines = lines.length;
 
-  const commentsByAnchor = comments.reduce<Record<number, FileComment[]>>((acc, c) => {
-    if (c.filePath !== filePath) return acc;
-    const key = c.lineEnd ?? c.lineStart;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(c);
-    return acc;
-  }, {});
+  const commentsByAnchor = comments.reduce<Record<number, FileComment[]>>(
+    (acc, c) => {
+      if (c.filePath !== filePath) return acc;
+      const key = c.lineEnd ?? c.lineStart;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(c);
+      return acc;
+    },
+    {},
+  );
 
   const commentRangeSet = new Set<number>();
   for (const c of comments) {
@@ -82,9 +89,12 @@ export function ProjectCodeViewer({
     }
   };
 
-  const clampLine = (val: number) => Math.max(1, Math.min(totalLines, val || 1));
+  const clampLine = (val: number) =>
+    Math.max(1, Math.min(totalLines, val || 1));
 
-  const formAnchorLine = commentForm ? Math.max(commentForm.lineStart, commentForm.lineEnd) : null;
+  const formAnchorLine = commentForm
+    ? Math.max(commentForm.lineStart, commentForm.lineEnd)
+    : null;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -106,7 +116,8 @@ export function ProjectCodeViewer({
 
               const inFormRange =
                 commentForm &&
-                lineNum >= Math.min(commentForm.lineStart, commentForm.lineEnd) &&
+                lineNum >=
+                  Math.min(commentForm.lineStart, commentForm.lineEnd) &&
                 lineNum <= Math.max(commentForm.lineStart, commentForm.lineEnd);
               const inCommentRange = commentRangeSet.has(lineNum);
               const isFormAnchor = formAnchorLine === lineNum;
@@ -127,7 +138,6 @@ export function ProjectCodeViewer({
                     {lineNum}
                   </td>
 
-              
                   {isTeacher && (
                     <td className="w-6 pl-1">
                       {hoveredLine === lineNum && !commentForm && (
@@ -143,7 +153,6 @@ export function ProjectCodeViewer({
                     </td>
                   )}
 
-                
                   <td className="whitespace-pre pl-3 pr-4 text-slate-800">
                     {line || ' '}
                   </td>
@@ -153,7 +162,6 @@ export function ProjectCodeViewer({
                   ? [
                       <tr key={`form-${lineNum}`} className="bg-violet-50">
                         <td colSpan={isTeacher ? 3 : 2} className="px-3 py-2">
-                          
                           <div className="flex flex-col gap-2.5 rounded-lg border border-violet-200 bg-white p-3 shadow-sm max-w-lg">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[11px] font-semibold text-violet-700 shrink-0">
@@ -164,25 +172,35 @@ export function ProjectCodeViewer({
                                 min={1}
                                 max={totalLines}
                                 value={lineStartInput}
-                                onChange={(e) => setLineStartInput(e.target.value)}
+                                onChange={(e) =>
+                                  setLineStartInput(e.target.value)
+                                }
                                 onBlur={() => {
                                   const val = clampLine(Number(lineStartInput));
                                   setLineStartInput(String(val));
-                                  setCommentForm((f) => (f ? { ...f, lineStart: val } : null));
+                                  setCommentForm((f) =>
+                                    f ? { ...f, lineStart: val } : null,
+                                  );
                                 }}
                                 className="w-16 rounded border border-slate-200 px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
                               />
-                              <span className="text-[11px] text-slate-500 shrink-0">to</span>
+                              <span className="text-[11px] text-slate-500 shrink-0">
+                                to
+                              </span>
                               <input
                                 type="number"
                                 min={1}
                                 max={totalLines}
                                 value={lineEndInput}
-                                onChange={(e) => setLineEndInput(e.target.value)}
+                                onChange={(e) =>
+                                  setLineEndInput(e.target.value)
+                                }
                                 onBlur={() => {
                                   const val = clampLine(Number(lineEndInput));
                                   setLineEndInput(String(val));
-                                  setCommentForm((f) => (f ? { ...f, lineEnd: val } : null));
+                                  setCommentForm((f) =>
+                                    f ? { ...f, lineEnd: val } : null,
+                                  );
                                 }}
                                 className="w-16 rounded border border-slate-200 px-1.5 py-0.5 text-center text-xs font-mono focus:outline-none focus:ring-1 focus:ring-violet-400"
                               />
@@ -201,7 +219,10 @@ export function ProjectCodeViewer({
                                 )
                               }
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                if (
+                                  e.key === 'Enter' &&
+                                  (e.ctrlKey || e.metaKey)
+                                ) {
                                   void handleSubmit();
                                 }
                               }}
@@ -212,7 +233,9 @@ export function ProjectCodeViewer({
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                disabled={commentForm.saving || !commentForm.body.trim()}
+                                disabled={
+                                  commentForm.saving || !commentForm.body.trim()
+                                }
                                 onClick={() => void handleSubmit()}
                                 className="flex items-center gap-1 rounded-full bg-violet-600 px-3 py-1 text-[11px] font-medium text-white hover:bg-violet-700 disabled:opacity-50"
                               >
@@ -237,10 +260,10 @@ export function ProjectCodeViewer({
                   <tr key={`comment-${c.id}`} className="bg-amber-50">
                     <td colSpan={isTeacher ? 3 : 2} className="px-3 py-1.5">
                       <div className="max-w-lg rounded-lg border border-amber-200 bg-white p-3 shadow-sm">
-                      
                         <div className="flex items-center gap-2">
                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
-                            {(c.author.username ?? c.author.email)[0].toUpperCase()}
+                            {(c.author.username ??
+                              c.author.email)[0].toUpperCase()}
                           </div>
                           <span className="text-[11px] font-semibold text-slate-700">
                             {c.author.username ?? c.author.email}
@@ -280,11 +303,12 @@ export function ProjectCodeViewer({
         </table>
       </div>
 
-      {!isTeacher && comments.filter((c) => c.filePath === filePath).length === 0 && (
-        <div className="border-t border-slate-100 px-3 py-2 text-[11px] text-slate-400">
-          No comments on this file yet
-        </div>
-      )}
+      {!isTeacher &&
+        comments.filter((c) => c.filePath === filePath).length === 0 && (
+          <div className="border-t border-slate-100 px-3 py-2 text-[11px] text-slate-400">
+            No comments on this file yet
+          </div>
+        )}
     </div>
   );
 }

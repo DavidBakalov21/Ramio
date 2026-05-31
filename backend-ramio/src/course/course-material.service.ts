@@ -89,10 +89,15 @@ export class CourseMaterialService {
 
     const name = file.originalname ?? 'file';
     const prefix = `course-materials/${courseId.toString()}/`;
-    const { url, key } = await this.storage.uploadFile(file, this.bucket, prefix);
+    const { url, key } = await this.storage.uploadFile(
+      file,
+      this.bucket,
+      prefix,
+    );
 
-    const type: CourseMaterialType =
-      input?.type ? (input.type as CourseMaterialType) : inferType({ mimeType: file.mimetype, name });
+    const type: CourseMaterialType = input?.type
+      ? (input.type as CourseMaterialType)
+      : inferType({ mimeType: file.mimetype, name });
     const title =
       (input?.title ?? '').trim() || name.replace(/\.[^.]+$/, '').slice(0, 120);
 

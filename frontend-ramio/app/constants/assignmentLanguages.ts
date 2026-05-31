@@ -35,10 +35,14 @@ export const ASSIGNMENT_LANGUAGE_MAP: Record<
   },
 };
 
-export function getAssignmentLanguageLabel(language: AssignmentLanguage): string {
+export function getAssignmentLanguageLabel(
+  language: AssignmentLanguage,
+): string {
   return ASSIGNMENT_LANGUAGE_MAP[language].label;
 }
 
-export function getAssignmentLanguageFileExtension(language: AssignmentLanguage): string {
+export function getAssignmentLanguageFileExtension(
+  language: AssignmentLanguage,
+): string {
   return ASSIGNMENT_LANGUAGE_MAP[language].fileExtension;
 }

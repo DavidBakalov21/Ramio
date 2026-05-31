@@ -24,11 +24,16 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingCourse, setLoadingCourse] = useState(true);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'materials' | 'requests' | 'results'>('assignments');
-  const [pendingRequests, setPendingRequests] = useState<PendingEnrollmentRequest[]>([]);
+  const [activeTab, setActiveTab] = useState<
+    'assignments' | 'materials' | 'requests' | 'results'
+  >('assignments');
+  const [pendingRequests, setPendingRequests] = useState<
+    PendingEnrollmentRequest[]
+  >([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [actingPendingId, setActingPendingId] = useState<string | null>(null);
-  const [studentResults, setStudentResults] = useState<StudentResultsResponse | null>(null);
+  const [studentResults, setStudentResults] =
+    useState<StudentResultsResponse | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [togglingOpen, setTogglingOpen] = useState(false);
@@ -74,7 +79,9 @@ export default function CourseDetailPage() {
     const fetchResults = async () => {
       setLoadingResults(true);
       try {
-        const res = await api.get<StudentResultsResponse>(`/course/${courseId}/student-results`);
+        const res = await api.get<StudentResultsResponse>(
+          `/course/${courseId}/student-results`,
+        );
         setStudentResults(res.data);
       } catch {
         setStudentResults(null);
@@ -102,7 +109,7 @@ export default function CourseDetailPage() {
     setTogglingOpen(true);
     try {
       await api.patch(`/course/${courseId}`, { isOpen: !course.isOpen });
-      setCourse((prev) => prev ? { ...prev, isOpen: !prev.isOpen } : prev);
+      setCourse((prev) => (prev ? { ...prev, isOpen: !prev.isOpen } : prev));
     } finally {
       setTogglingOpen(false);
     }
@@ -113,9 +120,18 @@ export default function CourseDetailPage() {
     try {
       await api.delete(`/course/${courseId}/enrollment/${studentId}`);
       setStudentResults((prev) =>
-        prev ? { ...prev, students: prev.students.filter((s) => s.userId !== studentId) } : prev,
+        prev
+          ? {
+              ...prev,
+              students: prev.students.filter((s) => s.userId !== studentId),
+            }
+          : prev,
       );
-      setCourse((prev) => prev ? { ...prev, enrollmentCount: Math.max(0, prev.enrollmentCount - 1) } : prev);
+      setCourse((prev) =>
+        prev
+          ? { ...prev, enrollmentCount: Math.max(0, prev.enrollmentCount - 1) }
+          : prev,
+      );
     } finally {
       setKickingId(null);
     }
@@ -126,7 +142,9 @@ export default function CourseDetailPage() {
     const fetchPending = async () => {
       setLoadingPending(true);
       try {
-        const res = await api.get<PendingEnrollmentRequest[]>(`/course/${courseId}/pending-enrollments`);
+        const res = await api.get<PendingEnrollmentRequest[]>(
+          `/course/${courseId}/pending-enrollments`,
+        );
         setPendingRequests(res.data);
       } catch {
         setPendingRequests([]);
@@ -140,14 +158,19 @@ export default function CourseDetailPage() {
   const handleAcceptRequest = async (pendingId: string) => {
     setActingPendingId(pendingId);
     try {
-      await api.post(`/course/${courseId}/pending-enrollments/${pendingId}/accept`);
+      await api.post(
+        `/course/${courseId}/pending-enrollments/${pendingId}/accept`,
+      );
       setPendingRequests((prev) => prev.filter((r) => r.id !== pendingId));
       setCourse((prev) =>
         prev
           ? {
               ...prev,
               enrollmentCount: prev.enrollmentCount + 1,
-              pendingRequestCount: Math.max(0, (prev.pendingRequestCount ?? 0) - 1),
+              pendingRequestCount: Math.max(
+                0,
+                (prev.pendingRequestCount ?? 0) - 1,
+              ),
             }
           : null,
       );
@@ -159,13 +182,18 @@ export default function CourseDetailPage() {
   const handleDeclineRequest = async (pendingId: string) => {
     setActingPendingId(pendingId);
     try {
-      await api.post(`/course/${courseId}/pending-enrollments/${pendingId}/decline`);
+      await api.post(
+        `/course/${courseId}/pending-enrollments/${pendingId}/decline`,
+      );
       setPendingRequests((prev) => prev.filter((r) => r.id !== pendingId));
       setCourse((prev) =>
         prev
           ? {
               ...prev,
-              pendingRequestCount: Math.max(0, (prev.pendingRequestCount ?? 0) - 1),
+              pendingRequestCount: Math.max(
+                0,
+                (prev.pendingRequestCount ?? 0) - 1,
+              ),
             }
           : null,
       );
@@ -193,7 +221,11 @@ export default function CourseDetailPage() {
   if (loadingCourse || !course) {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
-        <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
+        <Navbar
+          user={user}
+          onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
+        />
         <main className="flex flex-1 items-center justify-center px-4 py-4">
           {loadingCourse ? (
             <motion.div
@@ -232,141 +264,171 @@ export default function CourseDetailPage() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
       <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
       <main className="flex flex-1 items-center justify-center px-4 py-4">
-      <motion.main
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="relative flex w-full max-w-6xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
-      >
-        <header className="mb-6 flex w-full flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => router.push('/courses')}
-            className="self-start text-xs font-medium text-slate-500 transition hover:text-slate-700"
-          >
-            ← Back to courses
-          </button>
-          <h1 className="text-xl font-semibold text-slate-900">{course.title}</h1>
-          {course.description && (
-            <p className="text-sm text-slate-500">{course.description}</p>
-          )}
-          <p className="text-xs text-slate-400">
-            <button type="button"
-              onClick={() => router.push(`/users/${course.teacherId}`)}
-              className="font-medium text-slate-500 hover:text-violet-600 hover:underline">
-              {course.teacherName}
+        <motion.main
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="relative flex w-full max-w-6xl flex-col rounded-[1.9rem] bg-white/85 p-6 pb-7 shadow-xl backdrop-blur-sm ring-1 ring-white/60 min-h-[80vh]"
+        >
+          <header className="mb-6 flex w-full flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => router.push('/courses')}
+              className="self-start text-xs font-medium text-slate-500 transition hover:text-slate-700"
+            >
+              ← Back to courses
             </button>
-            {' · '}{course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
-            assignments
-            {(course.projectCount ?? 0) > 0 && (
-              <>
-                {' · '}
-                {course.projectCount} projects
-              </>
+            <h1 className="text-xl font-semibold text-slate-900">
+              {course.title}
+            </h1>
+            {course.description && (
+              <p className="text-sm text-slate-500">{course.description}</p>
             )}
-          </p>
+            <p className="text-xs text-slate-400">
+              <button
+                type="button"
+                onClick={() => router.push(`/users/${course.teacherId}`)}
+                className="font-medium text-slate-500 hover:text-violet-600 hover:underline"
+              >
+                {course.teacherName}
+              </button>
+              {' · '}
+              {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
+              assignments
+              {(course.projectCount ?? 0) > 0 && (
+                <>
+                  {' · '}
+                  {course.projectCount} projects
+                </>
+              )}
+            </p>
 
-          {course.isTeacher && (
-            <button
-              type="button"
-              onClick={() => void handleToggleOpen()}
-              disabled={togglingOpen}
-              className={`self-start rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
-                course.isOpen
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {course.isOpen ? 'Open enrollment · click to close' : 'Closed enrollment · click to open'}
-            </button>
-          )}
-
-          <div className="mt-4 flex gap-2 border-b border-slate-200">
-            <button
-              type="button"
-              onClick={() => setActiveTab('assignments')}
-              className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
-                activeTab === 'assignments'
-                  ? 'border-slate-900 text-slate-900'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Assignments
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('materials')}
-              className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
-                activeTab === 'materials'
-                  ? 'border-slate-900 text-slate-900'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Lecture materials
-            </button>
             {course.isTeacher && (
               <button
                 type="button"
-                onClick={() => setActiveTab('results')}
+                onClick={() => void handleToggleOpen()}
+                disabled={togglingOpen}
+                className={`self-start rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
+                  course.isOpen
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {course.isOpen
+                  ? 'Open enrollment · click to close'
+                  : 'Closed enrollment · click to open'}
+              </button>
+            )}
+
+            <div className="mt-4 flex gap-2 border-b border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveTab('assignments')}
                 className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
-                  activeTab === 'results'
+                  activeTab === 'assignments'
                     ? 'border-slate-900 text-slate-900'
                     : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Results
+                Assignments
               </button>
-            )}
-            {course.isTeacher && (
               <button
                 type="button"
-                onClick={() => setActiveTab('requests')}
+                onClick={() => setActiveTab('materials')}
                 className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
-                  activeTab === 'requests'
+                  activeTab === 'materials'
                     ? 'border-slate-900 text-slate-900'
                     : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Requests
-                {((activeTab === 'requests' ? pendingRequests.length : course.pendingRequestCount) ?? 0) > 0 && (
-                  <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">
-                    {activeTab === 'requests' ? pendingRequests.length : (course.pendingRequestCount ?? 0)}
-                  </span>
-                )}
+                Lecture materials
               </button>
-            )}
-          </div>
-        </header>
+              {course.isTeacher && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('results')}
+                  className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                    activeTab === 'results'
+                      ? 'border-slate-900 text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Results
+                </button>
+              )}
+              {course.isTeacher && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('requests')}
+                  className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                    activeTab === 'requests'
+                      ? 'border-slate-900 text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Requests
+                  {((activeTab === 'requests'
+                    ? pendingRequests.length
+                    : course.pendingRequestCount) ?? 0) > 0 && (
+                    <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">
+                      {activeTab === 'requests'
+                        ? pendingRequests.length
+                        : (course.pendingRequestCount ?? 0)}
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          </header>
 
-        {activeTab === 'assignments' && (
-          <>
-            <AssignmentsSection courseId={courseId} isTeacher={course.isTeacher} />
-            <ProjectsSection courseId={courseId} isTeacher={course.isTeacher} />
-            <QuizzesSection courseId={courseId} isTeacher={course.isTeacher} />
-          </>
-        )}
+          {activeTab === 'assignments' && (
+            <>
+              <AssignmentsSection
+                courseId={courseId}
+                isTeacher={course.isTeacher}
+              />
+              <ProjectsSection
+                courseId={courseId}
+                isTeacher={course.isTeacher}
+              />
+              <QuizzesSection
+                courseId={courseId}
+                isTeacher={course.isTeacher}
+              />
+            </>
+          )}
 
-        {activeTab === 'materials' && (
-          <MaterialsSection courseId={courseId} isTeacher={course.isTeacher} />
-        )}
+          {activeTab === 'materials' && (
+            <MaterialsSection
+              courseId={courseId}
+              isTeacher={course.isTeacher}
+            />
+          )}
 
-        {activeTab === 'results' && course.isTeacher && (
-          <section className="mb-8 flex w-full flex-col gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">Student results</h2>
-            <StudentResultsTable data={studentResults} loading={loadingResults} onKick={handleKick} kickingId={kickingId} />
-          </section>
-        )}
+          {activeTab === 'results' && course.isTeacher && (
+            <section className="mb-8 flex w-full flex-col gap-3">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Student results
+              </h2>
+              <StudentResultsTable
+                data={studentResults}
+                loading={loadingResults}
+                onKick={handleKick}
+                kickingId={kickingId}
+              />
+            </section>
+          )}
 
-        {activeTab === 'requests' && course.isTeacher && (
-          <PendingEnrollmentRequests
-            requests={pendingRequests}
-            loading={loadingPending}
-            actingId={actingPendingId}
-            onAccept={handleAcceptRequest}
-            onDecline={handleDeclineRequest}
-          />
-        )}
-      </motion.main>
+          {activeTab === 'requests' && course.isTeacher && (
+            <PendingEnrollmentRequests
+              requests={pendingRequests}
+              loading={loadingPending}
+              actingId={actingPendingId}
+              onAccept={handleAcceptRequest}
+              onDecline={handleDeclineRequest}
+            />
+          )}
+        </motion.main>
       </main>
     </div>
   );

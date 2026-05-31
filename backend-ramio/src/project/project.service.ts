@@ -26,20 +26,77 @@ import type { GithubSubmissionDto } from './dto/github-submission.dto';
 import { readCommitsFromZip } from './submission-git.util';
 
 const CODE_EXTENSIONS = new Set([
-  '.py', '.js', '.ts', '.jsx', '.tsx', '.cs', '.java', '.cpp', '.cc', '.c',
-  '.h', '.hpp', '.go', '.rb', '.php', '.swift', '.kt', '.kts', '.rs',
-  '.scala', '.vb', '.fs', '.fsx', '.r', '.m', '.pl', '.lua',
-  '.html', '.htm', '.css', '.scss', '.sass', '.less',
-  '.json', '.yaml', '.yml', '.toml', '.xml', '.ini', '.cfg', '.conf', '.env',
-  '.gradle', '.properties', '.csproj', '.pom',
-  '.sh', '.bash', '.zsh', '.ps1', '.bat', '.cmd',
-  '.sql', '.md', '.txt', '.csv', '.rst',
+  '.py',
+  '.js',
+  '.ts',
+  '.jsx',
+  '.tsx',
+  '.cs',
+  '.java',
+  '.cpp',
+  '.cc',
+  '.c',
+  '.h',
+  '.hpp',
+  '.go',
+  '.rb',
+  '.php',
+  '.swift',
+  '.kt',
+  '.kts',
+  '.rs',
+  '.scala',
+  '.vb',
+  '.fs',
+  '.fsx',
+  '.r',
+  '.m',
+  '.pl',
+  '.lua',
+  '.html',
+  '.htm',
+  '.css',
+  '.scss',
+  '.sass',
+  '.less',
+  '.json',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.xml',
+  '.ini',
+  '.cfg',
+  '.conf',
+  '.env',
+  '.gradle',
+  '.properties',
+  '.csproj',
+  '.pom',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.ps1',
+  '.bat',
+  '.cmd',
+  '.sql',
+  '.md',
+  '.txt',
+  '.csv',
+  '.rst',
 ]);
 
 const CODE_FILENAMES = new Set([
-  'dockerfile', 'makefile', 'rakefile', 'gemfile', 'procfile',
-  '.gitignore', '.dockerignore', '.editorconfig', '.eslintrc',
-  '.babelrc', 'requirements.txt',
+  'dockerfile',
+  'makefile',
+  'rakefile',
+  'gemfile',
+  'procfile',
+  '.gitignore',
+  '.dockerignore',
+  '.editorconfig',
+  '.eslintrc',
+  '.babelrc',
+  'requirements.txt',
 ]);
 
 const MAX_FILE_CONTENT_BYTES = 100 * 1024;
@@ -527,7 +584,8 @@ export class ProjectService {
             !hasTestCounts &&
             metricsRetryDue
           ) {
-            const m = await this.codeBuild.tryExtractTestMetricsFromBuild(build);
+            const m =
+              await this.codeBuild.tryExtractTestMetricsFromBuild(build);
             if (m) {
               data.codeBuildTestsPassed = m.passed;
               data.codeBuildTestsFailed = m.failed;
@@ -539,8 +597,7 @@ export class ProjectService {
             where: { id: s.id },
             data,
           });
-        } catch {
-        }
+        } catch {}
       }
       submissions = await this.prisma.projectSubmission.findMany({
         where: { projectId },
@@ -647,7 +704,9 @@ export class ProjectService {
       throw new NotFoundException('Submission not found');
     }
     if (submission.projectId !== projectId) {
-      throw new BadRequestException('Submission does not belong to this project');
+      throw new BadRequestException(
+        'Submission does not belong to this project',
+      );
     }
     if (submission.project.course.userId !== teacherId) {
       throw new ForbiddenException(
@@ -674,16 +733,17 @@ export class ProjectService {
       );
     }
 
-    const submissionWithMetrics = await this.prisma.projectSubmission.findUnique({
-      where: { id: submissionId },
-      select: {
-        codeBuildId: true,
-        codeBuildStatus: true,
-        codeBuildTestsPassed: true,
-        codeBuildTestsFailed: true,
-        codeBuildTestsSkipped: true,
-      },
-    });
+    const submissionWithMetrics =
+      await this.prisma.projectSubmission.findUnique({
+        where: { id: submissionId },
+        select: {
+          codeBuildId: true,
+          codeBuildStatus: true,
+          codeBuildTestsPassed: true,
+          codeBuildTestsFailed: true,
+          codeBuildTestsSkipped: true,
+        },
+      });
 
     const automatedTestSummary =
       submissionWithMetrics?.codeBuildId != null
@@ -708,9 +768,8 @@ export class ProjectService {
         assessmentPrompt: submission.project.assessmentPrompt,
         maxPoints: submission.project.points,
         projectFilesXml:
-          (warnings.length
-            ? `Parser notes: ${warnings.join('; ')}\n\n`
-            : '') + projectFilesXml,
+          (warnings.length ? `Parser notes: ${warnings.join('; ')}\n\n` : '') +
+          projectFilesXml,
         automatedTestSummary,
       });
 
@@ -732,7 +791,9 @@ export class ProjectService {
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.projectId !== projectId) {
-      throw new BadRequestException('Submission does not belong to this project');
+      throw new BadRequestException(
+        'Submission does not belong to this project',
+      );
     }
     if (submission.project.course.userId !== teacherId) {
       throw new ForbiddenException(
@@ -800,7 +861,9 @@ export class ProjectService {
     });
     if (!submission) throw new NotFoundException('Submission not found');
     if (submission.projectId !== projectId) {
-      throw new BadRequestException('Submission does not belong to this project');
+      throw new BadRequestException(
+        'Submission does not belong to this project',
+      );
     }
     if (submission.project.course.userId !== teacherId) {
       throw new ForbiddenException(
@@ -814,8 +877,10 @@ export class ProjectService {
         codeBuildStatus: null,
         codeBuildPhase: null,
         codeBuildLogsUrl: null,
-        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
-        codeBuildUpdatedAt: submission.codeBuildUpdatedAt?.toISOString() ?? null,
+        codeBuildStartedAt:
+          submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildUpdatedAt:
+          submission.codeBuildUpdatedAt?.toISOString() ?? null,
         codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
         codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
         codeBuildTestsSkipped: submission.codeBuildTestsSkipped ?? null,
@@ -840,7 +905,8 @@ export class ProjectService {
         codeBuildStatus: 'UNKNOWN',
         codeBuildPhase: null,
         codeBuildLogsUrl: submission.codeBuildLogsUrl,
-        codeBuildStartedAt: submission.codeBuildStartedAt?.toISOString() ?? null,
+        codeBuildStartedAt:
+          submission.codeBuildStartedAt?.toISOString() ?? null,
         codeBuildUpdatedAt: now.toISOString(),
         codeBuildTestsPassed: submission.codeBuildTestsPassed ?? null,
         codeBuildTestsFailed: submission.codeBuildTestsFailed ?? null,
@@ -961,7 +1027,8 @@ export class ProjectService {
       this.fileBucket,
     );
     const zip = new AdmZip(zipBuffer);
-    const entry = zip.getEntry(filePath) ?? zip.getEntry(filePath.replace(/\//g, '\\'));
+    const entry =
+      zip.getEntry(filePath) ?? zip.getEntry(filePath.replace(/\//g, '\\'));
     if (!entry || entry.isDirectory) {
       throw new NotFoundException('File not found in archive');
     }
@@ -1044,9 +1111,7 @@ export class ProjectService {
     const isTeacher = submission.project.course.userId === userId;
     const isOwner = submission.userId === userId;
     if (!isTeacher && !isOwner) {
-      throw new ForbiddenException(
-        'You do not have access to this submission',
-      );
+      throw new ForbiddenException('You do not have access to this submission');
     }
     return submission;
   }

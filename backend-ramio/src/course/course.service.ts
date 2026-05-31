@@ -50,7 +50,9 @@ export class CourseService {
         take: safePageSize,
         include: {
           user: { select: { username: true, email: true } },
-          _count: { select: { enrollments: true, assignments: true, projects: true } },
+          _count: {
+            select: { enrollments: true, assignments: true, projects: true },
+          },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
         },
@@ -101,7 +103,9 @@ export class CourseService {
         take: safePageSize,
         include: {
           user: { select: { username: true, email: true } },
-          _count: { select: { enrollments: true, assignments: true, projects: true } },
+          _count: {
+            select: { enrollments: true, assignments: true, projects: true },
+          },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
         },
@@ -349,16 +353,25 @@ export class CourseService {
     };
   }
 
-  async removeEnrollment(courseId: bigint, studentId: bigint, teacherId: bigint) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+  async removeEnrollment(
+    courseId: bigint,
+    studentId: bigint,
+    teacherId: bigint,
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
     if (!course) throw new NotFoundException('Course not found');
     if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can remove students');
+      throw new ForbiddenException(
+        'Only the course teacher can remove students',
+      );
     }
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: studentId, courseId } },
     });
-    if (!enrollment) throw new NotFoundException('Student is not enrolled in this course');
+    if (!enrollment)
+      throw new NotFoundException('Student is not enrolled in this course');
     await this.prisma.enrollment.delete({
       where: { userId_courseId: { userId: studentId, courseId } },
     });
@@ -479,8 +492,7 @@ export class CourseService {
         const t = a.question.type;
         if (t === 'OPEN_ANSWER') return a.pointsEarned == null;
         if (t === 'CODING_TASK') {
-          const mode =
-            a.question.codingTaskGradingMode ?? 'MANUAL_ONLY';
+          const mode = a.question.codingTaskGradingMode ?? 'MANUAL_ONLY';
           if (mode === 'TESTS_ONLY') return false;
           return a.pointsEarned == null;
         }

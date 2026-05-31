@@ -5,12 +5,12 @@ on:
     branches:
       - master
     paths:
-      - "backend-ramio/**"
-      - ".github/workflows/deploy-backend-ec2.yml"
-      - "frontend-ramio/**"
-      - "docker-compose.yml"
-      - "nginx/**"
-      - ".github/scripts/**"
+      - 'backend-ramio/**'
+      - '.github/workflows/deploy-backend-ec2.yml'
+      - 'frontend-ramio/**'
+      - 'docker-compose.yml'
+      - 'nginx/**'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 permissions:

@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
-import { CourseProject, PROJECT_LANGUAGE_OPTIONS } from '@/app/interfaces/Project';
+import {
+  CourseProject,
+  PROJECT_LANGUAGE_OPTIONS,
+} from '@/app/interfaces/Project';
 import { ProjectSubmissionDetail } from '@/app/interfaces/Project';
 import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 import { User } from '@/app/interfaces/User';
@@ -28,13 +31,16 @@ export default function ProjectUploadPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingProject, setLoadingProject] = useState(true);
   const [file, setFile] = useState<File | null>(null);
-  const [submissionMethod, setSubmissionMethod] = useState<SubmissionMethod>('upload');
+  const [submissionMethod, setSubmissionMethod] =
+    useState<SubmissionMethod>('upload');
   const [repoUrl, setRepoUrl] = useState('');
   const [repoBranch, setRepoBranch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(null);
+  const [submission, setSubmission] = useState<ProjectSubmissionDetail | null>(
+    null,
+  );
   const [teacherStudents, setTeacherStudents] = useState<
     { userId: string; username: string | null; email: string }[]
   >([]);
@@ -200,10 +206,12 @@ export default function ProjectUploadPage() {
       );
       setSubmission(subRes.data);
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
           : null;
       const errorMsg =
         status === 409
@@ -261,7 +269,9 @@ export default function ProjectUploadPage() {
             <p className="text-sm text-slate-500">Loading project…</p>
           ) : !project ? (
             <div className="text-center">
-              <p className="text-sm text-slate-600">Project not found or you don’t have access.</p>
+              <p className="text-sm text-slate-600">
+                Project not found or you don’t have access.
+              </p>
               <button
                 type="button"
                 onClick={() => router.push(`/courses/${courseId}`)}
@@ -274,21 +284,27 @@ export default function ProjectUploadPage() {
             <>
               <header className="mb-6">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl font-semibold text-slate-900">{project.title}</h1>
+                  <h1 className="text-xl font-semibold text-slate-900">
+                    {project.title}
+                  </h1>
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                     Project
                   </span>
                   <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
-                    {PROJECT_LANGUAGE_OPTIONS.find((o) => o.value === project.language)?.label ??
-                      project.language}
+                    {PROJECT_LANGUAGE_OPTIONS.find(
+                      (o) => o.value === project.language,
+                    )?.label ?? project.language}
                   </span>
                 </div>
                 {project.description && (
-                  <p className="mt-2 text-sm text-slate-600">{project.description}</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {project.description}
+                  </p>
                 )}
                 <p className="mt-2 text-xs text-slate-400">
                   {project.points} pts
-                  {project.dueDate && ` · Due ${new Date(project.dueDate).toLocaleDateString()}`}
+                  {project.dueDate &&
+                    ` · Due ${new Date(project.dueDate).toLocaleDateString()}`}
                 </p>
               </header>
 
@@ -299,12 +315,15 @@ export default function ProjectUploadPage() {
                       Your result: {submission.points} / {project.points} pts
                     </p>
                     {submission.teacherFeedback && (
-                      <p className="mt-1 whitespace-pre-wrap text-xs">{submission.teacherFeedback}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-xs">
+                        {submission.teacherFeedback}
+                      </p>
                     )}
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Your submitted {submission.githubRepoUrl ? 'repository' : 'archive'}
+                      Your submitted{' '}
+                      {submission.githubRepoUrl ? 'repository' : 'archive'}
                     </p>
                     {submission.githubRepoUrl ? (
                       <a
@@ -353,7 +372,8 @@ export default function ProjectUploadPage() {
                         )}
                         {teacherStudents.map((student) => (
                           <option key={student.userId} value={student.userId}>
-                            {(student.username ?? student.email) + ` (${student.email})`}
+                            {(student.username ?? student.email) +
+                              ` (${student.email})`}
                           </option>
                         ))}
                       </select>
@@ -366,7 +386,9 @@ export default function ProjectUploadPage() {
                   {effectiveSubmitted && submission && (
                     <div className="space-y-3">
                       <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
-                        <p className="text-xs font-medium text-slate-500">Current submission</p>
+                        <p className="text-xs font-medium text-slate-500">
+                          Current submission
+                        </p>
                         {submission.githubRepoUrl ? (
                           <a
                             href={submission.githubRepoUrl}
@@ -401,7 +423,10 @@ export default function ProjectUploadPage() {
                   <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
                     <button
                       type="button"
-                      onClick={() => { setSubmissionMethod('upload'); setError(''); }}
+                      onClick={() => {
+                        setSubmissionMethod('upload');
+                        setError('');
+                      }}
                       className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
                         submissionMethod === 'upload'
                           ? 'bg-white text-slate-900 shadow-sm'
@@ -412,7 +437,10 @@ export default function ProjectUploadPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setSubmissionMethod('github'); setError(''); }}
+                      onClick={() => {
+                        setSubmissionMethod('github');
+                        setError('');
+                      }}
                       className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
                         submissionMethod === 'github'
                           ? 'bg-white text-slate-900 shadow-sm'
@@ -467,7 +495,10 @@ export default function ProjectUploadPage() {
                           htmlFor="repo-branch"
                           className="mb-1.5 block text-sm font-medium text-slate-700"
                         >
-                          Branch <span className="font-normal text-slate-400">(optional, defaults to default branch)</span>
+                          Branch{' '}
+                          <span className="font-normal text-slate-400">
+                            (optional, defaults to default branch)
+                          </span>
                         </label>
                         <input
                           id="repo-branch"
@@ -482,7 +513,9 @@ export default function ProjectUploadPage() {
                   )}
 
                   {error && (
-                    <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>
+                    <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                      {error}
+                    </div>
                   )}
 
                   <div className="flex justify-end">
@@ -515,7 +548,8 @@ export default function ProjectUploadPage() {
                 </div>
               ) : (
                 <p className="text-sm text-slate-600">
-                  Open this page as an enrolled student or course teacher to upload a project archive.
+                  Open this page as an enrolled student or course teacher to
+                  upload a project archive.
                 </p>
               )}
             </>

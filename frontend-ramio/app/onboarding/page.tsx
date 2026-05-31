@@ -18,13 +18,11 @@ export default function OnboardingPage() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    
     const checkAuth = async () => {
       try {
         const response = await api.get<User>('/me');
         const user = response.data;
-        
-       
+
         if (user.role && user.username) {
           router.push('/');
           return;
@@ -42,7 +40,7 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!role) {
       setError('Please select a role');
       return;
@@ -63,7 +61,6 @@ export default function OnboardingPage() {
         username: trimmedUsername,
       });
 
-      
       router.push('/');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'An error occurred');
@@ -77,10 +74,9 @@ export default function OnboardingPage() {
     setIsLoggingOut(true);
     try {
       await api.post('/auth/logout');
-     
+
       router.push('/login');
     } catch (err) {
-   
       console.error('Logout error:', err);
       router.push('/login');
     } finally {
@@ -128,7 +124,8 @@ export default function OnboardingPage() {
             Choose how you’ll use Ramio
           </h1>
           <p className="text-sm text-slate-500">
-            Pick your role and add a display name. You can start learning or teaching in seconds.
+            Pick your role and add a display name. You can start learning or
+            teaching in seconds.
           </p>
         </div>
 
@@ -138,7 +135,10 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="flex w-full max-w-md flex-col space-y-6"
+        >
           <div className="w-full">
             <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               I am joining as
@@ -205,4 +205,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

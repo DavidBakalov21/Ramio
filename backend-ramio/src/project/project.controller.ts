@@ -56,7 +56,8 @@ export class ProjectController {
     @Query('path') filePath: string,
     @User() user: PrismaUser,
   ) {
-    if (!filePath) throw new BadRequestException('path query param is required');
+    if (!filePath)
+      throw new BadRequestException('path query param is required');
     return this.projectService.getSubmissionFileContent(
       BigInt(submissionId),
       user.id,
@@ -124,10 +125,7 @@ export class ProjectController {
     @Param('submissionId', ParseIntPipe) submissionId: number,
     @User() user: PrismaUser,
   ) {
-    return this.projectService.getSubmissionById(
-      BigInt(submissionId),
-      user.id,
-    );
+    return this.projectService.getSubmissionById(BigInt(submissionId), user.id);
   }
 
   @Patch('submission/:submissionId')

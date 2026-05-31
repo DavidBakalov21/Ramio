@@ -1,4 +1,3 @@
-
 services:
   backend1:
     image: ramio-backend:local
@@ -9,13 +8,13 @@ services:
       - ./backend-ramio/.env
     environment:
       TMPDIR: /opt/ramio-runner-work
-      DOCKER_GID: "${DOCKER_GID:-988}"
+      DOCKER_GID: '${DOCKER_GID:-988}'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/ramio-runner-work:/opt/ramio-runner-work
-    shm_size: "1gb"
+    shm_size: '1gb'
     ports:
-      - "127.0.0.1:3333:3333"
+      - '127.0.0.1:3333:3333'
     restart: unless-stopped
 
   backend2:
@@ -24,13 +23,13 @@ services:
       - ./backend-ramio/.env
     environment:
       TMPDIR: /opt/ramio-runner-work
-      DOCKER_GID: "${DOCKER_GID:-988}"
+      DOCKER_GID: '${DOCKER_GID:-988}'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/ramio-runner-work:/opt/ramio-runner-work
-    shm_size: "1gb"
+    shm_size: '1gb'
     ports:
-      - "127.0.0.1:3334:3333"
+      - '127.0.0.1:3334:3333'
     restart: unless-stopped
 
   backend3:
@@ -39,77 +38,77 @@ services:
       - ./backend-ramio/.env
     environment:
       TMPDIR: /opt/ramio-runner-work
-      DOCKER_GID: "${DOCKER_GID:-988}"
+      DOCKER_GID: '${DOCKER_GID:-988}'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/ramio-runner-work:/opt/ramio-runner-work
-    shm_size: "1gb"
+    shm_size: '1gb'
     ports:
-      - "127.0.0.1:3335:3333"
+      - '127.0.0.1:3335:3333'
     restart: unless-stopped
 
   runner-python:
-    profiles: ["runners"]
+    profiles: ['runners']
     image: runner-python:3.12
     build:
       context: .
       dockerfile: runners/python/Dockerfile.python
 
   runner-node:
-    profiles: ["runners"]
+    profiles: ['runners']
     image: runner-node:20
     build:
       context: .
       dockerfile: runners/node/Dockerfile.node
 
   runner-java:
-    profiles: ["runners"]
+    profiles: ['runners']
     image: runner-java:21
     build:
       context: .
       dockerfile: runners/java/Dockerfile.java
 
   runner-dotnet:
-    profiles: ["runners"]
+    profiles: ['runners']
     image: runner-dotnet:8.0
     build:
       context: .
       dockerfile: runners/dotnet/Dockerfile.dotnet
 
   frontend1:
-    user: "1000:1000"
+    user: '1000:1000'
     image: ramio-frontend:local
     build:
       context: ./frontend-ramio
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-https://ramio-lms.com/api}"
+        NEXT_PUBLIC_API_URL: '${NEXT_PUBLIC_API_URL:-https://ramio-lms.com/api}'
     depends_on:
       - backend1
       - backend2
       - backend3
     ports:
-      - "127.0.0.1:3000:3000"
+      - '127.0.0.1:3000:3000'
     restart: unless-stopped
 
   frontend2:
-    user: "1000:1000"
+    user: '1000:1000'
     image: ramio-frontend:local
     depends_on:
       - backend1
       - backend2
       - backend3
     ports:
-      - "127.0.0.1:3001:3000"
+      - '127.0.0.1:3001:3000'
     restart: unless-stopped
 
   frontend3:
-    user: "1000:1000"
+    user: '1000:1000'
     image: ramio-frontend:local
     depends_on:
       - backend1
       - backend2
       - backend3
     ports:
-      - "127.0.0.1:3002:3000"
+      - '127.0.0.1:3002:3000'
     restart: unless-stopped

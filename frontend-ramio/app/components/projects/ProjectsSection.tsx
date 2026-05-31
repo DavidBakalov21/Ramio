@@ -61,7 +61,8 @@ export function ProjectsSection({ courseId, isTeacher }: ProjectsSectionProps) {
           )
         }
         onProjectClick={(project) => {
-          if (isTeacher) router.push(`/courses/${courseId}/project/${project.id}/edit`);
+          if (isTeacher)
+            router.push(`/courses/${courseId}/project/${project.id}/edit`);
           else router.push(`/courses/${courseId}/project/${project.id}`);
         }}
       />

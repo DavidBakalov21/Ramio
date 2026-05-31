@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.next
+**/out
+**/cdk.out
+**/coverage
+**/package-lock.json
+**/function.zip
+thesis

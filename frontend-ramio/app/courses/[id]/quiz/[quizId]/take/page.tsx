@@ -36,7 +36,9 @@ export default function TakeQuizPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [codeRunBusy, setCodeRunBusy] = useState<string | null>(null);
-  const [codeRunResult, setCodeRunResult] = useState<Record<string, RunQuizCodeResult | null>>({});
+  const [codeRunResult, setCodeRunResult] = useState<
+    Record<string, RunQuizCodeResult | null>
+  >({});
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,7 +64,9 @@ export default function TakeQuizPage() {
   const doSave = useCallback(
     async (cur: Record<string, AnswerState>) => {
       if (!quiz || hasTimerSubmittedRef.current) return;
-      await api.patch(`/quiz/${quizId}/submission`, { answers: buildPayload(cur) });
+      await api.patch(`/quiz/${quizId}/submission`, {
+        answers: buildPayload(cur),
+      });
     },
     [quiz, quizId, buildPayload],
   );
@@ -74,7 +78,9 @@ export default function TakeQuizPage() {
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
       try {
-        await api.post(`/quiz/${quizId}/submit`, { answers: buildPayload(cur) });
+        await api.post(`/quiz/${quizId}/submit`, {
+          answers: buildPayload(cur),
+        });
         router.push(`/courses/${courseId}/quiz/${quizId}`);
       } catch {
         router.push(`/courses/${courseId}/quiz/${quizId}`);
@@ -103,7 +109,11 @@ export default function TakeQuizPage() {
       try {
         const [quizRes, startRes] = await Promise.all([
           api.get<Quiz>(`/quiz/${quizId}`),
-          api.post<{ startedAt: string; timeLimit: number | null; status: string }>(`/quiz/${quizId}/start`),
+          api.post<{
+            startedAt: string;
+            timeLimit: number | null;
+            status: string;
+          }>(`/quiz/${quizId}/start`),
         ]);
         if (startRes.data.status === 'SUBMITTED') {
           router.replace(`/courses/${courseId}/quiz/${quizId}`);
@@ -111,24 +121,42 @@ export default function TakeQuizPage() {
         }
         setQuiz(quizRes.data);
         if (startRes.data.timeLimit) {
-          const elapsed = Math.floor((Date.now() - new Date(startRes.data.startedAt).getTime()) / 1000);
-          setRemainingSeconds(Math.max(0, startRes.data.timeLimit * 60 - elapsed));
+          const elapsed = Math.floor(
+            (Date.now() - new Date(startRes.data.startedAt).getTime()) / 1000,
+          );
+          setRemainingSeconds(
+            Math.max(0, startRes.data.timeLimit * 60 - elapsed),
+          );
         }
         try {
-          const subRes = await api.get<{ questions: { id: string; openText: string | null; answers: { id: string; isSelected: boolean }[] }[] }>(`/quiz/${quizId}/submission`);
+          const subRes = await api.get<{
+            questions: {
+              id: string;
+              openText: string | null;
+              answers: { id: string; isSelected: boolean }[];
+            }[];
+          }>(`/quiz/${quizId}/submission`);
           const pre: Record<string, AnswerState> = {};
           for (const q of subRes.data.questions) {
             pre[q.id] = {
-              selectedIds: q.answers.filter((x) => x.isSelected).map((x) => x.id),
+              selectedIds: q.answers
+                .filter((x) => x.isSelected)
+                .map((x) => x.id),
               openText: q.openText ?? '',
             };
           }
           for (const q of quizRes.data.questions) {
             if (q.type !== 'CODING_TASK') continue;
             if (!pre[q.id])
-              pre[q.id] = { selectedIds: [], openText: q.codingTaskStarterCode ?? '' };
+              pre[q.id] = {
+                selectedIds: [],
+                openText: q.codingTaskStarterCode ?? '',
+              };
             else if (!pre[q.id].openText?.trim() && q.codingTaskStarterCode)
-              pre[q.id] = { ...pre[q.id], openText: q.codingTaskStarterCode ?? '' };
+              pre[q.id] = {
+                ...pre[q.id],
+                openText: q.codingTaskStarterCode ?? '',
+              };
           }
           setAnswers(pre);
         } catch {
@@ -156,15 +184,21 @@ export default function TakeQuizPage() {
     if (remainingSeconds === null || remainingSeconds <= 0) return;
     timerRef.current = setInterval(() => {
       setRemainingSeconds((prev) => {
-        if (prev === null || prev <= 1) { clearInterval(timerRef.current!); return 0; }
+        if (prev === null || prev <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [remainingSeconds !== null]);
 
   useEffect(() => {
-    if (remainingSeconds === 0 && !hasTimerSubmittedRef.current) void doTimerSubmit(answers);
+    if (remainingSeconds === 0 && !hasTimerSubmittedRef.current)
+      void doTimerSubmit(answers);
   }, [remainingSeconds]);
 
   useEffect(() => {
@@ -172,20 +206,36 @@ export default function TakeQuizPage() {
     autoSaveTimerRef.current = setInterval(() => {
       if (!hasTimerSubmittedRef.current) void doSave(answers).catch(() => {});
     }, 30_000);
-    return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
+    return () => {
+      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
+    };
   }, [quiz, answers]);
 
   const setSelected = (qId: string, aId: string) =>
-    setAnswers((p) => ({ ...p, [qId]: { ...p[qId] ?? { openText: '' }, selectedIds: [aId] } }));
+    setAnswers((p) => ({
+      ...p,
+      [qId]: { ...(p[qId] ?? { openText: '' }), selectedIds: [aId] },
+    }));
 
   const toggleSelected = (qId: string, aId: string) =>
     setAnswers((p) => {
       const cur = p[qId]?.selectedIds ?? [];
-      return { ...p, [qId]: { ...p[qId] ?? { openText: '' }, selectedIds: cur.includes(aId) ? cur.filter((x) => x !== aId) : [...cur, aId] } };
+      return {
+        ...p,
+        [qId]: {
+          ...(p[qId] ?? { openText: '' }),
+          selectedIds: cur.includes(aId)
+            ? cur.filter((x) => x !== aId)
+            : [...cur, aId],
+        },
+      };
     });
 
   const setOpenText = (qId: string, text: string) =>
-    setAnswers((p) => ({ ...p, [qId]: { ...p[qId] ?? { selectedIds: [] }, openText: text } }));
+    setAnswers((p) => ({
+      ...p,
+      [qId]: { ...(p[qId] ?? { selectedIds: [] }), openText: text },
+    }));
 
   const runCodingTests = async (questionId: string) => {
     const code = (answers[questionId]?.openText ?? '').trim();
@@ -196,10 +246,13 @@ export default function TakeQuizPage() {
     setError('');
     setCodeRunBusy(questionId);
     try {
-      const { data } = await api.post<RunQuizCodeResult>(`/quiz/${quizId}/coding-task/run`, {
-        questionId: Number(questionId),
-        code,
-      });
+      const { data } = await api.post<RunQuizCodeResult>(
+        `/quiz/${quizId}/coding-task/run`,
+        {
+          questionId: Number(questionId),
+          code,
+        },
+      );
       setCodeRunResult((prev) => ({ ...prev, [questionId]: data }));
     } catch {
       setError('Could not run tests. Check your connection or try again.');
@@ -211,8 +264,16 @@ export default function TakeQuizPage() {
   if (loadingUser || loading) {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
-        {user && <Navbar user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />}
-        <div className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading quiz…</div>
+        {user && (
+          <Navbar
+            user={user}
+            onLogout={handleLogout}
+            isLoggingOut={isLoggingOut}
+          />
+        )}
+        <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
+          Loading quiz…
+        </div>
       </div>
     );
   }
@@ -228,11 +289,17 @@ export default function TakeQuizPage() {
       <div className="border-b border-slate-200 bg-white/90 px-4 py-2 shadow-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <div>
-            <p className="truncate text-sm font-semibold text-slate-900">{quiz.title}</p>
-            <p className="text-xs text-slate-500">{quiz.questions.length} questions · {totalPoints} pts</p>
+            <p className="truncate text-sm font-semibold text-slate-900">
+              {quiz.title}
+            </p>
+            <p className="text-xs text-slate-500">
+              {quiz.questions.length} questions · {totalPoints} pts
+            </p>
           </div>
           {remainingSeconds !== null && (
-            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${timerUrgent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}`}>
+            <div
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${timerUrgent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}`}
+            >
               ⏱ {formatTime(remainingSeconds)}
             </div>
           )}
@@ -244,24 +311,51 @@ export default function TakeQuizPage() {
           {quiz.questions.map((q, idx) => {
             const a = answers[q.id] ?? { selectedIds: [], openText: '' };
             return (
-              <motion.div key={q.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <motion.div
+                key={q.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04 }}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
                 <div className="mb-3 flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-900">{idx + 1}. {q.text}</p>
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{q.points} pt{q.points !== 1 ? 's' : ''}</span>
+                  <p className="text-sm font-medium text-slate-900">
+                    {idx + 1}. {q.text}
+                  </p>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                    {q.points} pt{q.points !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                {q.imageUrl && <QuizImage url={q.imageUrl} alt={`Question ${idx + 1} image`} />}
+                {q.imageUrl && (
+                  <QuizImage
+                    url={q.imageUrl}
+                    alt={`Question ${idx + 1} image`}
+                  />
+                )}
 
                 {q.type === 'ONE_ANSWER' && (
                   <div className="mt-3 flex flex-col gap-2">
                     {q.answers.map((ans) => (
-                      <label key={ans.id} className="flex cursor-pointer flex-col gap-1 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50/40">
+                      <label
+                        key={ans.id}
+                        className="flex cursor-pointer flex-col gap-1 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50/40"
+                      >
                         <div className="flex items-center gap-2.5">
-                          <input type="radio" name={`q_${q.id}`} value={ans.id} checked={a.selectedIds[0] === ans.id}
-                            onChange={() => setSelected(q.id, ans.id)} className="h-4 w-4 shrink-0 accent-violet-600" />
-                          <span className="text-sm text-slate-800">{ans.text}</span>
+                          <input
+                            type="radio"
+                            name={`q_${q.id}`}
+                            value={ans.id}
+                            checked={a.selectedIds[0] === ans.id}
+                            onChange={() => setSelected(q.id, ans.id)}
+                            className="h-4 w-4 shrink-0 accent-violet-600"
+                          />
+                          <span className="text-sm text-slate-800">
+                            {ans.text}
+                          </span>
                         </div>
-                        {ans.imageUrl && <QuizImage url={ans.imageUrl} alt="Answer image" />}
+                        {ans.imageUrl && (
+                          <QuizImage url={ans.imageUrl} alt="Answer image" />
+                        )}
                       </label>
                     ))}
                   </div>
@@ -269,30 +363,50 @@ export default function TakeQuizPage() {
 
                 {q.type === 'MULTI_ANSWER' && (
                   <div className="mt-3 flex flex-col gap-2">
-                    <p className="mb-1 text-xs text-slate-500">Select all that apply</p>
+                    <p className="mb-1 text-xs text-slate-500">
+                      Select all that apply
+                    </p>
                     {q.answers.map((ans) => (
-                      <label key={ans.id} className="flex cursor-pointer flex-col gap-1 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50/40">
+                      <label
+                        key={ans.id}
+                        className="flex cursor-pointer flex-col gap-1 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:bg-slate-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50/40"
+                      >
                         <div className="flex items-center gap-2.5">
-                          <input type="checkbox" value={ans.id} checked={a.selectedIds.includes(ans.id)}
-                            onChange={() => toggleSelected(q.id, ans.id)} className="h-4 w-4 shrink-0 accent-violet-600" />
-                          <span className="text-sm text-slate-800">{ans.text}</span>
+                          <input
+                            type="checkbox"
+                            value={ans.id}
+                            checked={a.selectedIds.includes(ans.id)}
+                            onChange={() => toggleSelected(q.id, ans.id)}
+                            className="h-4 w-4 shrink-0 accent-violet-600"
+                          />
+                          <span className="text-sm text-slate-800">
+                            {ans.text}
+                          </span>
                         </div>
-                        {ans.imageUrl && <QuizImage url={ans.imageUrl} alt="Answer image" />}
+                        {ans.imageUrl && (
+                          <QuizImage url={ans.imageUrl} alt="Answer image" />
+                        )}
                       </label>
                     ))}
                   </div>
                 )}
 
                 {q.type === 'OPEN_ANSWER' && (
-                  <textarea value={a.openText} onChange={(e) => setOpenText(q.id, e.target.value)}
-                    rows={4} maxLength={10000} placeholder="Write your answer here…"
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  <textarea
+                    value={a.openText}
+                    onChange={(e) => setOpenText(q.id, e.target.value)}
+                    rows={4}
+                    maxLength={10000}
+                    placeholder="Write your answer here…"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  />
                 )}
 
                 {q.type === 'CODING_TASK' && (
                   <div className="mt-3 space-y-3">
                     <p className="text-xs text-slate-500">
-                      Language: {q.codingTaskLanguage ?? '?'} · Same runners as assignments.
+                      Language: {q.codingTaskLanguage ?? '?'} · Same runners as
+                      assignments.
                     </p>
                     <textarea
                       value={a.openText}
@@ -308,15 +422,19 @@ export default function TakeQuizPage() {
                         type="button"
                         disabled={codeRunBusy === q.id}
                         onClick={() => void runCodingTests(q.id)}
-                        className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-50">
+                        className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-100 disabled:opacity-50"
+                      >
                         {codeRunBusy === q.id ? 'Running…' : 'Run tests'}
                       </button>
                     </div>
                     {codeRunResult[q.id] != null && (
                       <pre
                         className={`max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border px-3 py-2 font-mono text-[11px] ${
-                          codeRunResult[q.id]?.success ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-slate-50'
-                        }`}>
+                          codeRunResult[q.id]?.success
+                            ? 'border-emerald-200 bg-emerald-50/50'
+                            : 'border-slate-200 bg-slate-50'
+                        }`}
+                      >
                         {codeRunResult[q.id]?.timedOut ? 'Timed out\n' : ''}
                         exit {codeRunResult[q.id]?.exitCode ?? '?'}
                         {'\n\n— stdout —\n'}
@@ -334,8 +452,12 @@ export default function TakeQuizPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex justify-end pb-8">
-            <button type="button" onClick={() => void handleManualSubmit()} disabled={saving}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+            <button
+              type="button"
+              onClick={() => void handleManualSubmit()}
+              disabled={saving}
+              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
               {saving ? 'Saving…' : 'Submit quiz'}
             </button>
           </div>

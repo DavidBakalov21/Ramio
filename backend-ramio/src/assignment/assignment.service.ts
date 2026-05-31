@@ -171,7 +171,6 @@ export class AssignmentService {
     return { success: true };
   }
 
-
   async getTestFilesOverview(assignmentId: bigint, teacherId: bigint) {
     const assignment = await this.prisma.assignment.findUnique({
       where: { id: assignmentId },
@@ -310,7 +309,6 @@ export class AssignmentService {
     return { code };
   }
 
-
   async runAssignment(
     assignmentId: bigint,
     userId: bigint,
@@ -337,7 +335,6 @@ export class AssignmentService {
     );
     return this.runByLanguage(lang, code, testContent);
   }
-
 
   async createSubmission(
     assignmentId: bigint,
@@ -749,14 +746,18 @@ export class AssignmentService {
   ): Promise<{ reply: string }> {
     const messages = dto.messages ?? [];
     if (!Array.isArray(messages) || messages.length === 0) {
-      throw new BadRequestException('messages is required and must not be empty');
+      throw new BadRequestException(
+        'messages is required and must not be empty',
+      );
     }
     if (messages.length > 40) {
       throw new BadRequestException('Too many messages in one request');
     }
     const last = messages[messages.length - 1];
     if (last.role !== 'user' || !last.content?.trim()) {
-      throw new BadRequestException('Last message must be a non-empty user message');
+      throw new BadRequestException(
+        'Last message must be a non-empty user message',
+      );
     }
     for (const m of messages) {
       if (m.content && m.content.length > 12000) {
@@ -814,15 +815,21 @@ export class AssignmentService {
     if (cacheValid) {
       testSummary = cached!.summary;
     } else {
-      testSummary = 'Tests were not run (no test file or unsupported language).';
-      const testFile = assignment.tests.find((t) => t.language === effectiveLang);
+      testSummary =
+        'Tests were not run (no test file or unsupported language).';
+      const testFile = assignment.tests.find(
+        (t) => t.language === effectiveLang,
+      );
       if (effectiveLang === AssignmentLanguage.PYTHON && testFile) {
         try {
           const testContent = await this.storage.getFileContentAsText(
             testFile.key,
             this.assignmentBucket,
           );
-          const run = await this.codeTestService.runPythonTests(code, testContent);
+          const run = await this.codeTestService.runPythonTests(
+            code,
+            testContent,
+          );
           testSummary = [
             `Success: ${run.success}`,
             `Exit code: ${run.exitCode}`,
@@ -845,12 +852,13 @@ export class AssignmentService {
       });
     }
 
-    const langLabel = {
-      PYTHON: 'Python',
-      NODE_JS: 'JavaScript / Node.js',
-      JAVA: 'Java',
-      DOTNET: 'C# / .NET',
-    }[effectiveLang] ?? effectiveLang;
+    const langLabel =
+      {
+        PYTHON: 'Python',
+        NODE_JS: 'JavaScript / Node.js',
+        JAVA: 'Java',
+        DOTNET: 'C# / .NET',
+      }[effectiveLang] ?? effectiveLang;
 
     const system = `You are a supportive programming tutor helping a student reflect on their graded assignment.
 
@@ -889,7 +897,6 @@ Rules:
     const reply = await this.bedrock.chatWithSystem(system, messages, 4096);
     return { reply: reply.trim() };
   }
-
 
   private runByLanguage(
     language: AssignmentLanguage,
@@ -939,7 +946,13 @@ Rules:
     createdAt: Date;
     updatedAt: Date;
     courseId: bigint;
-    tests?: { id: bigint; url: string; key: string; name: string; language: AssignmentLanguage }[];
+    tests?: {
+      id: bigint;
+      url: string;
+      key: string;
+      name: string;
+      language: AssignmentLanguage;
+    }[];
   }) {
     return {
       id: a.id.toString(),

@@ -88,8 +88,8 @@ describe('assertArchiveUpload', () => {
     expect(() =>
       assertArchiveUpload(mockFile('C:\\Users\\x\\Downloads\\ok.zip')),
     ).not.toThrow();
-    expect(() =>
-      assertArchiveUpload(mockFile('/tmp/uploads/bad.exe')),
-    ).toThrow(BadRequestException);
+    expect(() => assertArchiveUpload(mockFile('/tmp/uploads/bad.exe'))).toThrow(
+      BadRequestException,
+    );
   });
 });

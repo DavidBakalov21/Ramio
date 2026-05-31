@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 
@@ -21,8 +25,11 @@ export class GithubRepoToS3Service {
   private readonly lambdaClient: LambdaClient | null;
 
   constructor(private readonly config: ConfigService) {
-    this.lambdaArn = this.config.get<string>(LAMBDA_ARN_KEY)?.trim() || undefined;
-    const region = this.lambdaArn ? regionFromLambdaArn(this.lambdaArn) : undefined;
+    this.lambdaArn =
+      this.config.get<string>(LAMBDA_ARN_KEY)?.trim() || undefined;
+    const region = this.lambdaArn
+      ? regionFromLambdaArn(this.lambdaArn)
+      : undefined;
 
     if (this.lambdaArn && !region) {
       this.logger.error(
@@ -52,7 +59,7 @@ export class GithubRepoToS3Service {
     if (!this.lambdaArn || !this.lambdaClient) {
       throw new ServiceUnavailableException(
         'GitHub repo submission requires an AWS Lambda function. ' +
-        'Deploy lambda/github-repo-to-s3/ and set GITHUB_REPO_TO_S3_LAMBDA_ARN to its full ARN in your .env.',
+          'Deploy lambda/github-repo-to-s3/ and set GITHUB_REPO_TO_S3_LAMBDA_ARN to its full ARN in your .env.',
       );
     }
 
@@ -62,7 +69,9 @@ export class GithubRepoToS3Service {
       if (err instanceof ServiceUnavailableException) throw err;
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`GitHub repo-to-S3 Lambda failed: ${msg}`);
-      throw new ServiceUnavailableException(`GitHub repo-to-S3 Lambda failed: ${msg}`);
+      throw new ServiceUnavailableException(
+        `GitHub repo-to-S3 Lambda failed: ${msg}`,
+      );
     }
   }
 
@@ -91,7 +100,7 @@ export class GithubRepoToS3Service {
       try {
         const errBody = JSON.parse(raw) as { errorMessage?: string };
         if (errBody.errorMessage) detail = errBody.errorMessage;
-      } catch {  }
+      } catch {}
       throw new Error(detail);
     }
 
@@ -102,7 +111,11 @@ export class GithubRepoToS3Service {
       throw new Error('Lambda returned non-JSON');
     }
 
-    if (!parsed.ok || typeof parsed.key !== 'string' || typeof parsed.url !== 'string') {
+    if (
+      !parsed.ok ||
+      typeof parsed.key !== 'string' ||
+      typeof parsed.url !== 'string'
+    ) {
       throw new Error(parsed.error || 'Lambda reported failure');
     }
 

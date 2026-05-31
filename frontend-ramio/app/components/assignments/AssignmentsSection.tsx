@@ -11,7 +11,10 @@ interface AssignmentsSectionProps {
   isTeacher: boolean;
 }
 
-export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionProps) {
+export function AssignmentsSection({
+  courseId,
+  isTeacher,
+}: AssignmentsSectionProps) {
   const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +65,10 @@ export function AssignmentsSection({ courseId, isTeacher }: AssignmentsSectionPr
         }
         isTeacher={isTeacher}
         onAssignmentClick={(assignment) => {
-          if (isTeacher) router.push(`/courses/${courseId}/assignment/${assignment.id}/edit`);
+          if (isTeacher)
+            router.push(
+              `/courses/${courseId}/assignment/${assignment.id}/edit`,
+            );
           else router.push(`/courses/${courseId}/assignment/${assignment.id}`);
         }}
       />

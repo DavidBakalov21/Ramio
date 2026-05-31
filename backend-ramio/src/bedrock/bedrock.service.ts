@@ -93,7 +93,6 @@ export class BedrockService {
     return body.content?.[0]?.text ?? '';
   }
 
-
   async chatWithSystem(
     system: string,
     messages: { role: 'user' | 'assistant'; content: string }[],

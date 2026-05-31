@@ -41,7 +41,9 @@ export function AssessSubmissionModal({
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<SubmissionDetail>(`/assignment/submission/${submissionId}`);
+      const res = await api.get<SubmissionDetail>(
+        `/assignment/submission/${submissionId}`,
+      );
       setSubmission(res.data);
       setFeedback(res.data.teacherFeedback ?? '');
       setPoints(res.data.points ?? 0);
@@ -75,12 +77,15 @@ export function AssessSubmissionModal({
     setError(null);
     setIsRunning(true);
     try {
-      const { data } = await api.post<RunResult>(`/assignment/submission/${submissionId}/run`);
+      const { data } = await api.post<RunResult>(
+        `/assignment/submission/${submissionId}/run`,
+      );
       setResult(data);
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message
           : null;
       setError((msg as string) || 'Failed to run tests');
     } finally {
@@ -103,7 +108,8 @@ export function AssessSubmissionModal({
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ? (err as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message
           : null;
       setError((msg as string) || 'Failed to save assessment');
     } finally {
@@ -158,7 +164,10 @@ export function AssessSubmissionModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4">
-          <h2 id="assess-submission-title" className="text-lg font-semibold text-slate-900">
+          <h2
+            id="assess-submission-title"
+            className="text-lg font-semibold text-slate-900"
+          >
             Assess submission
           </h2>
           {submission && (
@@ -176,7 +185,6 @@ export function AssessSubmissionModal({
             <p className="text-sm text-red-600">{error}</p>
           ) : submission ? (
             <>
-             
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Student&apos;s solution
@@ -220,9 +228,11 @@ export function AssessSubmissionModal({
                 )}
               </div>
 
-            
               <div>
-                <label htmlFor="assess-feedback" className="mb-1 block text-xs font-medium text-slate-600">
+                <label
+                  htmlFor="assess-feedback"
+                  className="mb-1 block text-xs font-medium text-slate-600"
+                >
                   Feedback
                 </label>
                 <textarea
@@ -249,9 +259,11 @@ export function AssessSubmissionModal({
                 </div>
               </div>
 
-            
               <div>
-                <label htmlFor="assess-points" className="mb-1 block text-xs font-medium text-slate-600">
+                <label
+                  htmlFor="assess-points"
+                  className="mb-1 block text-xs font-medium text-slate-600"
+                >
                   Points
                 </label>
                 <input

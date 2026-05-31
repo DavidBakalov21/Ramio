@@ -21,7 +21,9 @@ export function PendingEnrollmentRequests({
   const router = useRouter();
   return (
     <section className="mb-8 flex w-full flex-col gap-3">
-      <h2 className="text-lg font-semibold text-slate-900">Enrollment requests</h2>
+      <h2 className="text-lg font-semibold text-slate-900">
+        Enrollment requests
+      </h2>
       {loading ? (
         <p className="text-sm text-slate-500">Loading requests…</p>
       ) : requests.length === 0 ? (
@@ -35,8 +37,11 @@ export function PendingEnrollmentRequests({
               key={req.id}
               className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3"
             >
-              <button type="button" onClick={() => router.push(`/users/${req.userId}`)}
-                className="text-left hover:opacity-75 transition-opacity">
+              <button
+                type="button"
+                onClick={() => router.push(`/users/${req.userId}`)}
+                className="text-left hover:opacity-75 transition-opacity"
+              >
                 <p className="font-medium text-slate-900 hover:text-violet-600">
                   {req.username || req.email}
                 </p>

@@ -13,7 +13,12 @@ interface StudentResultsTableProps {
   kickingId?: string | null;
 }
 
-export function StudentResultsTable({ data, loading, onKick, kickingId }: StudentResultsTableProps) {
+export function StudentResultsTable({
+  data,
+  loading,
+  onKick,
+  kickingId,
+}: StudentResultsTableProps) {
   const router = useRouter();
   if (loading) {
     return (
@@ -117,8 +122,11 @@ export function StudentResultsTable({ data, loading, onKick, kickingId }: Studen
                 className="border-b border-slate-100 transition hover:bg-slate-50/50"
               >
                 <td className="px-4 py-3">
-                  <button type="button" onClick={() => router.push(`/users/${s.userId}`)}
-                    className="text-left hover:opacity-75 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/users/${s.userId}`)}
+                    className="text-left hover:opacity-75 transition-opacity"
+                  >
                     <p className="font-medium text-slate-900 hover:text-violet-600">
                       {s.username || s.email}
                     </p>

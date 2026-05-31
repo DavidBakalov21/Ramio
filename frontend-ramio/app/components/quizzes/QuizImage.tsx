@@ -1,6 +1,12 @@
 import Image from 'next/image';
 
-export function QuizImage({ url, alt = 'Image' }: { url: string; alt?: string }) {
+export function QuizImage({
+  url,
+  alt = 'Image',
+}: {
+  url: string;
+  alt?: string;
+}) {
   return (
     <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
       <Image

@@ -25,7 +25,9 @@ export function TeacherPageShell({
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-violet-50/30 to-slate-50">
       <Navbar user={user} onLogout={onLogout} isLoggingOut={isLoggingOut} />
-      <main className={`flex flex-1 items-center justify-center ${paddingClassName}`}>
+      <main
+        className={`flex flex-1 items-center justify-center ${paddingClassName}`}
+      >
         <motion.main
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -38,4 +40,3 @@ export function TeacherPageShell({
     </div>
   );
 }
-

@@ -13,7 +13,9 @@ function isYouTubeUrl(url: string): boolean {
   try {
     const u = new URL(url);
     const host = u.hostname.replace(/^www\./, '').toLowerCase();
-    return host === 'youtube.com' || host === 'youtu.be' || host === 'm.youtube.com';
+    return (
+      host === 'youtube.com' || host === 'youtu.be' || host === 'm.youtube.com'
+    );
   } catch {
     return false;
   }
@@ -25,15 +27,20 @@ function toYouTubeEmbedUrl(url: string): string | null {
     const host = u.hostname.replace(/^www\./, '').toLowerCase();
     if (host === 'youtu.be') {
       const id = u.pathname.replace(/^\/+/, '').split('/')[0];
-      return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+      return id
+        ? `https://www.youtube.com/embed/${encodeURIComponent(id)}`
+        : null;
     }
     if (host === 'youtube.com' || host === 'm.youtube.com') {
       if (u.pathname === '/watch') {
         const id = u.searchParams.get('v');
-        return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+        return id
+          ? `https://www.youtube.com/embed/${encodeURIComponent(id)}`
+          : null;
       }
       const m = u.pathname.match(/^\/embed\/([^/]+)/);
-      if (m?.[1]) return `https://www.youtube.com/embed/${encodeURIComponent(m[1])}`;
+      if (m?.[1])
+        return `https://www.youtube.com/embed/${encodeURIComponent(m[1])}`;
     }
     return null;
   } catch {
@@ -128,7 +135,10 @@ export default function CourseMaterialViewerPage() {
       );
     }
 
-    if (material.type === 'VIDEO' || (material.mimeType ?? '').startsWith('video/')) {
+    if (
+      material.type === 'VIDEO' ||
+      (material.mimeType ?? '').startsWith('video/')
+    ) {
       return (
         <video
           src={material.url}
@@ -233,4 +243,3 @@ export default function CourseMaterialViewerPage() {
     </div>
   );
 }
-

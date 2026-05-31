@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, ChevronDown, FileCode, Folder, FolderOpen } from 'lucide-react';
+import {
+  ChevronRight,
+  ChevronDown,
+  FileCode,
+  Folder,
+  FolderOpen,
+} from 'lucide-react';
 import type { SubmissionFileEntry } from '@/app/interfaces/Project';
 
 interface TreeNode {
@@ -49,12 +55,35 @@ function buildTree(files: SubmissionFileEntry[]): TreeNode[] {
 function getFileIcon(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   const icons: Record<string, string> = {
-    py: '🐍', js: '🟨', ts: '🔷', tsx: '🔷', jsx: '🟨',
-    cs: '🟣', java: '☕', cpp: '⚙️', c: '⚙️', h: '⚙️',
-    go: '🐹', rs: '🦀', rb: '💎', php: '🐘', swift: '🍎',
-    kt: '🟠', html: '🌐', css: '🎨', scss: '🎨',
-    json: '📋', yaml: '📋', yml: '📋', toml: '📋', xml: '📋',
-    md: '📝', txt: '📄', sql: '🗄️', sh: '⚡', bash: '⚡',
+    py: '🐍',
+    js: '🟨',
+    ts: '🔷',
+    tsx: '🔷',
+    jsx: '🟨',
+    cs: '🟣',
+    java: '☕',
+    cpp: '⚙️',
+    c: '⚙️',
+    h: '⚙️',
+    go: '🐹',
+    rs: '🦀',
+    rb: '💎',
+    php: '🐘',
+    swift: '🍎',
+    kt: '🟠',
+    html: '🌐',
+    css: '🎨',
+    scss: '🎨',
+    json: '📋',
+    yaml: '📋',
+    yml: '📋',
+    toml: '📋',
+    xml: '📋',
+    md: '📝',
+    txt: '📄',
+    sql: '🗄️',
+    sh: '⚡',
+    bash: '⚡',
   };
   return icons[ext] ?? '📄';
 }
@@ -67,7 +96,13 @@ interface TreeNodeViewProps {
   depth?: number;
 }
 
-function TreeNodeView({ node, selectedPath, commentCounts, onSelect, depth = 0 }: TreeNodeViewProps) {
+function TreeNodeView({
+  node,
+  selectedPath,
+  commentCounts,
+  onSelect,
+  depth = 0,
+}: TreeNodeViewProps) {
   const [open, setOpen] = useState(depth === 0);
 
   if (node.type === 'dir') {
@@ -123,8 +158,12 @@ function TreeNodeView({ node, selectedPath, commentCounts, onSelect, depth = 0 }
       }`}
       style={{ paddingLeft: `${depth * 12 + 4}px` }}
     >
-      <FileCode className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-violet-600' : 'text-slate-400'}`} />
-      <span className="truncate">{getFileIcon(node.name)} {node.name}</span>
+      <FileCode
+        className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-violet-600' : 'text-slate-400'}`}
+      />
+      <span className="truncate">
+        {getFileIcon(node.name)} {node.name}
+      </span>
       {count > 0 && (
         <span className="ml-auto shrink-0 rounded-full bg-violet-200 px-1.5 py-0 text-[10px] font-semibold text-violet-700">
           {count}
@@ -141,7 +180,12 @@ interface ProjectFileTreeProps {
   onSelect: (path: string) => void;
 }
 
-export function ProjectFileTree({ files, selectedPath, commentCounts, onSelect }: ProjectFileTreeProps) {
+export function ProjectFileTree({
+  files,
+  selectedPath,
+  commentCounts,
+  onSelect,
+}: ProjectFileTreeProps) {
   const tree = buildTree(files);
 
   if (files.length === 0) {

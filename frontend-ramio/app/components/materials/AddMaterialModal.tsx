@@ -142,7 +142,11 @@ export function AddMaterialModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={isSubmitting}
-              placeholder={kind === 'LINK' ? 'e.g. Lecture 1 recording' : 'Optional (defaults to filename)'}
+              placeholder={
+                kind === 'LINK'
+                  ? 'e.g. Lecture 1 recording'
+                  : 'Optional (defaults to filename)'
+              }
               className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-violet-300"
             />
           </label>
@@ -169,7 +173,9 @@ export function AddMaterialModal({
                 </span>
                 <select
                   value={type}
-                  onChange={(e) => setType(e.target.value as CourseMaterialType)}
+                  onChange={(e) =>
+                    setType(e.target.value as CourseMaterialType)
+                  }
                   disabled={isSubmitting}
                   className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-violet-300"
                 >
@@ -220,4 +226,3 @@ export function AddMaterialModal({
 
   return createPortal(modalContent, document.body);
 }
-

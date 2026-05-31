@@ -79,9 +79,7 @@ export class StripeService {
   async createPortalSession(user: User) {
     const customerId = user.stripeCustomerId;
     if (!customerId) {
-      throw new BadRequestException(
-        'No active subscription found.',
-      );
+      throw new BadRequestException('No active subscription found.');
     }
     const frontend = this.config
       .get<string>('FRONTEND_BASE_URL')
@@ -189,9 +187,13 @@ export class StripeService {
     });
   }
 
-  private static readonly CANCEL_ELIGIBLE_STATUSES = new Set<
-    Stripe.Subscription.Status
-  >(['active', 'trialing', 'past_due', 'paused']);
+  private static readonly CANCEL_ELIGIBLE_STATUSES =
+    new Set<Stripe.Subscription.Status>([
+      'active',
+      'trialing',
+      'past_due',
+      'paused',
+    ]);
   private async cancelOtherDbSubscriptionsOnStripe(
     stripe: Stripe,
     stripeCustomerId: string,
@@ -205,7 +207,9 @@ export class StripeService {
     });
     for (const row of rows) {
       try {
-        const live = await stripe.subscriptions.retrieve(row.stripeSubscriptionId);
+        const live = await stripe.subscriptions.retrieve(
+          row.stripeSubscriptionId,
+        );
         if (!StripeService.CANCEL_ELIGIBLE_STATUSES.has(live.status)) {
           continue;
         }

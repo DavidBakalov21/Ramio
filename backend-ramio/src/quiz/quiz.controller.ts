@@ -58,7 +58,6 @@ export class QuizController {
     return this.quizService.findByCourse(BigInt(courseId), user.id);
   }
 
-
   @Get('submission/:submissionId')
   @Roles(UserRole.TEACHER)
   getSubmissionById(
@@ -91,7 +90,6 @@ export class QuizController {
     );
   }
 
-
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
     return this.quizService.findOne(BigInt(id), user.id);
@@ -121,7 +119,6 @@ export class QuizController {
   ) {
     return this.quizService.getSubmissionsByQuiz(BigInt(id), user.id);
   }
-
 
   @Post(':id/start')
   @Roles(UserRole.STUDENT)

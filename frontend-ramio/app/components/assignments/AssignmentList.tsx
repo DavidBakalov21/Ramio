@@ -55,7 +55,9 @@ export function AssignmentList({
               ? 'border-l-4 border-l-green-500 border-green-200 bg-green-50'
               : 'border-slate-200 bg-white'
           } ${isClickable ? 'cursor-pointer transition hover:border-slate-300 hover:bg-slate-50/50' : ''} ${
-            a.submitted && isClickable ? 'hover:border-green-300 hover:bg-green-100/50' : ''
+            a.submitted && isClickable
+              ? 'hover:border-green-300 hover:bg-green-100/50'
+              : ''
           }`}
         >
           <div className="flex items-center gap-2">
@@ -82,11 +84,16 @@ export function AssignmentList({
             <div>
               <p className="font-medium text-slate-900">{a.title}</p>
               {a.description && (
-                <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{a.description}</p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                  {a.description}
+                </p>
               )}
-              <p className={`mt-1 text-[11px] ${a.submitted ? 'text-green-700' : 'text-slate-400'}`}>
+              <p
+                className={`mt-1 text-[11px] ${a.submitted ? 'text-green-700' : 'text-slate-400'}`}
+              >
                 {a.points} pts · {getAssignmentLanguageLabel(a.language)}
-                {a.dueDate && ` · Due ${new Date(a.dueDate).toLocaleDateString()}`}
+                {a.dueDate &&
+                  ` · Due ${new Date(a.dueDate).toLocaleDateString()}`}
                 {a.submitted && (
                   <span className="ml-1.5 font-medium text-green-600">
                     · {a.isChecked ? 'Assessed' : 'Submitted'}
