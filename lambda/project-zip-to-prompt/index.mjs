@@ -41,7 +41,7 @@ const MAX_TOTAL_OUTPUT_CHARS = 320_000;
 function isSafeEntryName(entryName) {
   if (!entryName || entryName.length > 512) return false;
   const norm = entryName.replace(/\\/g, '/');
-  if (norm.startsWith('/') || /^[A-Za-z]:\
+  if (norm.startsWith('/') || /^[A-Za-z]:\//.test(norm)) return false;
   return !norm.split('/').some((s) => s === '..');
 }
 
