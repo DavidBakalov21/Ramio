@@ -33,8 +33,7 @@ export class CodeTestService {
     this.pythonImage =
       this.config.get<string>('RUNNER_PYTHON_IMAGE') ?? 'python:3.12-slim';
     this.javaImage =
-      this.config.get<string>('RUNNER_JAVA_IMAGE') ??
-      'eclipse-temurin:21-jdk';
+      this.config.get<string>('RUNNER_JAVA_IMAGE') ?? 'eclipse-temurin:21-jdk';
     this.dotnetImage =
       this.config.get<string>('RUNNER_DOTNET_IMAGE') ?? 'runner-dotnet:8.0';
     this.nodeImage =
@@ -192,7 +191,8 @@ export class CodeTestService {
     const studentSolutionImportIssue =
       /cannot import name .+ from ['"]solution['"]/.test(err) ||
       /No module named ['"]solution['"]/.test(err) ||
-      (/ImportError:\s*cannot import name/.test(err) && /\bsolution\b/.test(err));
+      (/ImportError:\s*cannot import name/.test(err) &&
+        /\bsolution\b/.test(err));
 
     if (!studentSolutionImportIssue) return result;
 
