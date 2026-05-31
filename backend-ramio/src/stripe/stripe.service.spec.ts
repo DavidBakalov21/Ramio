@@ -198,14 +198,21 @@ describe('StripeService.handleWebhook', () => {
 
   describe('the SAME event delivered twice → upsert keyed on subscription id leaves one stable row', () => {
     it('performs identical upsert writes without diverging state', async () => {
-      const event = checkoutCompletedEvent();
-      await dispatch(event);
-      await dispatch(event);
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-05-31T11:14:34.000Z'));
 
-      expect(prisma.userSubscription.upsert).toHaveBeenCalledTimes(2);
-      expect(prisma.userSubscription.upsert.mock.calls[0]).toEqual(
-        prisma.userSubscription.upsert.mock.calls[1],
-      );
+      try {
+        const event = checkoutCompletedEvent();
+        await dispatch(event);
+        await dispatch(event);
+
+        expect(prisma.userSubscription.upsert).toHaveBeenCalledTimes(2);
+        expect(prisma.userSubscription.upsert.mock.calls[0]).toEqual(
+          prisma.userSubscription.upsert.mock.calls[1],
+        );
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
