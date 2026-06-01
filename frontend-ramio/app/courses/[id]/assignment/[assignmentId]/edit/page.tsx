@@ -9,6 +9,7 @@ import {
   TestFileInfo,
 } from '@/app/interfaces/Assignment';
 import { SubmissionListItem } from '@/app/interfaces/Submission';
+import { ASSIGNMENT_DESCRIPTION_HINT } from '@/app/constants/formFieldHints';
 import {
   ASSIGNMENT_LANGUAGE_MAP,
   getAssignmentLanguageFileExtension,
@@ -326,13 +327,22 @@ export default function EditAssignmentPage() {
           placeholder="Title"
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
         />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          placeholder="Description"
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Description <span className="text-slate-400">(optional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="What students should implement"
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            {ASSIGNMENT_DESCRIPTION_HINT}
+          </p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <input
             type="number"

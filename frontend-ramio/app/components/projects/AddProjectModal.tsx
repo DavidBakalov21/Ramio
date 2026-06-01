@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
+  PROJECT_ASSESSMENT_PROMPT_HINT,
+  PROJECT_DESCRIPTION_HINT,
+} from '@/app/constants/formFieldHints';
+import {
   PROJECT_LANGUAGE_OPTIONS,
   type ProjectLanguage,
 } from '@/app/interfaces/Project';
@@ -140,6 +144,9 @@ export function AddProjectModal({
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}
             />
+            <p className="mt-1 text-[11px] text-slate-400">
+              {PROJECT_DESCRIPTION_HINT}
+            </p>
           </div>
           <div>
             <label
@@ -206,14 +213,17 @@ export function AddProjectModal({
               htmlFor="add-project-prompt"
               className="mb-1 block text-xs font-medium text-slate-600"
             >
-              Assessment notes{' '}
-              <span className="text-slate-400">(optional, for you)</span>
+              AI grading instructions{' '}
+              <span className="text-slate-400">(optional)</span>
             </label>
+            <p className="mb-1 text-[11px] text-slate-400">
+              {PROJECT_ASSESSMENT_PROMPT_HINT}
+            </p>
             <textarea
               id="add-project-prompt"
               value={assessmentPrompt}
               onChange={(e) => setAssessmentPrompt(e.target.value)}
-              placeholder="Rubric, criteria, or reminders while grading"
+              placeholder="e.g. Must include unit tests; deduct 10 pts if no README; full marks if core features work"
               rows={4}
               maxLength={20000}
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"

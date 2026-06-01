@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import {
+  PROJECT_ASSESSMENT_PROMPT_HINT,
+  PROJECT_DESCRIPTION_HINT,
+} from '@/app/constants/formFieldHints';
+import {
   CourseProject,
   PROJECT_LANGUAGE_OPTIONS,
   ProjectLanguage,
@@ -208,13 +212,22 @@ export default function EditProjectPage() {
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
           placeholder="Title"
         />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          placeholder="Description"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Description <span className="text-slate-400">(optional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            placeholder="What students should deliver"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            {PROJECT_DESCRIPTION_HINT}
+          </p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <select
             value={language}
@@ -241,13 +254,23 @@ export default function EditProjectPage() {
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
           />
         </div>
-        <textarea
-          value={assessmentPrompt}
-          onChange={(e) => setAssessmentPrompt(e.target.value)}
-          rows={6}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          placeholder="Assessment notes"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            AI grading instructions{' '}
+            <span className="text-slate-400">(optional)</span>
+          </label>
+          <p className="mb-1 text-[11px] text-slate-400">
+            {PROJECT_ASSESSMENT_PROMPT_HINT}
+          </p>
+          <textarea
+            value={assessmentPrompt}
+            onChange={(e) => setAssessmentPrompt(e.target.value)}
+            rows={6}
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            placeholder="e.g. Must include unit tests; deduct 10 pts if no README"
+          />
+        </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
           <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>

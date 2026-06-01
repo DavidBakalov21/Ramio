@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { useToast } from '@/app/components/utility/toast';
 import {
+  PROJECT_ASSESSMENT_PROMPT_HINT,
+  PROJECT_DESCRIPTION_HINT,
+} from '@/app/constants/formFieldHints';
+import {
   PROJECT_LANGUAGE_OPTIONS,
   ProjectLanguage,
 } from '@/app/interfaces/Project';
@@ -128,14 +132,22 @@ export default function NewProjectPage() {
           maxLength={255}
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="What students should deliver"
-          rows={3}
-          maxLength={20000}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Description <span className="text-slate-400">(optional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What students should deliver"
+            rows={3}
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            {PROJECT_DESCRIPTION_HINT}
+          </p>
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
           <select
@@ -164,14 +176,23 @@ export default function NewProjectPage() {
           />
         </div>
 
-        <textarea
-          value={assessmentPrompt}
-          onChange={(e) => setAssessmentPrompt(e.target.value)}
-          placeholder="Assessment criteria / rubric notes for AI and teacher review"
-          rows={8}
-          maxLength={20000}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            AI grading instructions{' '}
+            <span className="text-slate-400">(optional)</span>
+          </label>
+          <p className="mb-1 text-[11px] text-slate-400">
+            {PROJECT_ASSESSMENT_PROMPT_HINT}
+          </p>
+          <textarea
+            value={assessmentPrompt}
+            onChange={(e) => setAssessmentPrompt(e.target.value)}
+            placeholder="e.g. Must include unit tests; deduct 10 pts if no README"
+            rows={8}
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

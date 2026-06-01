@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { api } from '@/lib/axios';
 import { Assignment } from '@/app/interfaces/Assignment';
 import { AssignmentLanguage } from '@/app/interfaces/Assignment';
+import { ASSIGNMENT_DESCRIPTION_HINT } from '@/app/constants/formFieldHints';
 import { ASSIGNMENT_LANGUAGE_MAP } from '@/app/constants/assignmentLanguages';
 import { SubmissionListItem } from '@/app/interfaces/Submission';
 import { AssessSubmissionModal } from './AssessSubmissionModal';
@@ -239,6 +240,9 @@ export function EditAssignmentModal({
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}
             />
+            <p className="mt-1 text-[11px] text-slate-400">
+              {ASSIGNMENT_DESCRIPTION_HINT}
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

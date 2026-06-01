@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/axios';
 import { useToast } from '@/app/components/utility/toast';
 import { AssignmentLanguage } from '@/app/interfaces/Assignment';
+import { ASSIGNMENT_DESCRIPTION_HINT } from '@/app/constants/formFieldHints';
 import {
   ASSIGNMENT_LANGUAGE_MAP,
   getAssignmentLanguageFileExtension,
@@ -217,14 +218,22 @@ export default function NewAssignmentPage() {
           maxLength={255}
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="What students should implement"
-          rows={3}
-          maxLength={20000}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Description <span className="text-slate-400">(optional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What students should implement"
+            rows={3}
+            maxLength={20000}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            {ASSIGNMENT_DESCRIPTION_HINT}
+          </p>
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <input
