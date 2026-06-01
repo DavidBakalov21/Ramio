@@ -46,6 +46,7 @@ export class CourseController {
     @User() user: PrismaUser,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
     const pageNum = page ? Number(page) : 1;
     const limitNum = limit ? Number(limit) : 10;
@@ -54,6 +55,7 @@ export class CourseController {
       user.role,
       pageNum,
       limitNum,
+      search,
     );
   }
 

@@ -185,17 +185,18 @@ export default function Home() {
                         delay: Math.min(i * 0.05, 0.2),
                         ease: 'easeOut',
                       }}
-                      className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+                      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
                     >
-                      <h3 className="font-semibold text-slate-900">
-                        {course.title}
-                      </h3>
-                      {course.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                          {course.description}
-                        </p>
-                      )}
-                      <p className="mt-2 text-xs text-slate-400">
+                      <div className="flex flex-1 flex-col">
+                        <h3 className="font-semibold text-slate-900">
+                          {course.title}
+                        </h3>
+                        {course.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                            {course.description}
+                          </p>
+                        )}
+                        <p className="mt-2 text-xs text-slate-400">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -214,12 +215,13 @@ export default function Home() {
                             Open
                           </span>
                         )}
-                      </p>
-                      <div className="mt-3 flex items-center justify-between gap-2">
+                        </p>
+                      </div>
+                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
                         <button
                           type="button"
                           onClick={() => router.push(`/courses/${course.id}`)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                          className="flex h-9 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                         >
                           View course
                         </button>
@@ -228,16 +230,16 @@ export default function Home() {
                           <button
                             type="button"
                             onClick={() => router.push(`/courses/${course.id}`)}
-                            className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-violet-700"
+                            className="flex h-9 w-full items-center justify-center rounded-full bg-violet-600 px-2 text-xs font-medium text-white transition hover:bg-violet-700"
                           >
                             Edit course
                           </button>
                         ) : course.isEnrolled ? (
-                          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                          <span className="flex h-9 w-full items-center justify-center rounded-full bg-slate-100 px-2 text-xs font-medium text-slate-600">
                             Enrolled
                           </span>
                         ) : course.hasPendingRequest ? (
-                          <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
+                          <span className="flex h-9 w-full items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-medium text-amber-800">
                             Request sent
                           </span>
                         ) : (
@@ -247,7 +249,7 @@ export default function Home() {
                               handleEnroll(course.id, course.isOpen)
                             }
                             disabled={enrollingId === course.id}
-                            className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                            className="flex h-9 w-full items-center justify-center rounded-full bg-slate-900 px-2 text-xs font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
                           >
                             {enrollingId === course.id
                               ? course.isOpen

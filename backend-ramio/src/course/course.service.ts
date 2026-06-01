@@ -87,6 +87,7 @@ export class CourseService {
     role: UserRole | null,
     page: number,
     pageSize: number,
+    search?: string,
   ) {
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
     const normalizedPageSize =
@@ -94,10 +95,12 @@ export class CourseService {
     const safePageSize = Math.min(Math.max(normalizedPageSize, 1), 50);
 
     const skip = (safePage - 1) * safePageSize;
+    const titleFilter = this.buildTitleSearchFilter(search);
 
     const [total, courses] = await Promise.all([
-      this.prisma.course.count(),
+      this.prisma.course.count({ where: titleFilter }),
       this.prisma.course.findMany({
+        where: titleFilter,
         orderBy: { updatedAt: 'desc' },
         skip,
         take: safePageSize,
@@ -582,6 +585,12 @@ export class CourseService {
         (a.username ?? a.email).localeCompare(b.username ?? b.email),
       ),
     };
+  }
+
+  private buildTitleSearchFilter(search?: string) {
+    const term = search?.trim().slice(0, 100);
+    if (!term) return undefined;
+    return { title: { contains: term } };
   }
 
   private toResponse(course: {

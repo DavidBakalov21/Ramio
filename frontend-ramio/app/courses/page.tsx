@@ -16,6 +16,8 @@ export default function AllCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
@@ -46,12 +48,24 @@ export default function AllCoursesPage() {
     fetchUser();
   }, [router]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchCourses = useCallback(async () => {
     if (!user?.role) return;
     setIsLoadingCourses(true);
     try {
       const res = await api.get<CoursePage>('/course/all', {
-        params: { page, limit: 8 },
+        params: {
+          page,
+          limit: 8,
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+        },
       });
       setCourses(res.data.items);
       setTotalPages(res.data.totalPages);
@@ -61,12 +75,12 @@ export default function AllCoursesPage() {
     } finally {
       setIsLoadingCourses(false);
     }
-  }, [user?.role, page]);
+  }, [user?.role, page, debouncedSearch]);
 
   useEffect(() => {
     if (!user?.role) return;
     fetchCourses();
-  }, [user?.role, page, fetchCourses]);
+  }, [user?.role, page, debouncedSearch, fetchCourses]);
 
   useEffect(() => {
     if (!createModalOpen) return;
@@ -244,12 +258,29 @@ export default function AllCoursesPage() {
             )}
           </header>
 
+          <div className="mb-6 w-full max-w-4xl">
+            <label htmlFor="course-search" className="sr-only">
+              Search courses by name
+            </label>
+            <input
+              id="course-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search courses by name…"
+              maxLength={100}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
+
           <section className="flex w-full max-w-4xl flex-col items-center space-y-4">
             {isLoadingCourses ? (
               <p className="text-sm text-slate-500">Loading courses…</p>
             ) : courses.length === 0 ? (
               <div className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
-                No courses have been created yet.
+                {debouncedSearch
+                  ? `No courses match "${debouncedSearch}".`
+                  : 'No courses have been created yet.'}
               </div>
             ) : (
               <>
@@ -264,17 +295,18 @@ export default function AllCoursesPage() {
                         delay: Math.min(i * 0.05, 0.25),
                         ease: 'easeOut',
                       }}
-                      className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
+                      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-violet-200 hover:shadow-md"
                     >
-                      <h3 className="line-clamp-1 text-sm font-semibold text-slate-900">
-                        {course.title}
-                      </h3>
-                      {course.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                          {course.description}
-                        </p>
-                      )}
-                      <p className="mt-2 text-[11px] text-slate-400">
+                      <div className="flex flex-1 flex-col">
+                        <h3 className="line-clamp-1 text-sm font-semibold text-slate-900">
+                          {course.title}
+                        </h3>
+                        {course.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                            {course.description}
+                          </p>
+                        )}
+                        <p className="mt-2 text-[11px] text-slate-400">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -293,12 +325,13 @@ export default function AllCoursesPage() {
                             Open
                           </span>
                         )}
-                      </p>
-                      <div className="mt-3 flex items-center justify-between gap-2">
+                        </p>
+                      </div>
+                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
                         <button
                           type="button"
                           onClick={() => handleViewCourse(course.id)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
+                          className="flex h-9 w-full items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
                         >
                           View course
                         </button>
@@ -307,16 +340,16 @@ export default function AllCoursesPage() {
                           <button
                             type="button"
                             onClick={() => handleEditCourse(course.id)}
-                            className="rounded-full bg-violet-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-violet-700"
+                            className="flex h-9 w-full items-center justify-center rounded-full bg-violet-600 px-2 text-[11px] font-medium text-white transition hover:bg-violet-700"
                           >
                             Edit course
                           </button>
                         ) : course.isEnrolled ? (
-                          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600">
+                          <span className="flex h-9 w-full items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-medium text-slate-600">
                             Enrolled
                           </span>
                         ) : course.hasPendingRequest ? (
-                          <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-medium text-amber-800">
+                          <span className="flex h-9 w-full items-center justify-center rounded-full bg-amber-100 px-2 text-[11px] font-medium text-amber-800">
                             Request sent
                           </span>
                         ) : (
@@ -326,7 +359,7 @@ export default function AllCoursesPage() {
                               handleEnroll(course.id, course.isOpen)
                             }
                             disabled={enrollingId === course.id}
-                            className="rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                            className="flex h-9 w-full items-center justify-center rounded-full bg-slate-900 px-2 text-[11px] font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
                           >
                             {enrollingId === course.id
                               ? course.isOpen
