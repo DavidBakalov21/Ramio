@@ -116,7 +116,7 @@ export default function AssessQuizSubmissionPage() {
               Submitted:{' '}
               {submission.submittedAt
                 ? new Date(submission.submittedAt).toLocaleString()
-                : '—'}
+                : '-'}
             </p>
             {submission.totalPoints != null && (
               <p className="mt-1 text-xs font-medium text-slate-700">

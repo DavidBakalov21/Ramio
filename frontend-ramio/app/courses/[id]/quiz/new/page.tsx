@@ -178,7 +178,7 @@ export default function NewQuizPage() {
           newQ.codingTaskLanguage = newQ.codingTaskLanguage ?? 'PYTHON';
           newQ.codingTaskStarterCode =
             newQ.codingTaskStarterCode ??
-            '# solution.py — define symbols your tests import.\n';
+            '# solution.py - define symbols your tests import.\n';
           newQ.codingTaskTeacherTests =
             newQ.codingTaskTeacherTests ?? DEFAULT_PYTHON_TESTS;
           newQ.codingTaskGradingMode =
@@ -237,7 +237,7 @@ export default function NewQuizPage() {
               codingTaskLanguage: q.codingTaskLanguage ?? 'PYTHON',
               codingTaskStarterCode:
                 q.codingTaskStarterCode?.trim() ||
-                '# solution.py — define symbols your tests import.\n',
+                '# solution.py - define symbols your tests import.\n',
               codingTaskTeacherTests:
                 q.codingTaskTeacherTests?.trim() || DEFAULT_PYTHON_TESTS,
               codingTaskGradingMode: q.codingTaskGradingMode ?? 'MANUAL_ONLY',
@@ -535,7 +535,7 @@ export default function NewQuizPage() {
               onChange={(e) => setAiPrompt(e.target.value)}
               rows={3}
               maxLength={3000}
-              placeholder="Example: Week 4 review for my intro Python class — mix recap MCQ, two short explanations, one small coding function with tests roughly like the Factorial exercise."
+              placeholder="Example: Week 4 review for my intro Python class - mix recap MCQ, two short explanations, one small coding function with tests roughly like the Factorial exercise."
               className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">

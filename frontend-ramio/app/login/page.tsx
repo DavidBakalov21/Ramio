@@ -36,7 +36,7 @@ export default function LoginPage() {
             Sign in to continue
           </h1>
           <p className="text-sm text-slate-500">
-            Fast login with your Google account. No extra passwords. NO DANYAS ALLOWED!
+            Fast login with your Google account. No extra passwords.
           </p>
         </div>
 

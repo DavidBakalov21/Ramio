@@ -55,8 +55,8 @@ The UI is mounted at `/swagger` on the backend. Nginx forwards `/api/*` to the b
 
 Optional env vars:
 
-- `SWAGGER_PATH` — mount path on the backend (default: `swagger`)
-- `SWAGGER_SERVER_URL` — OpenAPI `servers` entry for “Try it out” (production: `https://ramio-lms.com/api`)
+- `SWAGGER_PATH` - mount path on the backend (default: `swagger`)
+- `SWAGGER_SERVER_URL` - OpenAPI `servers` entry for “Try it out” (production: `https://ramio-lms.com/api`)
 
 ## Run tests
 

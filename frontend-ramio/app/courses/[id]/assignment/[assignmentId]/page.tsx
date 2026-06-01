@@ -496,7 +496,7 @@ export default function AssignmentSandboxPage() {
                       <p className="text-xs text-slate-500">
                         Your editor is run as{' '}
                         <span className="font-mono">solution.py</span>. Tests
-                        use <span className="font-mono">import solution</span> —
+                        use <span className="font-mono">import solution</span> -
                         implement the function/class names expected by the
                         tests.
                       </p>

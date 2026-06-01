@@ -50,7 +50,7 @@ export function StudentResultsTable({
         {!r.isChecked && <span className="ml-0.5 text-amber-500">*</span>}
       </span>
     ) : (
-      <span className="text-slate-400">—</span>
+      <span className="text-slate-400">-</span>
     );
 
   return (

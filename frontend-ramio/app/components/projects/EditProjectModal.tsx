@@ -340,7 +340,7 @@ export function EditProjectModal({
                   const cbLabel =
                     s.codeBuildStatus === 'IN_PROGRESS' && s.codeBuildPhase
                       ? `${s.codeBuildStatus} · ${s.codeBuildPhase}`
-                      : (s.codeBuildStatus ?? '—');
+                      : (s.codeBuildStatus ?? '-');
                   const passed = s.codeBuildTestsPassed;
                   const failed = s.codeBuildTestsFailed;
                   const skipped = s.codeBuildTestsSkipped;
@@ -377,7 +377,7 @@ export function EditProjectModal({
                           {testSummary ? (
                             <span className="text-slate-500">
                               {' '}
-                              — {testSummary}
+                              - {testSummary}
                             </span>
                           ) : null}
                           {s.codeBuildTestMetricsAt &&
@@ -385,7 +385,7 @@ export function EditProjectModal({
                           !testSummary ? (
                             <span className="text-slate-400">
                               {' '}
-                              — test summary not detected in logs
+                              - test summary not detected in logs
                             </span>
                           ) : null}
                         </p>

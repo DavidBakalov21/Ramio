@@ -1037,7 +1037,7 @@ export class ProjectService {
       return {
         content:
           data.slice(0, MAX_FILE_CONTENT_BYTES).toString('utf-8') +
-          '\n\n[File truncated — showing first 100 KB]',
+          '\n\n[File truncated - showing first 100 KB]',
         truncated: true,
       };
     }

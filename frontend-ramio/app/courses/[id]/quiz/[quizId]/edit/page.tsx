@@ -278,11 +278,11 @@ export default function EditQuizPage() {
                 </div>
               ) : q.type === 'OPEN_ANSWER' ? (
                 <p className="text-xs italic text-slate-500">
-                  Open answer — graded manually.
+                  Open answer - graded manually.
                 </p>
               ) : (
                 <p className="text-xs italic text-slate-500">
-                  Coding task — tests, language, and AI options are fixed at
+                  Coding task - tests, language, and AI options are fixed at
                   creation for now; you can still adjust points.
                 </p>
               )}

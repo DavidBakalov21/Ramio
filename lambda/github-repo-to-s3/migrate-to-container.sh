@@ -44,7 +44,7 @@ echo ""
 if [ "$EXISTING_PACKAGE" = "Zip" ]; then
   echo "This will DELETE and RECREATE: ${FUNCTION_NAME} (${REGION})"
 else
-  echo "Function not found — will CREATE: ${FUNCTION_NAME} (${REGION})"
+  echo "Function not found - will CREATE: ${FUNCTION_NAME} (${REGION})"
 fi
 echo "  Role:      ${ROLE}"
 echo "  Image:     ${IMAGE_URI}"
@@ -53,7 +53,7 @@ echo "  Memory:    ${MEMORY} MB"
 echo "  /tmp:      ${EPHEMERAL} MB"
 echo ""
 echo "Required: run ./deploy.sh first (builds a Lambda-compatible Docker V2 manifest)."
-echo "If migrate failed with 'media type not supported', the old :latest in ECR was OCI — redeploy fixes it."
+echo "If migrate failed with 'media type not supported', the old :latest in ECR was OCI - redeploy fixes it."
 echo ""
 read -r -p "Continue? [y/N] " CONFIRM
 case "$(printf '%s' "$CONFIRM" | tr '[:upper:]' '[:lower:]')" in

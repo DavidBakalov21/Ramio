@@ -109,7 +109,7 @@ export default function NewAssignmentPage() {
       );
       setTestField(lang, 'code', res.data.tests ?? '');
       setTestField(lang, 'file', null);
-      showToast('Tests generated — review before saving.', 'success');
+      showToast('Tests generated - review before saving.', 'success');
     } catch {
       setError('Failed to generate tests.');
     } finally {
@@ -248,7 +248,7 @@ export default function NewAssignmentPage() {
             <p className="mb-2 text-xs font-medium text-slate-600">
               Test files{' '}
               <span className="text-slate-400 font-normal">
-                (optional — add one or more language tests)
+                (optional - add one or more language tests)
               </span>
             </p>
             <div className="flex gap-1 flex-wrap">

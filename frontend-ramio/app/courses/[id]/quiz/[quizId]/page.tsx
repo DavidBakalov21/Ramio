@@ -205,12 +205,12 @@ export default function QuizOverviewPage() {
                               <td className="px-4 py-3 text-slate-600">
                                 {sub.submittedAt
                                   ? new Date(sub.submittedAt).toLocaleString()
-                                  : '—'}
+                                  : '-'}
                               </td>
                               <td className="px-4 py-3 text-slate-700">
                                 {sub.totalPoints != null
                                   ? `${Math.round(sub.totalPoints * 100) / 100}`
-                                  : '—'}
+                                  : '-'}
                                 <span className="text-slate-400">
                                   {' '}
                                   / {sub.totalMax}
@@ -362,7 +362,7 @@ function StudentQuizActions({
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm text-slate-600">
-          This quiz is closed — the deadline has passed.
+          This quiz is closed - the deadline has passed.
         </p>
       </div>
     );

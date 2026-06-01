@@ -292,11 +292,11 @@ export default function EditProjectPage() {
                           : 'Not assessed yet'}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        CodeBuild: {s.codeBuildStatus ?? '—'}
+                        CodeBuild: {s.codeBuildStatus ?? '-'}
                         {hasCounts ? (
                           <span className="text-slate-500">
                             {' '}
-                            — Successful: {p} · Failed: {f} · Total: {total}
+                            - Successful: {p} · Failed: {f} · Total: {total}
                           </span>
                         ) : null}
                       </p>

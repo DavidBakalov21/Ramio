@@ -93,7 +93,7 @@ export default function QuizReviewPage() {
                     Submitted:{' '}
                     {submission.submittedAt
                       ? new Date(submission.submittedAt).toLocaleString()
-                      : '—'}
+                      : '-'}
                   </span>
                   {submission.totalPoints != null && (
                     <span className="font-medium text-slate-900">

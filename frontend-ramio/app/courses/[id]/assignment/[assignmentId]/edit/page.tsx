@@ -273,7 +273,7 @@ export default function EditAssignmentPage() {
       );
       setTestField(lang, 'code', res.data.code ?? '');
       setTestField(lang, 'file', null);
-      showToast('AI test generated — review and save.', 'success');
+      showToast('AI test generated - review and save.', 'success');
     } catch {
       showToast('Failed to generate tests.', 'error');
     } finally {
@@ -355,7 +355,7 @@ export default function EditAssignmentPage() {
             <p className="mb-2 text-xs font-medium text-slate-600">
               Test files{' '}
               <span className="text-slate-400 font-normal">
-                (per language — students pick their language)
+                (per language - students pick their language)
               </span>
             </p>
             <div className="flex gap-1 flex-wrap">
