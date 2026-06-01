@@ -18,7 +18,7 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(20_000)
   description?: string;
 
   @IsOptional()

@@ -20,7 +20,7 @@ export class UpdateAssignmentDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(20_000)
   description?: string;
 
   @IsOptional()

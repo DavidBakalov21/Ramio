@@ -18,7 +18,7 @@ export class CreateAssignmentDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(20_000)
   description?: string;
 
   @IsOptional()

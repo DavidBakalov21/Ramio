@@ -133,7 +133,7 @@ export default function NewProjectPage() {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What students should deliver"
           rows={3}
-          maxLength={2000}
+          maxLength={20000}
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
 
