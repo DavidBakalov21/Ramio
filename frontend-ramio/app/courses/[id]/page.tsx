@@ -294,7 +294,7 @@ export default function CourseDetailPage() {
               </button>
               {' · '}
               {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
-              assignments
+              code snippet tasks
               {(course.projectCount ?? 0) > 0 && (
                 <>
                   {' · '}
@@ -330,7 +330,7 @@ export default function CourseDetailPage() {
                     : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
-                Assignments
+                Tasks
               </button>
               <button
                 type="button"

@@ -126,7 +126,7 @@ export default function EditAssignmentPage() {
         setActiveTestTab(a.language);
         setSubmissions(subsRes.data);
       } catch {
-        setError('Failed to load assignment.');
+        setError('Failed to load code snippet task.');
       } finally {
         setLoading(false);
       }
@@ -190,7 +190,7 @@ export default function EditAssignmentPage() {
         points,
         dueDate: dueDateSeconds,
       });
-      showToast('Assignment updated.', 'success');
+      showToast('Code snippet task updated.', 'success');
       await reloadSubmissions();
     } catch (err: unknown) {
       const msg = (
@@ -283,14 +283,14 @@ export default function EditAssignmentPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this assignment? This cannot be undone.')) return;
+    if (!confirm('Delete this code snippet task? This cannot be undone.')) return;
     setDeleting(true);
     try {
       await api.delete(`/assignment/${assignmentId}`);
-      showToast('Assignment deleted.', 'success');
+      showToast('Code snippet task deleted.', 'success');
       router.push(`/courses/${courseId}`);
     } catch {
-      setError('Failed to delete assignment.');
+      setError('Failed to delete code snippet task.');
     } finally {
       setDeleting(false);
     }
@@ -318,7 +318,7 @@ export default function EditAssignmentPage() {
       >
         ← Back to course
       </button>
-      <h1 className="text-xl font-semibold text-slate-900">Edit assignment</h1>
+      <h1 className="text-xl font-semibold text-slate-900">Edit code snippet task</h1>
 
       <form onSubmit={handleSave} className="mt-5 grid gap-4">
         <input

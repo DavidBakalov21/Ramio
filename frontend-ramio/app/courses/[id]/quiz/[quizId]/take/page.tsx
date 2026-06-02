@@ -406,7 +406,7 @@ export default function TakeQuizPage() {
                   <div className="mt-3 space-y-3">
                     <p className="text-xs text-slate-500">
                       Language: {q.codingTaskLanguage ?? '?'} · Same runners as
-                      assignments.
+                      code snippet tasks.
                     </p>
                     <textarea
                       value={a.openText}

@@ -169,7 +169,7 @@ export function EditAssignmentModal({
     if (!assignment || !onDelete) return;
     if (
       !confirm(
-        `Delete assignment "${assignment.title}"? This cannot be undone.`,
+        `Delete code snippet task "${assignment.title}"? This cannot be undone.`,
       )
     )
       return;
@@ -201,7 +201,7 @@ export function EditAssignmentModal({
           id="edit-assignment-title"
           className="text-lg font-semibold text-slate-900"
         >
-          Edit assignment
+          Edit code snippet task
         </h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
@@ -234,7 +234,7 @@ export function EditAssignmentModal({
               id="edit-assignment-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of the assignment"
+              placeholder="Brief description of the task"
               rows={2}
               maxLength={20000}
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"

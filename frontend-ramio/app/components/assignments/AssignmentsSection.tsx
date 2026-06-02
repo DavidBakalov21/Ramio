@@ -38,7 +38,10 @@ export function AssignmentsSection({
   return (
     <section className="mb-8 flex w-full flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-slate-900">Assignments</h2>
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">Code Snippet Tasks</h2>
+          <span className="text-sm text-slate-400">— simple and quick single file tasks</span>
+        </div>
         {isTeacher && (
           <button
             type="button"
@@ -56,11 +59,11 @@ export function AssignmentsSection({
         emptyMessage={
           isTeacher ? (
             <>
-              No assignments yet.
+              No code snippet tasks yet.
               {' Use "Add" to create one.'}
             </>
           ) : (
-            'No assignments yet.'
+            'No code snippet tasks yet.'
           )
         }
         isTeacher={isTeacher}

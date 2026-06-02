@@ -142,7 +142,7 @@ export default function AssessAssignmentSubmissionPage() {
         }
         className="mb-3 text-xs font-medium text-slate-500 hover:text-slate-700"
       >
-        ← Back to assignment edit
+        ← Back to task edit
       </button>
       <h1 className="text-xl font-semibold text-slate-900">
         Assess submission

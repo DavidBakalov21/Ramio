@@ -713,7 +713,7 @@ export default function NewQuizPage() {
                 {q.type === 'CODING_TASK' && (
                   <div className="mt-1 grid gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
                     <p className="text-xs text-slate-600">
-                      Same Docker runners as course assignments (
+                      Same Docker runners as code snippet tasks (
                       <code className="text-[11px]">solution.py</code> /{' '}
                       <code className="text-[11px]">test_solution.py</code> for
                       Python, etc.).

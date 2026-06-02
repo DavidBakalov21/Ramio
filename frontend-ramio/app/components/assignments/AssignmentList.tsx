@@ -19,13 +19,13 @@ export function AssignmentList({
   onAssignmentClick,
 }: AssignmentListProps) {
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Loading assignments…</p>;
+    return <p className="text-sm text-slate-500">Loading code snippet tasks…</p>;
   }
 
   if (assignments.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-5 text-center text-sm text-slate-500">
-        {emptyMessage ?? 'No assignments yet.'}
+        {emptyMessage ?? 'No code snippet tasks yet.'}
       </div>
     );
   }

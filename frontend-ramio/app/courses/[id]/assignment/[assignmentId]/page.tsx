@@ -188,7 +188,7 @@ export default function AssignmentSandboxPage() {
         showToast(
           user?.role === 'TEACHER'
             ? 'Teacher solution submitted successfully.'
-            : 'Assignment submitted successfully.',
+            : 'Code snippet task submitted successfully.',
           'success',
         );
         setTimeout(() => setSubmitMessage(null), 4000);
@@ -203,7 +203,7 @@ export default function AssignmentSandboxPage() {
           : null;
       const errorMsg =
         status === 409
-          ? 'You have already submitted this assignment.'
+          ? 'You have already submitted this code snippet task.'
           : (msg as string) || 'Failed to submit';
       setSubmitMessage('error');
       setError(errorMsg);
@@ -310,11 +310,11 @@ export default function AssignmentSandboxPage() {
           </button>
 
           {loadingAssignment ? (
-            <p className="text-sm text-slate-500">Loading assignment…</p>
+            <p className="text-sm text-slate-500">Loading code snippet task…</p>
           ) : !assignment ? (
             <div className="text-center">
               <p className="text-sm text-slate-600">
-                Assignment not found or you don&apos;t have access.
+                Code snippet task not found or you don&apos;t have access.
               </p>
               <button
                 type="button"
@@ -381,7 +381,7 @@ export default function AssignmentSandboxPage() {
 
                   <div className="rounded-xl border border-violet-200 bg-violet-50/40 px-4 py-3">
                     <h3 className="text-sm font-semibold text-slate-900">
-                      Discuss this assignment with AI
+                      Discuss this task with AI
                     </h3>
                     <p className="mt-1 text-xs text-slate-600">
                       Ask about your grade, mistakes, or how to improve.
@@ -515,7 +515,7 @@ export default function AssignmentSandboxPage() {
                     <div className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">
                       {lastSubmitWasUpdate
                         ? 'Submission updated.'
-                        : 'Assignment submitted successfully.'}
+                        : 'Code snippet task submitted successfully.'}
                     </div>
                   )}
                   {submitMessage === 'error' && (
@@ -605,7 +605,7 @@ export default function AssignmentSandboxPage() {
                               : 'Update submission'
                             : isTeacher
                               ? 'Submit teacher solution'
-                              : 'Submit assignment'}
+                              : 'Submit task'}
                       </button>
                     )}
                   </div>

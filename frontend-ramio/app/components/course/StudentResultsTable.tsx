@@ -184,7 +184,15 @@ export function StudentResultsTable({
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => void onKick(s.userId)}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Remove ${s.username || s.email} from this course? This cannot be undone.`,
+                          )
+                        ) {
+                          void onKick(s.userId);
+                        }
+                      }}
                       disabled={kickingId === s.userId}
                       className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 hover:border-red-300 disabled:opacity-50"
                     >

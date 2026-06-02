@@ -158,7 +158,7 @@ export default function NewAssignmentPage() {
         );
       }
 
-      showToast('Assignment created.', 'success');
+      showToast('Code snippet task created.', 'success');
       router.push(`/courses/${courseId}`);
     } catch (err: unknown) {
       const msg = (
@@ -169,7 +169,7 @@ export default function NewAssignmentPage() {
           ? msg[0]
           : typeof msg === 'string'
             ? msg
-            : 'Failed to create assignment.',
+            : 'Failed to create code snippet task.',
       );
     } finally {
       setSubmitting(false);
@@ -187,7 +187,7 @@ export default function NewAssignmentPage() {
   if (!courseAllowed) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
-        Only course teacher can create assignments.
+        Only course teacher can create code snippet tasks.
       </div>
     );
   }
@@ -206,7 +206,7 @@ export default function NewAssignmentPage() {
         ← Back to course
       </button>
       <h1 className="text-xl font-semibold text-slate-900">
-        Create assignment
+        Create code snippet task
       </h1>
 
       <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
@@ -214,7 +214,7 @@ export default function NewAssignmentPage() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Assignment title"
+            placeholder="Task title"
           maxLength={255}
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
@@ -341,7 +341,7 @@ export default function NewAssignmentPage() {
             disabled={submitting}
             className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
-            {submitting ? 'Creating…' : 'Create assignment'}
+            {submitting ? 'Creating…' : 'Create task'}
           </button>
         </div>
       </form>
