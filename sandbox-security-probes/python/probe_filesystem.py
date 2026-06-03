@@ -21,10 +21,10 @@ for path, label in cases:
         with open(path, "w", encoding="utf-8") as f:
             f.write("escaped\n")
         if path.startswith("/tmp"):
-            print(f"OK: {label} — expected writable tmpfs")
+            print(f"OK: {label} - expected writable tmpfs")
             os.unlink(path)
         else:
-            print(f"ALLOWED: {label} — wrote {path}")
+            print(f"ALLOWED: {label} - wrote {path}")
             failed_escape = False
     except OSError as e:
         print(f"BLOCKED {label}: {e!r}")

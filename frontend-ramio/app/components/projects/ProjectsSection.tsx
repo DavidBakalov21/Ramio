@@ -37,7 +37,7 @@ export function ProjectsSection({ courseId, isTeacher }: ProjectsSectionProps) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Projects</h2>
-          <span className="text-sm text-slate-400">— for robust multifile solutions</span>
+          <span className="text-sm text-slate-400">- for robust multifile solutions</span>
         </div>
         {isTeacher && (
           <button

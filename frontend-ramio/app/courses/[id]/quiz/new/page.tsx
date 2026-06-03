@@ -524,7 +524,7 @@ export default function NewQuizPage() {
             Generate with AI
           </p>
           <p className="mt-1 text-xs text-violet-800/90">
-            Write freely—topic, difficulty, languages, roughly how many of each
+            Write freely-topic, difficulty, languages, roughly how many of each
             question style, coding vs multiple choice vs short answer. You
             don&apos;t need any special format; the assistant figures out
             structure. Generated content replaces your current draft.

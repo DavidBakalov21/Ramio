@@ -437,9 +437,9 @@ export default function TakeQuizPage() {
                       >
                         {codeRunResult[q.id]?.timedOut ? 'Timed out\n' : ''}
                         exit {codeRunResult[q.id]?.exitCode ?? '?'}
-                        {'\n\n— stdout -\n'}
+                        {'\n\n- stdout -\n'}
                         {codeRunResult[q.id]?.stdout || '(empty)'}
-                        {'\n\n— stderr -\n'}
+                        {'\n\n- stderr -\n'}
                         {codeRunResult[q.id]?.stderr || '(empty)'}
                       </pre>
                     )}

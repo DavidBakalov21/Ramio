@@ -40,7 +40,7 @@ export function AssignmentsSection({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-baseline gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Code Snippet Tasks</h2>
-          <span className="text-sm text-slate-400">— simple and quick single file tasks</span>
+          <span className="text-sm text-slate-400">- simple and quick single file tasks</span>
         </div>
         {isTeacher && (
           <button
