@@ -197,24 +197,24 @@ export default function Home() {
                           </p>
                         )}
                         <p className="mt-2 text-xs text-slate-400">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/users/${course.teacherId}`);
-                          }}
-                          className="font-medium text-slate-500 hover:text-violet-600 hover:underline"
-                        >
-                          {course.teacherName}
-                        </button>
-                        {' · '}
-                        {course.enrollmentCount} enrolled ·{' '}
-                        {course.assignmentCount} tasks
-                        {course.isOpen && (
-                          <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
-                            Open
-                          </span>
-                        )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/users/${course.teacherId}`);
+                            }}
+                            className="font-medium text-slate-500 hover:text-violet-600 hover:underline"
+                          >
+                            {course.teacherName}
+                          </button>
+                          {' · '}
+                          {course.enrollmentCount} enrolled ·{' '}
+                          {course.assignmentCount} tasks
+                          {course.isOpen && (
+                            <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                              Open
+                            </span>
+                          )}
                         </p>
                       </div>
                       <div className="mt-auto grid grid-cols-2 gap-2 pt-4">

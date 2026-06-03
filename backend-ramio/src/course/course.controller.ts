@@ -80,6 +80,12 @@ export class CourseController {
     return this.courseService.update(BigInt(id), user.id, dto);
   }
 
+  @Delete(':id')
+  @Roles(UserRole.TEACHER)
+  remove(@Param('id', ParseIntPipe) id: number, @User() user: PrismaUser) {
+    return this.courseService.remove(BigInt(id), user.id);
+  }
+
   @Post(':id/enroll')
   @Roles(UserRole.STUDENT)
   requestEnroll(

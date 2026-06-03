@@ -214,7 +214,7 @@ export default function NewAssignmentPage() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-            placeholder="Task title"
+          placeholder="Task title"
           maxLength={255}
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />

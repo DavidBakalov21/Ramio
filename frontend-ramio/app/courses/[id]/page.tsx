@@ -14,11 +14,13 @@ import { StudentResultsResponse } from '@/app/interfaces/StudentResults';
 import { Navbar } from '@/app/components/Navbar';
 import { MaterialsSection } from '@/app/components/materials/MaterialsSection';
 import { QuizzesSection } from '@/app/components/quizzes/QuizzesSection';
+import { useToast } from '@/app/components/utility/toast';
 
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.id as string;
+  const { showToast } = useToast();
 
   const [user, setUser] = useState<User | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
@@ -38,6 +40,7 @@ export default function CourseDetailPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [togglingOpen, setTogglingOpen] = useState(false);
   const [kickingId, setKickingId] = useState<string | null>(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -112,6 +115,27 @@ export default function CourseDetailPage() {
       setCourse((prev) => (prev ? { ...prev, isOpen: !prev.isOpen } : prev));
     } finally {
       setTogglingOpen(false);
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!course) return;
+    if (
+      !confirm(
+        `Delete "${course.title}"? All tasks, projects, quizzes, materials and enrollments will be removed. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setDeletingCourse(true);
+    try {
+      await api.delete(`/course/${courseId}`);
+      showToast('Course deleted.', 'success');
+      router.push('/courses');
+    } catch {
+      showToast('Failed to delete course.', 'error');
+    } finally {
+      setDeletingCourse(false);
     }
   };
 
@@ -293,8 +317,8 @@ export default function CourseDetailPage() {
                 {course.teacherName}
               </button>
               {' · '}
-              {course.enrollmentCount} enrolled · {course.assignmentCount}{' '}
-              code snippet tasks
+              {course.enrollmentCount} enrolled · {course.assignmentCount} code
+              snippet tasks
               {(course.projectCount ?? 0) > 0 && (
                 <>
                   {' · '}
@@ -304,20 +328,30 @@ export default function CourseDetailPage() {
             </p>
 
             {course.isTeacher && (
-              <button
-                type="button"
-                onClick={() => void handleToggleOpen()}
-                disabled={togglingOpen}
-                className={`self-start rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
-                  course.isOpen
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {course.isOpen
-                  ? 'Open enrollment · click to close'
-                  : 'Closed enrollment · click to open'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleToggleOpen()}
+                  disabled={togglingOpen || deletingCourse}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition disabled:opacity-60 ${
+                    course.isOpen
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {course.isOpen
+                    ? 'Open enrollment · click to close'
+                    : 'Closed enrollment · click to open'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteCourse()}
+                  disabled={deletingCourse || togglingOpen}
+                  className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                >
+                  {deletingCourse ? 'Deleting…' : 'Delete course'}
+                </button>
+              </div>
             )}
 
             <div className="mt-4 flex gap-2 border-b border-slate-200">

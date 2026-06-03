@@ -19,7 +19,9 @@ export function AssignmentList({
   onAssignmentClick,
 }: AssignmentListProps) {
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Loading code snippet tasks…</p>;
+    return (
+      <p className="text-sm text-slate-500">Loading code snippet tasks…</p>
+    );
   }
 
   if (assignments.length === 0) {

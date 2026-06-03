@@ -283,7 +283,8 @@ export default function EditAssignmentPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Delete this code snippet task? This cannot be undone.')) return;
+    if (!confirm('Delete this code snippet task? This cannot be undone.'))
+      return;
     setDeleting(true);
     try {
       await api.delete(`/assignment/${assignmentId}`);
@@ -318,7 +319,9 @@ export default function EditAssignmentPage() {
       >
         ← Back to course
       </button>
-      <h1 className="text-xl font-semibold text-slate-900">Edit code snippet task</h1>
+      <h1 className="text-xl font-semibold text-slate-900">
+        Edit code snippet task
+      </h1>
 
       <form onSubmit={handleSave} className="mt-5 grid gap-4">
         <input

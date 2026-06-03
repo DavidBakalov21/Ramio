@@ -207,6 +207,21 @@ export class CourseService {
     return this.toResponse(updated);
   }
 
+  async remove(courseId: bigint, teacherId: bigint) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+    if (course.userId !== teacherId) {
+      throw new ForbiddenException('You can only delete your own courses');
+    }
+
+    await this.prisma.course.delete({ where: { id: courseId } });
+    return { success: true };
+  }
+
   async requestEnroll(courseId: bigint, studentId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
