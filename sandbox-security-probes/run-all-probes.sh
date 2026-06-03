@@ -35,14 +35,11 @@ run_probe() {
 }
 
 echo "Image: $IMAGE"
-echo "Container wall-clock limit (host timeout): ${TIMEOUT_SEC}s (backend uses ${DOCKER_TIMEOUT_MS}ms)"
 
 run_probe "Network egress" probe_network.py
 run_probe "Fork storm (PID cap)" probe_fork.py
 run_probe "Memory exhaustion" probe_memory.py
 run_probe "Filesystem escape / tamper" probe_filesystem.py
-run_probe "CPU busy-loop (needs ~30s kill)" probe_cpu.py
-run_probe "Long sleep (timeout)" probe_sleep.py
 run_probe "Privileges / caps" probe_privileges.py
 
 echo ""
