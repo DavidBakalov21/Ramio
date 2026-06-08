@@ -27,6 +27,7 @@ const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   NODE_JS: 'text/javascript',
   JAVA: 'text/x-java-source',
   DOTNET: 'text/plain',
+  CPP: 'text/x-c++src',
 };
 
 export default function EditAssignmentPage() {

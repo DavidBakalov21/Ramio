@@ -28,6 +28,7 @@ enum AssignmentLanguage {
   NODE_JS
   JAVA
   DOTNET
+  CPP
 }
 
 enum ProjectLanguage {
@@ -35,6 +36,7 @@ enum ProjectLanguage {
   PYTHON
   JAVA
   NODE_JS
+  CPP
 }
 
 enum CourseMaterialType {

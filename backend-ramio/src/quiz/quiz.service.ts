@@ -65,6 +65,8 @@ function fallbackGeneratedStarterCode(lang: AssignmentLanguage): string {
       return '// Solution.java — define the class your tests expect.\n';
     case AssignmentLanguage.DOTNET:
       return '// Solution.cs — define types your tests expect.\n';
+    case AssignmentLanguage.CPP:
+      return '// Solution.cpp — define functions/classes your tests expect.\n';
     default:
       return '';
   }
@@ -311,7 +313,7 @@ Structure:
   • answers — for EVERY question: array. Use [] only for OPEN_ANSWER or CODING_TASK. For ONE_ANSWER and MULTI_ANSWER use 2–6 answers { text, isCorrect }; ONE_ANSWER has exactly one correct, MULTI_ANSWER at least one.
 
   For each CODING_TASK also include strings:
-    • codingTaskLanguage — PYTHON | NODE_JS | JAVA | DOTNET  
+    • codingTaskLanguage — PYTHON | NODE_JS | JAVA | DOTNET | CPP  
     • codingTaskStarterCode — what appears in their editor initially (embed newlines inside the JSON string); may be stubs or hints  
     • codingTaskTeacherTests — full runnable test source in that language as one JSON string  
 

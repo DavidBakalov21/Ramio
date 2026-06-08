@@ -22,12 +22,13 @@ const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
 
 const LANGUAGE_TO_TEST_LANGUAGE: Record<
   AssignmentLanguage,
-  'python' | 'javascript' | 'java' | 'csharp'
+  'python' | 'javascript' | 'java' | 'csharp' | 'cpp'
 > = {
   PYTHON: 'python',
   NODE_JS: 'javascript',
   JAVA: 'java',
   DOTNET: 'csharp',
+  CPP: 'cpp',
 };
 
 @Injectable()
@@ -858,6 +859,7 @@ export class AssignmentService {
         NODE_JS: 'JavaScript / Node.js',
         JAVA: 'Java',
         DOTNET: 'C# / .NET',
+        CPP: 'C++',
       }[effectiveLang] ?? effectiveLang;
 
     const system = `You are a supportive programming tutor helping a student reflect on their graded assignment.

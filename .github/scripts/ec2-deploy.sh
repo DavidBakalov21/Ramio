@@ -24,7 +24,7 @@ sudo docker builder prune -af || true
 
 sudo -u ubuntu bash -lc "cd \"$APP_DIR\" && COMPOSE_PARALLEL_LIMIT=1 docker compose build backend1 frontend1 > /tmp/ramio-compose-build.log 2>&1; ec=\$?; tail -200 /tmp/ramio-compose-build.log; exit \$ec"
 
-sudo -u ubuntu bash -lc "cd \"$APP_DIR\" && COMPOSE_PARALLEL_LIMIT=1 docker compose build runner-python runner-node runner-java runner-dotnet > /tmp/ramio-runners-build.log 2>&1; ec=\$?; tail -200 /tmp/ramio-runners-build.log; exit \$ec"
+sudo -u ubuntu bash -lc "cd \"$APP_DIR\" && COMPOSE_PARALLEL_LIMIT=1 docker compose build runner-python runner-node runner-java runner-dotnet runner-cpp > /tmp/ramio-runners-build.log 2>&1; ec=\$?; tail -200 /tmp/ramio-runners-build.log; exit \$ec"
 
 sudo -u ubuntu bash -lc "cd \"$APP_DIR\" && COMPOSE_PARALLEL_LIMIT=1 docker compose up -d --no-build --pull never --remove-orphans > /tmp/ramio-compose-up.log 2>&1; ec=\$?; tail -200 /tmp/ramio-compose-up.log; exit \$ec"
 

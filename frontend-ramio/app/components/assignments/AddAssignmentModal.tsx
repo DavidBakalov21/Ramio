@@ -62,12 +62,13 @@ export function AddAssignmentModal({
     try {
       const languageMap: Record<
         AssignmentLanguage,
-        'python' | 'javascript' | 'java' | 'csharp'
+        'python' | 'javascript' | 'java' | 'csharp' | 'cpp'
       > = {
         PYTHON: 'python',
         NODE_JS: 'javascript',
         JAVA: 'java',
         DOTNET: 'csharp',
+        CPP: 'cpp',
       };
       const res = await api.post<{ tests: string }>(
         '/code-test/generate-tests-from-description',

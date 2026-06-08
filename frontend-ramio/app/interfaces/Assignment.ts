@@ -1,4 +1,9 @@
-export type AssignmentLanguage = 'PYTHON' | 'NODE_JS' | 'JAVA' | 'DOTNET';
+export type AssignmentLanguage =
+  | 'PYTHON'
+  | 'NODE_JS'
+  | 'JAVA'
+  | 'DOTNET'
+  | 'CPP';
 
 export interface TestFileInfo {
   id: string;

@@ -75,6 +75,13 @@ services:
       context: .
       dockerfile: runners/dotnet/Dockerfile.dotnet
 
+  runner-cpp:
+    profiles: ['runners']
+    image: runner-cpp:14
+    build:
+      context: .
+      dockerfile: runners/cpp/Dockerfile.cpp
+
   frontend1:
     user: '1000:1000'
     image: ramio-frontend:local

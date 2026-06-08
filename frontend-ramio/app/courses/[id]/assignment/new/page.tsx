@@ -22,6 +22,7 @@ const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   NODE_JS: 'text/javascript',
   JAVA: 'text/x-java-source',
   DOTNET: 'text/plain',
+  CPP: 'text/x-c++src',
 };
 
 export default function NewAssignmentPage() {
@@ -97,12 +98,13 @@ export default function NewAssignmentPage() {
     try {
       const languageMap: Record<
         AssignmentLanguage,
-        'python' | 'javascript' | 'java' | 'csharp'
+        'python' | 'javascript' | 'java' | 'csharp' | 'cpp'
       > = {
         PYTHON: 'python',
         NODE_JS: 'javascript',
         JAVA: 'java',
         DOTNET: 'csharp',
+        CPP: 'cpp',
       };
       const res = await api.post<{ tests: string }>(
         '/code-test/generate-tests-from-description',

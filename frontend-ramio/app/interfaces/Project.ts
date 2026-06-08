@@ -1,4 +1,9 @@
-export type ProjectLanguage = 'DOTNET' | 'PYTHON' | 'JAVA' | 'NODE_JS';
+export type ProjectLanguage =
+  | 'DOTNET'
+  | 'PYTHON'
+  | 'JAVA'
+  | 'NODE_JS'
+  | 'CPP';
 
 export const PROJECT_LANGUAGE_OPTIONS: {
   value: ProjectLanguage;
@@ -8,6 +13,7 @@ export const PROJECT_LANGUAGE_OPTIONS: {
   { value: 'NODE_JS', label: 'Node.js' },
   { value: 'JAVA', label: 'Java' },
   { value: 'DOTNET', label: '.NET' },
+  { value: 'CPP', label: 'C++' },
 ];
 
 export interface CourseProject {
