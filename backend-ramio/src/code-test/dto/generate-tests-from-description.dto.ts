@@ -8,10 +8,11 @@ export class GenerateTestsFromDescriptionDto {
   description: string;
 
   @IsOptional()
-  @IsIn(['python', 'javascript', 'java', 'csharp'], {
-    message: 'language must be "python", "javascript", "java", or "csharp"',
+  @IsIn(['python', 'javascript', 'java', 'csharp', 'cpp'], {
+    message:
+      'language must be "python", "javascript", "java", "csharp", or "cpp"',
   })
-  language?: 'python' | 'javascript' | 'java' | 'csharp';
+  language?: 'python' | 'javascript' | 'java' | 'csharp' | 'cpp';
 }
 
 export class GenerateTestsFromDescriptionResponseDto {

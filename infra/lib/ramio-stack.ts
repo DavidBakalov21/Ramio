@@ -3,6 +3,11 @@ import type { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import {
+  RamioCodeBuild,
+  type RamioCodeBuildLanguageId,
+} from './ramio-codebuild';
 
 export class RamioStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -150,6 +155,26 @@ export class RamioStack extends cdk.Stack {
 
     db.secret?.grantRead(ec2Role);
 
+    const submissionsBucketName =
+      (this.node.tryGetContext('submissionsBucketName') as string | undefined) ??
+      'ramio-file-storage';
+    const submissionsBucket = s3.Bucket.fromBucketName(
+      this,
+      'SubmissionsBucket',
+      submissionsBucketName,
+    );
+
+    const codeBuildProvisionLanguages =
+      (this.node.tryGetContext('codeBuildProvisionLanguages') as
+        | RamioCodeBuildLanguageId[]
+        | undefined) ?? ['Cpp'];
+
+    const codeBuild = new RamioCodeBuild(this, 'CodeBuild', {
+      submissionsBucket,
+      grantApiAccessTo: [ec2Role],
+      provisionLanguages: codeBuildProvisionLanguages,
+    });
+
     new cdk.CfnOutput(this, 'VpcId', { value: vpc.vpcId });
     new cdk.CfnOutput(this, 'DbEndpoint', {
       value: db.instanceEndpoint.hostname,
@@ -168,6 +193,34 @@ export class RamioStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'Ec2ElasticIp', {
       value: appElasticIp.ref,
       description: 'Static public IP for EC2 instance',
+    });
+
+    new cdk.CfnOutput(this, 'SubmissionsBucketName', {
+      value: submissionsBucketName,
+      description: 'S3 bucket for project/assignment ZIP submissions',
+    });
+
+    new cdk.CfnOutput(this, 'CodeBuildApiPolicyArn', {
+      value: codeBuild.apiPolicy.managedPolicyArn,
+      description:
+        'Attach to the IAM user behind S3_ACCESS_KEY_ID if not using the EC2 instance role',
+    });
+
+    new cdk.CfnOutput(this, 'CodeBuildProvisionedProjects', {
+      value: codeBuild.projects.map((p) => p.projectName).join(', ') || '(none)',
+      description: 'CodeBuild projects created or updated by this deploy',
+    });
+
+    for (const lang of codeBuild.projects) {
+      new cdk.CfnOutput(this, `CodeBuild${lang.projectName}`, {
+        value: lang.projectName,
+        description: `Set ${lang.envKey} in backend .env (default name matches)`,
+      });
+    }
+
+    new cdk.CfnOutput(this, 'CodeBuildRegion', {
+      value: this.region,
+      description: 'Set CODEBUILD_REGION in backend .env',
     });
   }
 }

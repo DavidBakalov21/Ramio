@@ -32,6 +32,7 @@ const LANGUAGE_MIME_TYPE: Record<AssignmentLanguage, string> = {
   NODE_JS: 'text/javascript',
   JAVA: 'text/x-java-source',
   DOTNET: 'text/plain',
+  CPP: 'text/x-c++src',
 };
 
 const CODE_PLACEHOLDER: Record<AssignmentLanguage, string> = {
@@ -40,6 +41,7 @@ const CODE_PLACEHOLDER: Record<AssignmentLanguage, string> = {
   NODE_JS: '// Write your JavaScript solution here',
   JAVA: '// Write your Java solution here',
   DOTNET: '// Write your C# solution here',
+  CPP: '// Write your C++ solution here (saved as Solution.cpp)',
 };
 
 export default function AssignmentSandboxPage() {
@@ -499,6 +501,14 @@ export default function AssignmentSandboxPage() {
                         use <span className="font-mono">import solution</span> -
                         implement the function/class names expected by the
                         tests.
+                      </p>
+                    )}
+                    {effectiveLang === 'CPP' && (
+                      <p className="text-xs text-slate-500">
+                        Your editor is saved as{' '}
+                        <span className="font-mono">Solution.cpp</span> and
+                        compiled with{' '}
+                        <span className="font-mono">SolutionTest.cpp</span>.
                       </p>
                     )}
                     <textarea

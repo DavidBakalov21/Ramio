@@ -24,6 +24,7 @@ export class CodeTestService {
   private readonly javaImage: string;
   private readonly dotnetImage: string;
   private readonly nodeImage: string;
+  private readonly cppImage: string;
   private readonly timeoutMs: number;
 
   constructor(
@@ -38,6 +39,8 @@ export class CodeTestService {
       this.config.get<string>('RUNNER_DOTNET_IMAGE') ?? 'runner-dotnet:8.0';
     this.nodeImage =
       this.config.get<string>('RUNNER_NODE_IMAGE') ?? 'runner-node:20';
+    this.cppImage =
+      this.config.get<string>('RUNNER_CPP_IMAGE') ?? 'runner-cpp:14';
     this.timeoutMs = this.config.get<number>('RUNNER_TIMEOUT_MS') ?? 30_000;
   }
 
@@ -108,6 +111,23 @@ export class CodeTestService {
     });
   }
 
+  async runCppTests(code: string, tests: string): Promise<RunCodeResponseDto> {
+    const solutionFile = 'Solution.cpp';
+    const testFile = 'SolutionTest.cpp';
+    return this.runLanguageTests({
+      code,
+      tests,
+      solutionFile,
+      testFile,
+      image: this.cppImage,
+      command: [
+        'sh',
+        '-lc',
+        'cp /workspace/Solution.cpp /workspace/SolutionTest.cpp /tmp/ && cd /tmp && g++ -std=c++17 -Wall -Wextra -O0 Solution.cpp SolutionTest.cpp -o solution_test && ./solution_test',
+      ],
+    });
+  }
+
   async runDotnetTests(
     code: string,
     tests: string,
@@ -154,6 +174,8 @@ export class CodeTestService {
         return this.runJavaTests(code, testContent);
       case AssignmentLanguage.DOTNET:
         return this.runDotnetTests(code, testContent);
+      case AssignmentLanguage.CPP:
+        return this.runCppTests(code, testContent);
       default:
         throw new BadRequestException('Unsupported assignment language');
     }

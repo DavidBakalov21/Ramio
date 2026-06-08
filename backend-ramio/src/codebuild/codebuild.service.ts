@@ -19,6 +19,7 @@ const CODEBUILD_PROJECT_ENV_BY_LANGUAGE: Record<ProjectLanguage, string> = {
   PYTHON: 'CODEBUILD_PROJECT_PYTHON',
   JAVA: 'CODEBUILD_PROJECT_JAVA',
   NODE_JS: 'CODEBUILD_PROJECT_NODE_JS',
+  CPP: 'CODEBUILD_PROJECT_CPP',
 };
 
 const DEFAULT_CODEBUILD_PROJECT_BY_LANGUAGE: Partial<
@@ -28,6 +29,7 @@ const DEFAULT_CODEBUILD_PROJECT_BY_LANGUAGE: Partial<
   PYTHON: 'PythonProject',
   NODE_JS: 'NodeJSProject',
   JAVA: 'JavaProject',
+  CPP: 'CppProject',
 };
 
 export interface CodeBuildStartResult {

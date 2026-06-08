@@ -7,7 +7,7 @@ import {
 import { AssignmentLanguage } from '@prisma/client';
 import { stripModelCodeOutput } from '../lib/strip-model-code.js';
 
-export type TestLanguage = 'python' | 'javascript' | 'java' | 'csharp';
+export type TestLanguage = 'python' | 'javascript' | 'java' | 'csharp' | 'cpp';
 
 interface InvokeResponseBody {
   content?: Array<{ text: string }>;
@@ -31,6 +31,16 @@ import solution
 class TestSolution(unittest.TestCase):
     def test_solution_module_is_importable(self):
         self.assertIsNotNone(solution)`;
+}
+
+function cppRamioConstraints(): string {
+  return `
+C++ / Ramio runner (mandatory for C++ test output):
+- Student code is saved as Solution.cpp; your output is saved as SolutionTest.cpp.
+- Ramio compiles with: g++ -std=c++17 Solution.cpp SolutionTest.cpp -o solution_test && ./solution_test
+- SolutionTest.cpp must define int main() that exercises Solution.cpp (no external test frameworks).
+- Use #include <cassert> or throw std::runtime_error on failure; return 0 when all checks pass.
+- Do not require CMake, Google Test, Catch2, or other third-party libraries.`;
 }
 
 export function toInferenceProfileId(modelId: string, region: string): string {
@@ -137,6 +147,7 @@ export class BedrockService {
       NODE_JS: 'JavaScript / Node.js',
       JAVA: 'Java',
       DOTNET: 'C# / .NET',
+      CPP: 'C++',
     };
     const languageLabel = languageLabelByAssignment[input.language];
 
@@ -327,6 +338,7 @@ ${input.projectFilesXml}`;
       javascript: 'JavaScript/Node.js with Jest',
       java: 'Java tests without external dependencies (plain java/javac)',
       csharp: 'C#/.NET tests without external dependencies',
+      cpp: 'C++ tests without external dependencies (plain g++, assert or checks in main)',
     };
     const framework = frameworkByLanguage[language];
 
@@ -338,6 +350,7 @@ Requirements:
 - Tests should be meaningful: cover main behaviors, edge cases, and important branches.
 - Keep the test file self-contained and runnable.
 ${language === 'python' ? pythonUnittestRamioConstraints() : ''}
+${language === 'cpp' ? cppRamioConstraints() : ''}
 
 Source code (${language}):
 
@@ -359,6 +372,7 @@ Generate the complete test file now:`;
       javascript: 'JavaScript/Node.js with Jest',
       java: 'Java tests without external dependencies (plain java/javac)',
       csharp: 'C#/.NET tests without external dependencies',
+      cpp: 'C++ tests without external dependencies (plain g++, assert or checks in main)',
     };
     const framework = frameworkByLanguage[language];
 
@@ -369,8 +383,9 @@ Requirements:
 - Output ONLY the test code, no explanations or markdown code fences.
 - Tests should match what the description asks students to implement: assert the expected behavior.
 - Keep the test file self-contained and runnable (imports, test runner).
-- Assume the student will implement a solution that your tests will run against (e.g. solution.py or a module they provide).
+- Assume the student will implement a solution that your tests will run against (e.g. solution.py, Solution.cpp, or a module they provide).
 ${language === 'python' ? pythonUnittestRamioConstraints() : ''}
+${language === 'cpp' ? cppRamioConstraints() : ''}
 
 Assignment description:
 

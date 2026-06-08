@@ -196,5 +196,28 @@ export function parseTestCountsFromBuildLog(log: string): {
     };
   }
 
+  const gtestPassed = text.match(/\[\s+PASSED\s+\]\s+(\d+)\s+tests?\./i);
+  if (gtestPassed) {
+    const gtestFailed = text.match(/\[\s+FAILED\s+\]\s+(\d+)\s+tests?/i);
+    return {
+      passed: Number(gtestPassed[1]),
+      failed: gtestFailed ? Number(gtestFailed[1]) : 0,
+      skipped: 0,
+    };
+  }
+
+  const ctest = text.match(
+    /(\d+)% tests passed,\s*(\d+) tests? failed out of (\d+)/i,
+  );
+  if (ctest) {
+    const total = Number(ctest[3]);
+    const failed = Number(ctest[2]);
+    return {
+      passed: Math.max(0, total - failed),
+      failed,
+      skipped: 0,
+    };
+  }
+
   return null;
 }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Project` MODIFY `language` ENUM('DOTNET', 'PYTHON', 'JAVA', 'NODE_JS', 'CPP') NOT NULL DEFAULT 'PYTHON';

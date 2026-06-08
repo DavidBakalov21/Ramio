@@ -33,6 +33,14 @@ export const ASSIGNMENT_LANGUAGE_MAP: Record<
     testCodeHint: 'Enter C# test code. It will be saved as test.cs.',
     testCodePlaceholder: '// e.g. static checks and throw on failures',
   },
+  CPP: {
+    label: 'C++',
+    fileExtension: 'cpp',
+    testCodeHint:
+      'Enter C++ test code. It will be saved as SolutionTest.cpp and compiled with Solution.cpp.',
+    testCodePlaceholder:
+      '// e.g. int main() with assert checks against Solution.cpp',
+  },
 };
 
 export function getAssignmentLanguageLabel(

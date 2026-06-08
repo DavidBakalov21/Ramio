@@ -297,6 +297,46 @@ describe('parseTestCountsFromBuildLog', () => {
     });
   });
 
+  describe('Google Test summary', () => {
+    it('parses passed-only summary', () => {
+      const log = '[  PASSED  ] 5 tests.';
+      expect(parseTestCountsFromBuildLog(log)).toEqual({
+        passed: 5,
+        failed: 0,
+        skipped: 0,
+      });
+    });
+
+    it('parses passed and failed summary', () => {
+      const log = '[  PASSED  ] 3 tests.\n[  FAILED  ] 2 tests, listed below:';
+      expect(parseTestCountsFromBuildLog(log)).toEqual({
+        passed: 3,
+        failed: 2,
+        skipped: 0,
+      });
+    });
+  });
+
+  describe('CTest summary', () => {
+    it('parses all-passed summary', () => {
+      const log = '100% tests passed, 0 tests failed out of 5';
+      expect(parseTestCountsFromBuildLog(log)).toEqual({
+        passed: 5,
+        failed: 0,
+        skipped: 0,
+      });
+    });
+
+    it('parses partial-failure summary', () => {
+      const log = '75% tests passed, 1 tests failed out of 4';
+      expect(parseTestCountsFromBuildLog(log)).toEqual({
+        passed: 3,
+        failed: 1,
+        skipped: 0,
+      });
+    });
+  });
+
   describe('unrecognised log', () => {
     it('returns null', () => {
       const log = 'Building project...\nSUCCESS\n';
