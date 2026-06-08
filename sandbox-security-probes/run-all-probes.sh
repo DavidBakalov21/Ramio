@@ -23,7 +23,7 @@ run_probe() {
     --memory-swap=256m \
     --pids-limit=128 \
     --read-only \
-    --tmpfs /tmp:rw,size=64m \
+    --tmpfs /tmp:rw,exec,size=64m \
     --security-opt no-new-privileges \
     --cap-drop ALL \
     -v "${WORK}:/workspace:ro" \

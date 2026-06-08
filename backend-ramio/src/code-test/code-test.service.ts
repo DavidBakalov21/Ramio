@@ -306,7 +306,7 @@ export class CodeTestService {
         '--pids-limit=128',
         '--read-only',
         '--tmpfs',
-        '/tmp:rw,size=64m',
+        '/tmp:rw,exec,size=64m',
         '--security-opt',
         'no-new-privileges',
         '--cap-drop',
