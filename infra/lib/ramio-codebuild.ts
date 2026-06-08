@@ -25,19 +25,10 @@ export interface RamioCodeBuildLanguageProject {
 }
 
 export interface RamioCodeBuildProps {
-  /** S3 bucket where student submission ZIPs live (e.g. ramio-file-storage). */
   readonly submissionsBucket: s3.IBucket;
-  /** IAM roles that may StartBuild and read CloudWatch logs (e.g. EC2 instance role). */
   readonly grantApiAccessTo?: iam.IRole[];
-  /**
-   * CodeBuild projects to create in this stack. Defaults to Cpp only when the
-   * other language projects already exist in the account (console-created).
-   */
+  readonly grantApiAccessToUsers?: iam.IUser[];
   readonly provisionLanguages?: RamioCodeBuildLanguageId[];
-  /**
-   * All Ramio CodeBuild project names (for API IAM). Include console-managed
-   * projects here so StartBuild/BatchGetBuilds covers every language.
-   */
   readonly allProjectNames?: string[];
 }
 
@@ -177,6 +168,9 @@ export class RamioCodeBuild extends Construct {
 
     for (const role of props.grantApiAccessTo ?? []) {
       this.apiPolicy.attachToRole(role);
+    }
+    for (const user of props.grantApiAccessToUsers ?? []) {
+      this.apiPolicy.attachToUser(user);
     }
   }
 }

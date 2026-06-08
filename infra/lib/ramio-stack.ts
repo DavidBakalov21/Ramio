@@ -169,9 +169,17 @@ export class RamioStack extends cdk.Stack {
         | RamioCodeBuildLanguageId[]
         | undefined) ?? ['Cpp'];
 
+    const apiIamUserName = this.node.tryGetContext('apiIamUserName') as
+      | string
+      | undefined;
+    const apiIamUser = apiIamUserName
+      ? iam.User.fromUserName(this, 'ApiIamUser', apiIamUserName)
+      : undefined;
+
     const codeBuild = new RamioCodeBuild(this, 'CodeBuild', {
       submissionsBucket,
       grantApiAccessTo: [ec2Role],
+      grantApiAccessToUsers: apiIamUser ? [apiIamUser] : undefined,
       provisionLanguages: codeBuildProvisionLanguages,
     });
 
@@ -202,9 +210,15 @@ export class RamioStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'CodeBuildApiPolicyArn', {
       value: codeBuild.apiPolicy.managedPolicyArn,
-      description:
-        'Attach to the IAM user behind S3_ACCESS_KEY_ID if not using the EC2 instance role',
+      description: 'CodeBuild API policy (auto-attached when apiIamUserName is set)',
     });
+
+    if (apiIamUserName) {
+      new cdk.CfnOutput(this, 'CodeBuildApiIamUser', {
+        value: apiIamUserName,
+        description: 'IAM user granted RamioStack-codebuild-api via CDK',
+      });
+    }
 
     new cdk.CfnOutput(this, 'CodeBuildProvisionedProjects', {
       value: codeBuild.projects.map((p) => p.projectName).join(', ') || '(none)',
