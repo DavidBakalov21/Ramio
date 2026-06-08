@@ -1,3 +1,9 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const CPP_UNITTEST_SHIM_B64 = Buffer.from(
+  fs.readFileSync(path.join(__dirname, 'cpp-unittest-shim.h'), 'utf8'),
+).toString('base64');
 
 export const PYTHON_BUILDSPEC = {
   version: '0.2',
@@ -71,6 +77,7 @@ export const CPP_BUILDSPEC = {
       commands: [
         'set -e',
         'if command -v dnf >/dev/null; then dnf install -y cmake gcc-c++ make gtest-devel; elif command -v yum >/dev/null; then yum install -y cmake3 gcc-c++ make gtest-devel; else apt-get update && apt-get install -y cmake g++ make libgtest-dev; fi',
+        `mkdir -p /tmp/ramio-cpp-shim && printf '%s' '${CPP_UNITTEST_SHIM_B64}' | base64 -d > /tmp/ramio-cpp-shim/CppUnitTest.h`,
       ],
     },
     build: {
@@ -95,7 +102,7 @@ export const CPP_BUILDSPEC = {
           'elif [ -f Solution.cpp ] && [ -f SolutionTest.cpp ]; then',
           'g++ -std=c++17 -Wall -Wextra -O0 Solution.cpp SolutionTest.cpp -o solution_test && ./solution_test;',
           'else',
-          'TEST_CPP="$(find . \\( -path ./.git -o -path ./build \\) -prune -o -type f \\( -iname \'*_test.cpp\' -o -iname \'*Test.cpp\' -o -iname \'test_*.cpp\' \\) -print 2>/dev/null | awk \'{print length, $0}\' | sort -n | head -1 | cut -d\\" \\" -f2-)";',
+          'TEST_CPP="$(find . \\( -path ./.git -o -path ./build \\) -prune -o -type f \\( -iname \'*_test.cpp\' -o -iname \'*Test.cpp\' -o -iname \'test_*.cpp\' \\) -print 2>/dev/null | awk \'{print length, $0}\' | sort -n | head -1 | cut -d" " -f2-)";',
           'if [ -n "$TEST_CPP" ]; then',
           'INC_FLAGS="";',
           'for d in include inc src .; do [ -d "$d" ] && INC_FLAGS="$INC_FLAGS -I$d"; done;',
@@ -105,6 +112,7 @@ export const CPP_BUILDSPEC = {
           'TEST_DIR="$(dirname "$TEST_CPP")";',
           'SRC_CPPS="$(find . \\( -path ./.git -o -path ./build -o -path "./$TEST_DIR" \\) -prune -o -type f -name \'*.cpp\' -print 2>/dev/null | tr \'\\n\' \' \')";',
           'fi;',
+          'if grep -Eq \'#include [<"]CppUnitTest\' "$TEST_CPP" 2>/dev/null; then INC_FLAGS="$INC_FLAGS -I /tmp/ramio-cpp-shim"; fi;',
           'GTEST_LIBS="";',
           'if grep -Eq \'#include [<"]gtest\' "$TEST_CPP" 2>/dev/null; then GTEST_LIBS="-lgtest -lgtest_main -pthread"; fi;',
           'g++ -std=c++17 -Wall -Wextra -O0 $INC_FLAGS $SRC_CPPS "$TEST_CPP" -o ramio_cpp_test $GTEST_LIBS && ./ramio_cpp_test;',
