@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { CodeTestService } from '../code-test/code-test.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CourseAccessService } from '../course/course-access.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateAssignmentDto } from './dto/create-assignment.dto';
 import type { UpdateAssignmentDto } from './dto/update-assignment.dto';
@@ -46,6 +47,7 @@ export class AssignmentService {
     private readonly config: ConfigService,
     private readonly codeTestService: CodeTestService,
     private readonly bedrock: BedrockService,
+    private readonly courseAccess: CourseAccessService,
   ) {
     this.assignmentBucket =
       this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ??
@@ -130,11 +132,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only edit assignments in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const dueDate =
       dto.dueDate !== undefined
         ? dto.dueDate != null
@@ -160,11 +158,7 @@ export class AssignmentService {
       include: { course: true, tests: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only delete assignments in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     for (const t of assignment.tests) {
       await this.storage.deleteFile(t.key, this.assignmentBucket);
     }
@@ -178,11 +172,7 @@ export class AssignmentService {
       include: { course: true, tests: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only view test files for your own assignments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     return assignment.tests.map((t) => this.toTestFileResponse(t));
   }
 
@@ -196,11 +186,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only view test files for your own assignments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const testFile = await this.prisma.testFile.findUnique({
       where: { assignmentId_language: { assignmentId, language } },
     });
@@ -224,11 +210,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only upload test files to your own assignments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const filename = file.originalname?.split(/[/\\]/).pop() ?? 'test-file';
     const key = `tests/${assignmentId}/${language}/${filename}`;
     const { url } = await this.storage.overwriteFile(
@@ -269,11 +251,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only delete test files from your own assignments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const testFile = await this.prisma.testFile.findUnique({
       where: { assignmentId_language: { assignmentId, language } },
     });
@@ -295,11 +273,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only generate tests for your own assignments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const description =
       `${assignment.title}\n\n${assignment.description ?? ''}`.trim();
     const testLanguage = LANGUAGE_TO_TEST_LANGUAGE[language];
@@ -348,7 +322,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    const isTeacher = assignment.course.userId === userId;
+    const isTeacher = await this.courseAccess.isManagerOfLoadedCourse(assignment.course, userId);
     if (!isTeacher) {
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
@@ -414,7 +388,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    const isTeacher = assignment.course.userId === userId;
+    const isTeacher = await this.courseAccess.isManagerOfLoadedCourse(assignment.course, userId);
     if (!isTeacher) {
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
@@ -523,11 +497,7 @@ export class AssignmentService {
       include: { course: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    if (assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(assignment.course, teacherId);
     const submissions = await this.prisma.assignmentSubmission.findMany({
       where: { assignmentId },
       include: { user: true, solutionFiles: true, assignment: true },
@@ -558,11 +528,7 @@ export class AssignmentService {
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.assignment.course, teacherId);
     let solutionContent: string | null = null;
     const firstFile = submission.solutionFiles[0];
     if (firstFile) {
@@ -609,11 +575,7 @@ export class AssignmentService {
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can run tests on submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.assignment.course, teacherId);
 
     const lang = submission.language ?? submission.assignment.language;
     const testFile = submission.assignment.tests.find(
@@ -657,11 +619,7 @@ export class AssignmentService {
       include: { assignment: { include: { course: true } } },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can assess submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.assignment.course, teacherId);
     const data: Record<string, unknown> = {};
     if (dto.teacherFeedback !== undefined)
       data.teacherFeedback = dto.teacherFeedback;
@@ -704,11 +662,7 @@ export class AssignmentService {
         'Submission does not belong to this assignment',
       );
     }
-    if (submission.assignment.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can request AI feedback for this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.assignment.course, teacherId);
 
     let code = '';
     const firstFile = submission.solutionFiles[0];
@@ -913,15 +867,7 @@ Rules:
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
-    if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only create assignments in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
   }
 
   private async assertCanAccessCourse(courseId: bigint, userId: bigint) {
@@ -929,11 +875,11 @@ Rules:
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    const isTeacher = course.userId === userId;
+    if (await this.courseAccess.isCourseManager(courseId, userId)) return;
     const isEnrolled = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
-    if (!isTeacher && !isEnrolled) {
+    if (!isEnrolled) {
       throw new ForbiddenException('You do not have access to this course');
     }
   }

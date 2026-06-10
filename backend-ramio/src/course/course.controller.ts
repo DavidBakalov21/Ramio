@@ -22,6 +22,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { CourseMaterialService } from './course-material.service';
 import { CreateCourseMaterialLinkDto } from './dto/create-course-material-link.dto';
 import { CreateCourseMaterialFileDto } from './dto/create-course-material-file.dto';
+import { InviteCourseAssistantDto } from './dto/invite-course-assistant.dto';
 
 @Controller('course')
 export class CourseController {
@@ -39,6 +40,30 @@ export class CourseController {
     const pageNum = page ? Number(page) : 1;
     const limitNum = limit ? Number(limit) : 10;
     return this.courseService.findAll(user.id, user.role, pageNum, limitNum);
+  }
+
+  @Get('assistant-invites')
+  @Roles(UserRole.TEACHER)
+  getMyAssistantInvites(@User() user: PrismaUser) {
+    return this.courseService.getMyAssistantInvites(user.id);
+  }
+
+  @Post('assistant-invites/:inviteId/accept')
+  @Roles(UserRole.TEACHER)
+  acceptAssistantInvite(
+    @Param('inviteId', ParseIntPipe) inviteId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.acceptAssistantInvite(BigInt(inviteId), user.id);
+  }
+
+  @Post('assistant-invites/:inviteId/decline')
+  @Roles(UserRole.TEACHER)
+  declineAssistantInvite(
+    @Param('inviteId', ParseIntPipe) inviteId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.declineAssistantInvite(BigInt(inviteId), user.id);
   }
 
   @Get('all')
@@ -165,6 +190,53 @@ export class CourseController {
     @User() user: PrismaUser,
   ) {
     return this.courseService.getStudentResults(BigInt(id), user.id);
+  }
+
+  @Get(':id/assistants')
+  @Roles(UserRole.TEACHER)
+  getAssistants(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.getAssistants(BigInt(id), user.id);
+  }
+
+  @Post(':id/assistants/invite')
+  @Roles(UserRole.TEACHER)
+  inviteAssistant(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: InviteCourseAssistantDto,
+  ) {
+    return this.courseService.inviteAssistant(BigInt(id), user.id, dto.email);
+  }
+
+  @Delete(':id/assistants/pending/:inviteId')
+  @Roles(UserRole.TEACHER)
+  cancelAssistantInvite(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('inviteId', ParseIntPipe) inviteId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.cancelAssistantInvite(
+      BigInt(id),
+      BigInt(inviteId),
+      user.id,
+    );
+  }
+
+  @Delete(':id/assistants/:userId')
+  @Roles(UserRole.TEACHER)
+  removeAssistant(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.courseService.removeAssistant(
+      BigInt(id),
+      BigInt(userId),
+      user.id,
+    );
   }
 
   @Get(':id/pending-enrollments')

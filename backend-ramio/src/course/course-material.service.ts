@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { CourseMaterialType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { CourseAccessService } from './course-access.service';
 
 const MATERIALS_BUCKET_KEY = 'S3_BUCKET_MATERIALS';
 const DEFAULT_BUCKET_KEY = 'S3_BUCKET';
@@ -33,6 +34,7 @@ export class CourseMaterialService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly config: ConfigService,
+    private readonly courseAccess: CourseAccessService,
   ) {
     this.bucket =
       this.config.get<string>(MATERIALS_BUCKET_KEY) ??
@@ -129,13 +131,7 @@ export class CourseMaterialService {
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
-    if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can do that');
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
   }
 
   private async assertCanAccessCourse(courseId: bigint, userId: bigint) {
@@ -143,7 +139,7 @@ export class CourseMaterialService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId === userId) return;
+    if (await this.courseAccess.isCourseManager(courseId, userId)) return;
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,10 +9,14 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateCourseDto } from './dto/create-course.dto';
 import type { UpdateCourseDto } from './dto/update-course.dto';
+import { CourseAccessService } from './course-access.service';
 
 @Injectable()
 export class CourseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly courseAccess: CourseAccessService,
+  ) {}
 
   async findAll(
     userId: bigint,
@@ -38,7 +43,12 @@ export class CourseService {
 
     const where =
       role === UserRole.TEACHER
-        ? { userId }
+        ? {
+            OR: [
+              { userId },
+              { assistants: { some: { userId } } },
+            ],
+          }
         : { enrollments: { some: { userId } } };
 
     const [total, courses] = await Promise.all([
@@ -55,6 +65,7 @@ export class CourseService {
           },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
+          assistants: { where: { userId }, select: { id: true } },
         },
       }),
     ]);
@@ -65,7 +76,8 @@ export class CourseService {
       enrollmentCount: c._count.enrollments,
       assignmentCount: c._count.assignments,
       projectCount: c._count.projects,
-      isTeacher: c.userId === userId,
+      isTeacher: c.userId === userId || c.assistants.length > 0,
+      isCourseOwner: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
       hasPendingRequest: c.pendingEnrollments.length > 0,
     }));
@@ -111,6 +123,7 @@ export class CourseService {
           },
           enrollments: { where: { userId }, select: { id: true } },
           pendingEnrollments: { where: { userId }, select: { id: true } },
+          assistants: { where: { userId }, select: { id: true } },
         },
       }),
     ]);
@@ -121,7 +134,8 @@ export class CourseService {
       enrollmentCount: c._count.enrollments,
       assignmentCount: c._count.assignments,
       projectCount: c._count.projects,
-      isTeacher: c.userId === userId,
+      isTeacher: c.userId === userId || c.assistants.length > 0,
+      isCourseOwner: c.userId === userId,
       isEnrolled: c.enrollments.length > 0,
       hasPendingRequest: c.pendingEnrollments.length > 0,
     }));
@@ -153,10 +167,13 @@ export class CourseService {
         },
         enrollments: { where: { userId }, select: { id: true } },
         pendingEnrollments: { where: { userId }, select: { id: true } },
+        assistants: { where: { userId }, select: { id: true } },
       },
     });
     if (!course) throw new NotFoundException('Course not found');
-    const isTeacher = course.userId === userId;
+    const isCourseOwner = course.userId === userId;
+    const isAssistant = course.assistants.length > 0;
+    const isTeacher = isCourseOwner || isAssistant;
     const isEnrolled = course.enrollments.length > 0;
     if (!isTeacher && !isEnrolled) {
       throw new ForbiddenException('You do not have access to this course');
@@ -168,6 +185,7 @@ export class CourseService {
       assignmentCount: course._count.assignments,
       projectCount: course._count.projects,
       isTeacher,
+      isCourseOwner,
       isEnrolled,
       hasPendingRequest: course.pendingEnrollments.length > 0,
       pendingRequestCount: isTeacher ? course._count.pendingEnrollments : 0,
@@ -193,9 +211,7 @@ export class CourseService {
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException('You can only edit your own courses');
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
     const updated = await this.prisma.course.update({
       where: { id: courseId },
       data: {
@@ -214,9 +230,7 @@ export class CourseService {
     if (!course) {
       throw new NotFoundException('Course not found');
     }
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException('You can only delete your own courses');
-    }
+    await this.courseAccess.assertCourseOwner(courseId, teacherId);
 
     await this.prisma.course.delete({ where: { id: courseId } });
     return { success: true };
@@ -281,11 +295,7 @@ export class CourseService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view pending requests',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
     const list = await this.prisma.pendingEnrollment.findMany({
       where: { courseId },
       include: {
@@ -312,11 +322,7 @@ export class CourseService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can accept requests',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
     const pending = await this.prisma.pendingEnrollment.findFirst({
       where: { id: pendingId, courseId },
       include: { user: true },
@@ -351,11 +357,7 @@ export class CourseService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can decline requests',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
     const pending = await this.prisma.pendingEnrollment.findFirst({
       where: { id: pendingId, courseId },
     });
@@ -380,11 +382,7 @@ export class CourseService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can remove students',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: studentId, courseId } },
     });
@@ -424,11 +422,7 @@ export class CourseService {
       },
     });
     if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view student results',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
 
     const enrollmentUserIds = course.enrollments.map((e) => e.userId);
 
@@ -600,6 +594,204 @@ export class CourseService {
         (a.username ?? a.email).localeCompare(b.username ?? b.email),
       ),
     };
+  }
+
+  async getAssistants(courseId: bigint, ownerId: bigint) {
+    await this.courseAccess.assertCourseOwner(courseId, ownerId);
+    const [assistants, pendingInvites] = await Promise.all([
+      this.prisma.courseAssistant.findMany({
+        where: { courseId },
+        include: {
+          user: { select: { id: true, username: true, email: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.pendingCourseAssistantInvite.findMany({
+        where: { courseId },
+        include: {
+          user: { select: { id: true, username: true, email: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+    return {
+      assistants: assistants.map((a) => ({
+        userId: a.user.id.toString(),
+        username: a.user.username ?? null,
+        email: a.user.email,
+        joinedAt: a.createdAt,
+      })),
+      pendingInvites: pendingInvites.map((p) => ({
+        id: p.id.toString(),
+        userId: p.user.id.toString(),
+        username: p.user.username ?? null,
+        email: p.user.email,
+        invitedAt: p.createdAt,
+      })),
+    };
+  }
+
+  async inviteAssistant(courseId: bigint, ownerId: bigint, email: string) {
+    await this.courseAccess.assertCourseOwner(courseId, ownerId);
+    const normalizedEmail = email.trim().toLowerCase();
+    const invitee = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (!invitee) {
+      throw new NotFoundException('No user found with that email');
+    }
+    if (invitee.role !== UserRole.TEACHER) {
+      throw new BadRequestException('Only teachers can be invited as assistants');
+    }
+    if (invitee.id === ownerId) {
+      throw new BadRequestException('You cannot invite yourself');
+    }
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { userId: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (course.userId === invitee.id) {
+      throw new BadRequestException('The course owner is already the teacher');
+    }
+    const existingAssistant = await this.prisma.courseAssistant.findUnique({
+      where: {
+        userId_courseId: { userId: invitee.id, courseId },
+      },
+    });
+    if (existingAssistant) {
+      throw new ConflictException('This teacher is already an assistant');
+    }
+    const existingInvite =
+      await this.prisma.pendingCourseAssistantInvite.findUnique({
+        where: {
+          userId_courseId: { userId: invitee.id, courseId },
+        },
+      });
+    if (existingInvite) {
+      throw new ConflictException('An invite is already pending for this teacher');
+    }
+    const invite = await this.prisma.pendingCourseAssistantInvite.create({
+      data: {
+        userId: invitee.id,
+        courseId,
+        invitedBy: ownerId,
+      },
+      include: {
+        user: { select: { username: true, email: true } },
+        course: { select: { title: true } },
+      },
+    });
+    return {
+      id: invite.id.toString(),
+      courseId: invite.courseId.toString(),
+      courseTitle: invite.course.title,
+      userId: invite.userId.toString(),
+      email: invite.user.email,
+      username: invite.user.username ?? null,
+      invitedAt: invite.createdAt,
+    };
+  }
+
+  async removeAssistant(
+    courseId: bigint,
+    assistantUserId: bigint,
+    ownerId: bigint,
+  ) {
+    await this.courseAccess.assertCourseOwner(courseId, ownerId);
+    const assistant = await this.prisma.courseAssistant.findUnique({
+      where: {
+        userId_courseId: { userId: assistantUserId, courseId },
+      },
+    });
+    if (!assistant) {
+      throw new NotFoundException('Assistant not found on this course');
+    }
+    await this.prisma.courseAssistant.delete({
+      where: { id: assistant.id },
+    });
+    return { message: 'Assistant removed' };
+  }
+
+  async cancelAssistantInvite(
+    courseId: bigint,
+    inviteId: bigint,
+    ownerId: bigint,
+  ) {
+    await this.courseAccess.assertCourseOwner(courseId, ownerId);
+    const invite = await this.prisma.pendingCourseAssistantInvite.findFirst({
+      where: { id: inviteId, courseId },
+    });
+    if (!invite) {
+      throw new NotFoundException('Pending assistant invite not found');
+    }
+    await this.prisma.pendingCourseAssistantInvite.delete({
+      where: { id: inviteId },
+    });
+    return { message: 'Invite cancelled' };
+  }
+
+  async getMyAssistantInvites(userId: bigint) {
+    const invites = await this.prisma.pendingCourseAssistantInvite.findMany({
+      where: { userId },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            user: { select: { username: true, email: true } },
+          },
+        },
+        inviter: { select: { username: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return invites.map((invite) => ({
+      id: invite.id.toString(),
+      courseId: invite.course.id.toString(),
+      courseTitle: invite.course.title,
+      invitedAt: invite.createdAt,
+      inviterName:
+        invite.inviter.username ?? invite.inviter.email,
+      ownerName: invite.course.user.username ?? invite.course.user.email,
+    }));
+  }
+
+  async acceptAssistantInvite(inviteId: bigint, userId: bigint) {
+    const invite = await this.prisma.pendingCourseAssistantInvite.findFirst({
+      where: { id: inviteId, userId },
+    });
+    if (!invite) {
+      throw new NotFoundException('Assistant invite not found');
+    }
+    await this.prisma.$transaction([
+      this.prisma.courseAssistant.create({
+        data: {
+          userId,
+          courseId: invite.courseId,
+        },
+      }),
+      this.prisma.pendingCourseAssistantInvite.delete({
+        where: { id: inviteId },
+      }),
+    ]);
+    return {
+      message: 'You are now a course assistant',
+      courseId: invite.courseId.toString(),
+    };
+  }
+
+  async declineAssistantInvite(inviteId: bigint, userId: bigint) {
+    const invite = await this.prisma.pendingCourseAssistantInvite.findFirst({
+      where: { id: inviteId, userId },
+    });
+    if (!invite) {
+      throw new NotFoundException('Assistant invite not found');
+    }
+    await this.prisma.pendingCourseAssistantInvite.delete({
+      where: { id: inviteId },
+    });
+    return { message: 'Invite declined' };
   }
 
   private buildTitleSearchFilter(search?: string) {

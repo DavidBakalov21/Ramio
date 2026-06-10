@@ -5,7 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api } from '@/lib/axios';
 import { User } from '../../interfaces/User';
-import { Course, PendingEnrollmentRequest } from '../../interfaces/Course';
+import {
+  Course,
+  CourseAssistantsResponse,
+  PendingEnrollmentRequest,
+} from '../../interfaces/Course';
+import { CourseAssistantsSection } from '@/app/components/course/CourseAssistantsSection';
 import { AssignmentsSection } from '@/app/components/assignments';
 import { ProjectsSection } from '@/app/components/projects';
 import { PendingEnrollmentRequests } from '@/app/components/PendingEnrollmentRequests';
@@ -27,7 +32,7 @@ export default function CourseDetailPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'assignments' | 'materials' | 'requests' | 'results'
+    'assignments' | 'materials' | 'requests' | 'results' | 'assistants'
   >('assignments');
   const [pendingRequests, setPendingRequests] = useState<
     PendingEnrollmentRequest[]
@@ -41,6 +46,10 @@ export default function CourseDetailPage() {
   const [togglingOpen, setTogglingOpen] = useState(false);
   const [kickingId, setKickingId] = useState<string | null>(null);
   const [deletingCourse, setDeletingCourse] = useState(false);
+  const [assistants, setAssistants] = useState<CourseAssistantsResponse | null>(
+    null,
+  );
+  const [loadingAssistants, setLoadingAssistants] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -94,6 +103,31 @@ export default function CourseDetailPage() {
     };
     fetchResults();
   }, [courseId, course?.isTeacher, activeTab]);
+
+  const fetchAssistants = async () => {
+    setLoadingAssistants(true);
+    try {
+      const res = await api.get<CourseAssistantsResponse>(
+        `/course/${courseId}/assistants`,
+      );
+      setAssistants(res.data);
+    } catch {
+      setAssistants(null);
+    } finally {
+      setLoadingAssistants(false);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      !courseId ||
+      !course?.isCourseOwner ||
+      activeTab !== 'assistants'
+    ) {
+      return;
+    }
+    void fetchAssistants();
+  }, [courseId, course?.isCourseOwner, activeTab]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -343,14 +377,16 @@ export default function CourseDetailPage() {
                     ? 'Open enrollment · click to close'
                     : 'Closed enrollment · click to open'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteCourse()}
-                  disabled={deletingCourse || togglingOpen}
-                  className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                >
-                  {deletingCourse ? 'Deleting…' : 'Delete course'}
-                </button>
+                {course.isCourseOwner !== false && (
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteCourse()}
+                    disabled={deletingCourse || togglingOpen}
+                    className="rounded-full border border-red-200 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                  >
+                    {deletingCourse ? 'Deleting…' : 'Delete course'}
+                  </button>
+                )}
               </div>
             )}
 
@@ -388,6 +424,19 @@ export default function CourseDetailPage() {
                   }`}
                 >
                   Results
+                </button>
+              )}
+              {course.isCourseOwner !== false && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('assistants')}
+                  className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                    activeTab === 'assistants'
+                      ? 'border-slate-900 text-slate-900'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Assistants
                 </button>
               )}
               {course.isTeacher && (
@@ -460,6 +509,15 @@ export default function CourseDetailPage() {
               actingId={actingPendingId}
               onAccept={handleAcceptRequest}
               onDecline={handleDeclineRequest}
+            />
+          )}
+
+          {activeTab === 'assistants' && course.isCourseOwner !== false && (
+            <CourseAssistantsSection
+              courseId={courseId}
+              data={assistants}
+              loading={loadingAssistants}
+              onUpdated={() => void fetchAssistants()}
             />
           )}
         </motion.main>

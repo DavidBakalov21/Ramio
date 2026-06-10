@@ -15,6 +15,7 @@ import {
 import sharp from 'sharp';
 import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
+import { CourseAccessService } from '../course/course-access.service';
 import { StorageService } from '../storage/storage.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { CodeTestService } from '../code-test/code-test.service';
@@ -160,6 +161,7 @@ export class QuizService {
     private readonly storage: StorageService,
     private readonly bedrock: BedrockService,
     private readonly codeTestService: CodeTestService,
+    private readonly courseAccess: CourseAccessService,
   ) {}
 
   async uploadImage(file: Express.Multer.File): Promise<{ url: string }> {
@@ -394,7 +396,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
     });
     if (!quiz) throw new NotFoundException('Quiz not found');
 
-    const isTeacher = quiz.course.userId === userId;
+    const isTeacher = await this.courseAccess.isManagerOfLoadedCourse(quiz.course, userId);
     if (!isTeacher) {
       await this.assertCanAccessCourse(quiz.courseId, userId);
     }
@@ -696,11 +698,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       include: { course: true, questions: true },
     });
     if (!quiz) throw new NotFoundException('Quiz not found');
-    if (quiz.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(quiz.course, teacherId);
 
     const submissions = await this.prisma.quizSubmission.findMany({
       where: { quizId, status: QuizSubmissionStatus.SUBMITTED },
@@ -759,11 +757,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.quiz.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.quiz.course, teacherId);
 
     const questions = submission.quiz.questions.map((q) => {
       const subAnswer = submission.answers.find((a) => a.questionId === q.id);
@@ -839,11 +833,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.quiz.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can assess this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.quiz.course, teacherId);
 
     for (const item of dto.answers) {
       const question = submission.quiz.questions.find(
@@ -898,9 +888,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       include: { course: true, questions: { include: { answers: true } } },
     });
     if (!quiz) throw new NotFoundException('Quiz not found');
-    if (quiz.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only edit your own quizzes');
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(quiz.course, teacherId);
 
     const data: Record<string, unknown> = {};
     if (dto.deadline !== undefined) {
@@ -996,9 +984,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       include: { course: true },
     });
     if (!quiz) throw new NotFoundException('Quiz not found');
-    if (quiz.course.userId !== teacherId) {
-      throw new ForbiddenException('You can only delete your own quizzes');
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(quiz.course, teacherId);
     await this.prisma.quiz.delete({ where: { id: quizId } });
     return { success: true };
   }
@@ -1607,15 +1593,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
-    if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only create quizzes in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
   }
 
   private async assertCanAccessCourse(courseId: bigint, userId: bigint) {
@@ -1623,8 +1601,7 @@ Prefer concise wording; classroom-appropriate. Escape characters so the whole re
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    const isTeacher = course.userId === userId;
-    if (isTeacher) return;
+    if (await this.courseAccess.isCourseManager(courseId, userId)) return;
     const isEnrolled = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });

@@ -15,6 +15,7 @@ import {
   isTerminalCodeBuildStatus,
 } from '../codebuild/codebuild.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CourseAccessService } from '../course/course-access.service';
 import { StorageService } from '../storage/storage.service';
 import { ProjectZipToPromptService } from './project-zip-to-prompt.service';
 import { GithubRepoToS3Service } from './github-repo-to-s3.service';
@@ -149,6 +150,7 @@ export class ProjectService {
     private readonly codeBuild: CodeBuildService,
     private readonly projectZipToPrompt: ProjectZipToPromptService,
     private readonly githubRepoToS3: GithubRepoToS3Service,
+    private readonly courseAccess: CourseAccessService,
   ) {
     this.fileBucket =
       this.config.get<string>(ASSIGNMENT_BUCKET_KEY) ??
@@ -224,11 +226,7 @@ export class ProjectService {
       include: { course: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    if (project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only edit projects in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(project.course, teacherId);
     const dueDate =
       dto.dueDate !== undefined
         ? dto.dueDate != null
@@ -257,11 +255,7 @@ export class ProjectService {
       include: { course: true, submissions: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    if (project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only delete projects in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(project.course, teacherId);
     for (const s of project.submissions) {
       await this.storage.deleteFile(s.key, this.fileBucket);
     }
@@ -290,7 +284,6 @@ export class ProjectService {
     if (!project) throw new NotFoundException('Project not found');
     const submissionUserId = await this.resolveSubmissionUserId(
       project.courseId,
-      project.course.userId,
       actorId,
       targetStudentId,
     );
@@ -347,7 +340,6 @@ export class ProjectService {
     if (!project) throw new NotFoundException('Project not found');
     const submissionUserId = await this.resolveSubmissionUserId(
       project.courseId,
-      project.course.userId,
       actorId,
       targetStudentId,
     );
@@ -394,7 +386,6 @@ export class ProjectService {
 
     const submissionUserId = await this.resolveSubmissionUserId(
       project.courseId,
-      project.course.userId,
       actorId,
       targetStudentId,
     );
@@ -444,7 +435,6 @@ export class ProjectService {
 
     const submissionUserId = await this.resolveSubmissionUserId(
       project.courseId,
-      project.course.userId,
       actorId,
       targetStudentId,
     );
@@ -495,7 +485,6 @@ export class ProjectService {
     await this.assertCanAccessCourse(project.courseId, actorId);
     const submissionUserId = await this.resolveSubmissionUserId(
       project.courseId,
-      project.course.userId,
       actorId,
       targetStudentId,
     );
@@ -525,11 +514,7 @@ export class ProjectService {
       include: { course: true },
     });
     if (!project) throw new NotFoundException('Project not found');
-    if (project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(project.course, teacherId);
     let submissions = await this.prisma.projectSubmission.findMany({
       where: { projectId },
       include: { user: true, project: true },
@@ -629,11 +614,7 @@ export class ProjectService {
       },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
     return {
       ...this.toSubmissionResponse(submission),
       teacherFeedback: submission.teacherFeedback,
@@ -664,11 +645,7 @@ export class ProjectService {
       include: { project: { include: { course: true } } },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can assess submissions',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
     const data: Record<string, unknown> = {};
     if (dto.teacherFeedback !== undefined)
       data.teacherFeedback = dto.teacherFeedback;
@@ -708,11 +685,7 @@ export class ProjectService {
         'Submission does not belong to this project',
       );
     }
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can request AI feedback for this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
 
     const name = submission.name.toLowerCase();
     if (!name.endsWith('.zip')) {
@@ -795,11 +768,7 @@ export class ProjectService {
         'Submission does not belong to this project',
       );
     }
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can run CodeBuild for this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
 
     const name = submission.name.toLowerCase();
     if (!name.endsWith('.zip')) {
@@ -865,11 +834,7 @@ export class ProjectService {
         'Submission does not belong to this project',
       );
     }
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can view CodeBuild status for this submission',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
 
     if (!submission.codeBuildId) {
       return {
@@ -1066,9 +1031,7 @@ export class ProjectService {
       include: { project: { include: { course: true } } },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    if (submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException('Only the course teacher can add comments');
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(submission.project.course, teacherId);
     const comment = await this.prisma.projectFileComment.create({
       data: {
         submissionId,
@@ -1093,11 +1056,7 @@ export class ProjectService {
       },
     });
     if (!comment) throw new NotFoundException('Comment not found');
-    if (comment.submission.project.course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'Only the course teacher can delete comments',
-      );
-    }
+    await this.courseAccess.assertCanManageLoadedCourse(comment.submission.project.course, teacherId);
     await this.prisma.projectFileComment.delete({ where: { id: commentId } });
     return { success: true };
   }
@@ -1108,7 +1067,7 @@ export class ProjectService {
       include: { project: { include: { course: true } } },
     });
     if (!submission) throw new NotFoundException('Submission not found');
-    const isTeacher = submission.project.course.userId === userId;
+    const isTeacher = await this.courseAccess.isManagerOfLoadedCourse(submission.project.course, userId);
     const isOwner = submission.userId === userId;
     if (!isTeacher && !isOwner) {
       throw new ForbiddenException('You do not have access to this submission');
@@ -1118,11 +1077,10 @@ export class ProjectService {
 
   private async resolveSubmissionUserId(
     courseId: bigint,
-    courseTeacherId: bigint,
     actorId: bigint,
     targetStudentId?: bigint,
   ): Promise<bigint> {
-    const isTeacher = actorId === courseTeacherId;
+    const isTeacher = await this.courseAccess.isCourseManager(courseId, actorId);
     if (isTeacher) {
       if (!targetStudentId || targetStudentId === actorId) {
         throw new ForbiddenException(
@@ -1187,15 +1145,7 @@ export class ProjectService {
   }
 
   private async assertTeacherOwnsCourse(courseId: bigint, teacherId: bigint) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
-    if (!course) throw new NotFoundException('Course not found');
-    if (course.userId !== teacherId) {
-      throw new ForbiddenException(
-        'You can only create projects in your own courses',
-      );
-    }
+    await this.courseAccess.assertCanManageCourse(courseId, teacherId);
   }
 
   private async assertCanAccessCourse(courseId: bigint, userId: bigint) {
@@ -1203,11 +1153,11 @@ export class ProjectService {
       where: { id: courseId },
     });
     if (!course) throw new NotFoundException('Course not found');
-    const isTeacher = course.userId === userId;
+    if (await this.courseAccess.isCourseManager(courseId, userId)) return;
     const isEnrolled = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
-    if (!isTeacher && !isEnrolled) {
+    if (!isEnrolled) {
       throw new ForbiddenException('You do not have access to this course');
     }
   }

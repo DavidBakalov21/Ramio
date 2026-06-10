@@ -7,9 +7,10 @@ import { BedrockModule } from '../bedrock/bedrock.module';
 import { CodeBuildModule } from '../codebuild/codebuild.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { StorageModule } from '../storage/storage.module';
+import { CourseModule } from '../course/course.module';
 
 @Module({
-  imports: [PrismaModule, StorageModule, BedrockModule, CodeBuildModule],
+  imports: [PrismaModule, StorageModule, BedrockModule, CodeBuildModule, CourseModule],
   controllers: [ProjectController],
   providers: [ProjectService, ProjectZipToPromptService, GithubRepoToS3Service],
   exports: [ProjectService],

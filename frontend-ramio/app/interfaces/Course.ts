@@ -11,6 +11,7 @@ export interface Course {
   assignmentCount: number;
   projectCount?: number;
   isTeacher: boolean;
+  isCourseOwner?: boolean;
   isEnrolled: boolean;
   hasPendingRequest?: boolean;
   pendingRequestCount?: number;
@@ -23,6 +24,35 @@ export interface PendingEnrollmentRequest {
   requestedAt: string;
   username: string | null;
   email: string;
+}
+
+export interface CourseAssistant {
+  userId: string;
+  username: string | null;
+  email: string;
+  joinedAt: string;
+}
+
+export interface PendingCourseAssistantInvite {
+  id: string;
+  userId: string;
+  username: string | null;
+  email: string;
+  invitedAt: string;
+}
+
+export interface CourseAssistantsResponse {
+  assistants: CourseAssistant[];
+  pendingInvites: PendingCourseAssistantInvite[];
+}
+
+export interface MyCourseAssistantInvite {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  invitedAt: string;
+  inviterName: string;
+  ownerName: string;
 }
 
 export interface CoursePage {

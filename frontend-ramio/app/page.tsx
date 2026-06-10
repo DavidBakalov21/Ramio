@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User } from './interfaces/User';
-import { Course, CoursePage } from './interfaces/Course';
+import { Course, CoursePage, MyCourseAssistantInvite } from './interfaces/Course';
 import { api } from '@/lib/axios';
 import { Navbar } from './components/Navbar';
 import { useToast } from './components/utility/toast';
+import { CourseAssistantInvitesBanner } from './components/course/CourseAssistantInvitesBanner';
 
 export default function Home() {
   const router = useRouter();
@@ -20,6 +21,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
+  const [assistantInvites, setAssistantInvites] = useState<
+    MyCourseAssistantInvite[]
+  >([]);
+  const [actingInviteId, setActingInviteId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,6 +65,51 @@ export default function Home() {
     };
     fetchCourses();
   }, [user?.role, coursesPage]);
+
+  useEffect(() => {
+    if (user?.role !== 'TEACHER') return;
+    const fetchInvites = async () => {
+      try {
+        const res = await api.get<MyCourseAssistantInvite[]>(
+          '/course/assistant-invites',
+        );
+        setAssistantInvites(res.data);
+      } catch {
+        setAssistantInvites([]);
+      }
+    };
+    void fetchInvites();
+  }, [user?.role]);
+
+  const handleAcceptAssistantInvite = async (inviteId: string) => {
+    setActingInviteId(inviteId);
+    try {
+      await api.post(`/course/assistant-invites/${inviteId}/accept`);
+      setAssistantInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      showToast('You joined the course as an assistant.', 'success');
+      const res = await api.get<CoursePage>('/course', {
+        params: { page: coursesPage, limit: 6 },
+      });
+      setCourses(res.data.items);
+    } catch {
+      showToast('Failed to accept invite.', 'error');
+    } finally {
+      setActingInviteId(null);
+    }
+  };
+
+  const handleDeclineAssistantInvite = async (inviteId: string) => {
+    setActingInviteId(inviteId);
+    try {
+      await api.post(`/course/assistant-invites/${inviteId}/decline`);
+      setAssistantInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      showToast('Invite declined.', 'success');
+    } catch {
+      showToast('Failed to decline invite.', 'error');
+    } finally {
+      setActingInviteId(null);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -156,6 +206,15 @@ export default function Home() {
                 : 'learn new skills.'}
             </p>
           </section>
+
+          {user.role === 'TEACHER' && (
+            <CourseAssistantInvitesBanner
+              invites={assistantInvites}
+              actingId={actingInviteId}
+              onAccept={(id) => void handleAcceptAssistantInvite(id)}
+              onDecline={(id) => void handleDeclineAssistantInvite(id)}
+            />
+          )}
 
           <section className="flex w-full max-w-2xl flex-col items-center space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">Courses</h2>
