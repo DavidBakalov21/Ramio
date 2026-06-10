@@ -9,9 +9,33 @@ jest.mock('../auth.service', () => ({
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 function mockExecutionContext(cookies: Record<string, string> = {}) {
-  const request: { cookies: Record<string, string>; user?: unknown } = {
+  const request: {
+    cookies: Record<string, string>;
+    headers: Record<string, string>;
+    user?: unknown;
+  } = {
     cookies,
+    headers: {},
   };
+  const context = {
+    getHandler: jest.fn(),
+    getClass: jest.fn(),
+    switchToHttp: () => ({
+      getRequest: () => request,
+    }),
+  } as unknown as ExecutionContext;
+  return { context, request };
+}
+
+function mockExecutionContextWithHeaders(
+  cookies: Record<string, string> = {},
+  headers: Record<string, string> = {},
+) {
+  const request: {
+    cookies: Record<string, string>;
+    headers: Record<string, string>;
+    user?: unknown;
+  } = { cookies, headers };
   const context = {
     getHandler: jest.fn(),
     getClass: jest.fn(),
@@ -28,6 +52,9 @@ describe('JwtAuthGuard.canActivate', () => {
     verifyAccessToken: jest.Mock;
     getEmailFromCognito: jest.Mock;
   };
+  let apiTokenService: {
+    authenticateBearerToken: jest.Mock;
+  };
   let prisma: {
     user: { findUnique: jest.Mock };
   };
@@ -38,12 +65,16 @@ describe('JwtAuthGuard.canActivate', () => {
       verifyAccessToken: jest.fn(),
       getEmailFromCognito: jest.fn(),
     };
+    apiTokenService = {
+      authenticateBearerToken: jest.fn().mockResolvedValue(null),
+    };
     prisma = {
       user: { findUnique: jest.fn() },
     };
     reflector = { getAllAndOverride: jest.fn().mockReturnValue(false) };
     guard = new JwtAuthGuard(
       auth as never,
+      apiTokenService as never,
       prisma as never,
       reflector as unknown as Reflector,
     );
@@ -61,8 +92,29 @@ describe('JwtAuthGuard.canActivate', () => {
         UnauthorizedException,
       );
       await expect(guard.canActivate(context)).rejects.toThrow(
-        'No access token cookie',
+        'No access token cookie or API token',
       );
+    });
+  });
+
+  describe('valid API bearer token → attaches user to request, returns true', () => {
+    it('authenticates via ApiTokenService without reading cookies', async () => {
+      const user = {
+        id: 3n,
+        cognitoSub: 'sub-teacher',
+        email: 'teacher@example.com',
+        role: 'TEACHER',
+        profilePicture: null,
+      };
+      apiTokenService.authenticateBearerToken.mockResolvedValue(user);
+
+      const { context, request } = mockExecutionContextWithHeaders(
+        {},
+        { authorization: 'Bearer ramio_testtoken' },
+      );
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(request.user).toEqual(user);
+      expect(auth.verifyAccessToken).not.toHaveBeenCalled();
     });
   });
 

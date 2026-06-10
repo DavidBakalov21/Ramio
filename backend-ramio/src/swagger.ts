@@ -19,14 +19,23 @@ export function setupSwagger(app: INestApplication): void {
   const builder = new DocumentBuilder()
     .setTitle('Ramio API')
     .setDescription(
-      'Ramio LMS backend REST API. Authenticated routes expect the `access_token` cookie set after OAuth login.',
+      'Ramio LMS backend REST API. Browser clients use the `access_token` cookie after OAuth login. Teachers can also use `Authorization: Bearer ramio_...` API tokens.',
     )
     .setVersion('1.0')
     .addCookieAuth('access_token', {
       type: 'apiKey',
       in: 'cookie',
       name: 'access_token',
-    });
+    })
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'API token',
+        description: 'Teacher API token (prefix `ramio_`)',
+      },
+      'api-token',
+    );
 
   const serverUrl = configService.get<string>('SWAGGER_SERVER_URL');
   if (serverUrl) {

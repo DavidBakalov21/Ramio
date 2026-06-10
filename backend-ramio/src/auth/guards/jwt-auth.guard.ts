@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { AuthService } from '../auth.service';
+import { ApiTokenService } from '../api-token.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
@@ -14,6 +15,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly auth: AuthService,
+    private readonly apiTokenService: ApiTokenService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
   ) {}
@@ -30,8 +32,18 @@ export class JwtAuthGuard implements CanActivate {
 
     const req = ctx.switchToHttp().getRequest<Request>();
 
+    const apiTokenUser = await this.apiTokenService.authenticateBearerToken(
+      req.headers?.authorization,
+    );
+    if (apiTokenUser) {
+      (req as any).user = apiTokenUser;
+      return true;
+    }
+
     const accessToken = req.cookies?.access_token;
-    if (!accessToken) throw new UnauthorizedException('No access token cookie');
+    if (!accessToken) {
+      throw new UnauthorizedException('No access token cookie or API token');
+    }
 
     const payload = await this.auth.verifyAccessToken(accessToken);
 

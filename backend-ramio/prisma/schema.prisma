@@ -68,6 +68,23 @@ model User {
   projectSubmissions ProjectSubmission[]
   projectFileComments  ProjectFileComment[]
   quizSubmissions      QuizSubmission[]
+  apiTokens            TeacherApiToken[]
+}
+
+model TeacherApiToken {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String    @db.VarChar(100)
+  tokenHash   String    @unique @db.VarChar(64)
+  tokenPrefix String    @db.VarChar(16)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("teacher_api_token")
 }
 
 model UserSubscription {
