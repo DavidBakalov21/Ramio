@@ -71,18 +71,25 @@ export class AuthService {
     if (!cognitoSub) throw new UnauthorizedException('Missing sub in id_token');
     if (!email) throw new UnauthorizedException('Missing email in id_token');
 
-    const user = await this.prisma.user.upsert({
-      where: { cognitoSub },
-      update: {
-        email,
-      },
-      create: {
-        cognitoSub,
-        email,
-        role: null,
-        username: null,
-      },
+    const existingByEmail = await this.prisma.user.findUnique({
+      where: { email },
     });
+
+    const user = existingByEmail
+      ? await this.prisma.user.update({
+          where: { email },
+          data: { cognitoSub },
+        })
+      : await this.prisma.user.upsert({
+          where: { cognitoSub },
+          update: { email },
+          create: {
+            cognitoSub,
+            email,
+            role: null,
+            username: null,
+          },
+        });
 
     this.setAuthCookies(res, tokens.access_token, tokens.refresh_token);
 

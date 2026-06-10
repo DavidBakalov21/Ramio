@@ -394,6 +394,87 @@ export class CourseService {
     return { message: 'Student removed from course' };
   }
 
+  async enrollStudents(
+    courseId: bigint,
+    managerId: bigint,
+    emails: string[],
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    await this.courseAccess.assertCanManageCourse(courseId, managerId);
+
+    let enrolled = 0;
+    let skipped = 0;
+    let notFound = 0;
+    const results: Array<{
+      email: string;
+      status: 'enrolled' | 'skipped' | 'not_found';
+      userId?: string;
+      reason?: string;
+    }> = [];
+
+    for (const rawEmail of emails) {
+      const email = rawEmail.trim().toLowerCase();
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        select: { id: true, role: true },
+      });
+
+      if (!user) {
+        notFound++;
+        results.push({ email, status: 'not_found' });
+        continue;
+      }
+
+      if (user.role === UserRole.TEACHER) {
+        skipped++;
+        results.push({
+          email,
+          status: 'skipped',
+          userId: user.id.toString(),
+          reason: 'not_a_student',
+        });
+        continue;
+      }
+
+      const existingEnrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: { userId: user.id, courseId },
+        },
+      });
+      if (existingEnrollment) {
+        skipped++;
+        results.push({
+          email,
+          status: 'skipped',
+          userId: user.id.toString(),
+          reason: 'already_enrolled',
+        });
+        continue;
+      }
+
+      await this.prisma.$transaction([
+        this.prisma.enrollment.create({
+          data: { userId: user.id, courseId },
+        }),
+        this.prisma.pendingEnrollment.deleteMany({
+          where: { userId: user.id, courseId },
+        }),
+      ]);
+
+      enrolled++;
+      results.push({
+        email,
+        status: 'enrolled',
+        userId: user.id.toString(),
+      });
+    }
+
+    return { enrolled, skipped, notFound, total: emails.length, results };
+  }
+
   async getStudentResults(courseId: bigint, teacherId: bigint) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },

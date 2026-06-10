@@ -22,6 +22,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { CourseMaterialService } from './course-material.service';
 import { CreateCourseMaterialLinkDto } from './dto/create-course-material-link.dto';
 import { CreateCourseMaterialFileDto } from './dto/create-course-material-file.dto';
+import { EnrollStudentsDto } from './dto/enroll-students.dto';
 import { InviteCourseAssistantDto } from './dto/invite-course-assistant.dto';
 
 @Controller('course')
@@ -167,6 +168,20 @@ export class CourseController {
     @User() user: PrismaUser,
   ) {
     return this.materialService.remove(BigInt(id), BigInt(materialId), user.id);
+  }
+
+  @Post(':id/enroll-students')
+  @Roles(UserRole.TEACHER)
+  enrollStudents(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+    @Body() dto: EnrollStudentsDto,
+  ) {
+    return this.courseService.enrollStudents(
+      BigInt(id),
+      user.id,
+      dto.emails,
+    );
   }
 
   @Delete(':id/enrollment/:userId')
