@@ -7,6 +7,7 @@ import { api } from '@/lib/axios';
 import { useRequireUser } from '@/app/hooks/useRequireUser';
 import { Navbar } from '@/app/components/Navbar';
 import { useToast } from '@/app/components/utility/toast';
+import { ApiTokensSection } from '@/app/components/profile/ApiTokensSection';
 import { motion } from 'framer-motion';
 
 interface PublicCourse {
@@ -95,6 +96,11 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = user && String(user.id) === userId;
 
+  useEffect(() => {
+    if (!isOwnProfile || !user?.birthdate) return;
+    setBirthdate(String(user.birthdate).slice(0, 10));
+  }, [isOwnProfile, user?.birthdate]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -114,6 +120,9 @@ export default function PublicProfilePage() {
           ? { ...prev, username: res.data.username, aboutMe: res.data.aboutMe }
           : prev,
       );
+      if (res.data.birthdate) {
+        setBirthdate(String(res.data.birthdate).slice(0, 10));
+      }
       setEditMode(false);
       showToast('Profile updated.', 'success');
     } catch (err: unknown) {
@@ -294,6 +303,16 @@ export default function PublicProfilePage() {
                       />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-slate-500">
+                        Email
+                      </label>
+                      <p className="mt-1 text-sm text-slate-600">{user.email}</p>
+                      <p className="text-xs text-slate-400">
+                        Email cannot be changed here.
+                      </p>
+                    </div>
+
                     <div className="flex gap-3 pt-1">
                       <button
                         type="submit"
@@ -362,12 +381,28 @@ export default function PublicProfilePage() {
                           {profile.aboutMe}
                         </p>
                       )}
+                      {isOwnProfile ? (
+                        <div className="mt-3 space-y-2 text-sm text-slate-600">
+                          <p>{user.email}</p>
+                          {birthdate ? (
+                            <p>
+                              Born{' '}
+                              {new Date(birthdate).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 )}
               </div>
 
               {!editMode && (
+                <>
                 <div className="rounded-[1.6rem] border border-slate-200 bg-white p-6 shadow-sm">
                   <h2 className="mb-4 text-sm font-semibold text-slate-800">
                     {profile.role === 'TEACHER'
@@ -408,6 +443,11 @@ export default function PublicProfilePage() {
                     </div>
                   )}
                 </div>
+
+                {isOwnProfile && profile.role === 'TEACHER' ? (
+                  <ApiTokensSection />
+                ) : null}
+                </>
               )}
             </motion.div>
           )}
