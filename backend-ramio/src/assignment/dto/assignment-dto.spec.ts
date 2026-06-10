@@ -42,11 +42,11 @@ describe('CreateAssignmentDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('rejects description over 20000 chars', async () => {
+  it('rejects description over 100000 chars', async () => {
     const dto = plainToInstance(CreateAssignmentDto, {
       title: 'HW',
       courseId: 1,
-      description: 'd'.repeat(20_001),
+      description: 'd'.repeat(100_001),
     });
     const errors = await validate(dto);
     expect(errors.map((e) => e.property)).toContain('description');

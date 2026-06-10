@@ -340,7 +340,7 @@ export default function EditAssignmentPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="What students should implement"
-            maxLength={20000}
+            maxLength={100000}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
           />
           <p className="mt-1 text-[11px] text-slate-400">

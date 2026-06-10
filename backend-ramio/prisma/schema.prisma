@@ -196,7 +196,7 @@ model Enrollment {
 model Assignment {
   id          BigInt             @id @default(autoincrement())
   title       String
-  description String?
+  description String?            @db.LongText
   points      Int                @default(100)
   language    AssignmentLanguage @default(PYTHON)
   dueDate     DateTime?
@@ -211,7 +211,7 @@ model Assignment {
 model Project {
   id               BigInt          @id @default(autoincrement())
   title            String
-  description      String?
+  description      String?         @db.LongText
   points           Int             @default(100)
   language         ProjectLanguage @default(PYTHON)
   dueDate          DateTime?

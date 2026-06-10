@@ -605,6 +605,69 @@ export class ProjectService {
     }));
   }
 
+  async getProjectGrades(projectId: bigint, teacherId: bigint) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { course: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    await this.courseAccess.assertCanManageLoadedCourse(project.course, teacherId);
+
+    const [enrollments, submissions] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where: { courseId: project.courseId },
+        include: {
+          user: { select: { id: true, username: true, email: true } },
+        },
+      }),
+      this.prisma.projectSubmission.findMany({
+        where: { projectId },
+      }),
+    ]);
+
+    const submissionByUserId = new Map(
+      submissions.map((s) => [s.userId.toString(), s]),
+    );
+
+    const rows = enrollments
+      .map((enrollment) => {
+        const submission = submissionByUserId.get(
+          enrollment.user.id.toString(),
+        );
+        return {
+          userId: enrollment.user.id.toString(),
+          email: enrollment.user.email,
+          username: enrollment.user.username ?? null,
+          submitted: !!submission,
+          submissionId: submission?.id.toString() ?? null,
+          completedAt: submission?.completedAt.toISOString() ?? null,
+          points: submission?.points ?? null,
+          maxPoints: project.points,
+          isChecked: submission?.isChecked ?? false,
+          checkedAt: submission?.checkedAt?.toISOString() ?? null,
+          teacherFeedback: submission?.teacherFeedback ?? null,
+          archiveName: submission?.name ?? null,
+          codeBuildStatus: submission?.codeBuildStatus ?? null,
+          codeBuildTestsPassed: submission?.codeBuildTestsPassed ?? null,
+          codeBuildTestsFailed: submission?.codeBuildTestsFailed ?? null,
+          codeBuildTestsSkipped: submission?.codeBuildTestsSkipped ?? null,
+        };
+      })
+      .sort((a, b) =>
+        (a.username ?? a.email).localeCompare(b.username ?? b.email),
+      );
+
+    return {
+      project: {
+        id: project.id.toString(),
+        title: project.title,
+        courseId: project.courseId.toString(),
+        maxPoints: project.points,
+      },
+      rows,
+    };
+  }
+
   async getSubmissionById(submissionId: bigint, teacherId: bigint) {
     const submission = await this.prisma.projectSubmission.findUnique({
       where: { id: submissionId },

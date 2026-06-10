@@ -140,7 +140,7 @@ export function AddProjectModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What students should deliver"
               rows={2}
-              maxLength={20000}
+              maxLength={100000}
               className="w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               disabled={isSubmitting}
             />

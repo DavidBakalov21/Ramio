@@ -220,7 +220,7 @@ export default function EditProjectPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            maxLength={20000}
+            maxLength={100000}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
             placeholder="What students should deliver"
           />

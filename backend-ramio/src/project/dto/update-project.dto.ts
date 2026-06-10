@@ -20,7 +20,7 @@ export class UpdateProjectDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20_000)
+  @MaxLength(100_000)
   description?: string;
 
   @IsOptional()

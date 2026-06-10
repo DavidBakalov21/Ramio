@@ -154,6 +154,15 @@ export class ProjectController {
     });
   }
 
+  @Get(':id/grades')
+  @Roles(UserRole.TEACHER)
+  getProjectGrades(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.getProjectGrades(BigInt(id), user.id);
+  }
+
   @Get(':id/submission/:submissionId/codebuild-status')
   @Roles(UserRole.TEACHER)
   getCodeBuildStatusForSubmission(
