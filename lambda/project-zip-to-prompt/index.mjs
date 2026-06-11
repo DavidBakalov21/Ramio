@@ -4,10 +4,6 @@ import AdmZip from 'adm-zip';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
-const mammoth = require('mammoth');
-const WordExtractor = require('word-extractor');
-const rtf2text = require('rtf2text');
 
 const IGNORE_LIST = [
   'node_modules/',
@@ -66,19 +62,23 @@ function cdataSafe(content) {
 
 async function extractFileText(ext, content) {
   if (ext === '.pdf') {
+    const pdfParse = require('pdf-parse');
     const data = await pdfParse(content);
     return (data.text || '').trim();
   }
   if (ext === '.docx') {
+    const mammoth = require('mammoth');
     const result = await mammoth.extractRawText({ buffer: content });
     return (result.value || '').trim();
   }
   if (ext === '.doc') {
+    const WordExtractor = require('word-extractor');
     const extractor = new WordExtractor();
     const doc = await extractor.extract(content);
     return (doc.getBody() || '').trim();
   }
   if (ext === '.rtf') {
+    const rtf2text = require('rtf2text');
     return await new Promise((resolve, reject) => {
       rtf2text.string(content.toString('latin1'), (err, text) => {
         if (err) reject(err);
