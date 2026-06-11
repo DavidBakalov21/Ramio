@@ -6,7 +6,8 @@ jest.mock('@aws-sdk/client-bedrock-runtime', () => ({
 }));
 
 describe('toInferenceProfileId', () => {
-  const modelId = 'anthropic.claude-sonnet-4-6';
+   const modelId = 'anthropic.claude-haiku-4-5-20251001-v1:0';
+
 
   it('passes through us.-prefixed model ids', () => {
     expect(toInferenceProfileId('us.my-model', 'eu-north-1')).toBe(

@@ -72,7 +72,7 @@ export class BedrockService {
   ) {
     const rawModelId =
       this.config.get<string>('BEDROCK_MODEL_ID') ??
-      'anthropic.claude-sonnet-4-6';
+      'anthropic.claude-haiku-4-5-20251001-v1:0';
     const region = this.config.get<string>('BEDROCK_REGION') ?? 'eu-north-1';
     this.modelId = toInferenceProfileId(rawModelId, region);
   }
