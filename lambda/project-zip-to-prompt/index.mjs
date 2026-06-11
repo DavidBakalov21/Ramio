@@ -1,6 +1,13 @@
+import { createRequire } from 'node:module';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import AdmZip from 'adm-zip';
 import path from 'node:path';
+
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const WordExtractor = require('word-extractor');
+const rtf2text = require('rtf2text');
 
 const IGNORE_LIST = [
   'node_modules/',
@@ -30,6 +37,10 @@ const ALLOWED_EXT = [
   '.jinja',
   '.jinja2',
   '.md',
+  '.rtf',
+  '.pdf',
+  '.doc',
+  '.docx',
 ];
 
 const MAX_ZIP_BYTES = 60 * 1024 * 1024;
@@ -53,7 +64,32 @@ function cdataSafe(content) {
   return content.replace(/\]\]>/g, ']]]]><![CDATA[>');
 }
 
-function convertZipBuffer(zipBuffer) {
+async function extractFileText(ext, content) {
+  if (ext === '.pdf') {
+    const data = await pdfParse(content);
+    return (data.text || '').trim();
+  }
+  if (ext === '.docx') {
+    const result = await mammoth.extractRawText({ buffer: content });
+    return (result.value || '').trim();
+  }
+  if (ext === '.doc') {
+    const extractor = new WordExtractor();
+    const doc = await extractor.extract(content);
+    return (doc.getBody() || '').trim();
+  }
+  if (ext === '.rtf') {
+    return await new Promise((resolve, reject) => {
+      rtf2text.string(content.toString('latin1'), (err, text) => {
+        if (err) reject(err);
+        else resolve((text || '').trim());
+      });
+    });
+  }
+  return content.toString('utf8');
+}
+
+async function convertZipBuffer(zipBuffer) {
   const warnings = [];
   let zip;
   try {
@@ -112,9 +148,14 @@ function convertZipBuffer(zipBuffer) {
 
     let text;
     try {
-      text = content.toString('utf8');
+      text = await extractFileText(ext, content);
     } catch {
-      warnings.push(`Skipped non-UTF8 file: ${entryName}`);
+      warnings.push(`Could not extract text: ${entryName}`);
+      continue;
+    }
+
+    if (!text.trim()) {
+      warnings.push(`No extractable text: ${entryName}`);
       continue;
     }
 
@@ -176,7 +217,7 @@ export async function handler(event) {
     }
 
     const zipBuffer = Buffer.concat(chunks);
-    const { projectFilesXml, warnings } = convertZipBuffer(zipBuffer);
+    const { projectFilesXml, warnings } = await convertZipBuffer(zipBuffer);
     return { ok: true, projectFilesXml, warnings };
   } catch (e) {
     return {

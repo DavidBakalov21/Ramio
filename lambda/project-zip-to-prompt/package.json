@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",
-    "adm-zip": "^0.5.16"
+    "adm-zip": "^0.5.16",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5",
+    "rtf2text": "^1.0.1",
+    "word-extractor": "^1.0.4"
   }
 }

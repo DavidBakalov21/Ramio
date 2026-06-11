@@ -209,7 +209,7 @@ export function AssessProjectSubmissionModal({
                   </button>
                   <p className="text-[11px] text-slate-400">
                     {isZipArchive
-                      ? 'Requires the ZIP parser Lambda (S3 read + text files only).'
+                      ? 'Requires the ZIP parser Lambda (code + .rtf/.pdf/.doc/.docx).'
                       : 'AI extract works only for .zip submissions.'}
                   </p>
                 </div>

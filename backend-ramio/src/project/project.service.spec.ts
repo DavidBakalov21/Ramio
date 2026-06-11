@@ -24,6 +24,8 @@ describe('isCodeFile', () => {
   it('returns true for a known extension', () => {
     expect(isCodeFile('src/main.py')).toBe(true);
     expect(isCodeFile('app.tsx')).toBe(true);
+    expect(isCodeFile('essay.docx')).toBe(true);
+    expect(isCodeFile('report.pdf')).toBe(true);
   });
 
   it('returns true for a known bare filename', () => {

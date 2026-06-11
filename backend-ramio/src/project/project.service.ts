@@ -84,6 +84,10 @@ const CODE_EXTENSIONS = new Set([
   '.txt',
   '.csv',
   '.rst',
+  '.rtf',
+  '.pdf',
+  '.doc',
+  '.docx',
 ]);
 
 const CODE_FILENAMES = new Set([
