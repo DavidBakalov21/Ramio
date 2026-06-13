@@ -311,14 +311,28 @@ Extracted project files (paths and contents):
 ${input.projectFilesXml}`;
 
     const raw = await this.invoke(prompt, 4096);
-    const text = stripModelCodeOutput(raw);
+    // Project feedback is free-form teacher text — do not apply stripModelCodeOutput
+    // (that helper is designed for code-assignment responses and would corrupt feedback
+    // that begins with a code-looking line from the project files).
+    const text = raw.trim();
 
     const pointsMatch = text.match(/SuggestedPoints:\s*([0-9]+)/i);
     const suggestedPoints = pointsMatch ? Number(pointsMatch[1]) : undefined;
     const feedbackMatch = text.match(
       /FeedbackForTeacher:\s*([\s\S]*?)(?:SuggestedPoints:|$)/i,
     );
-    const feedback = (feedbackMatch ? feedbackMatch[1] : text).trim();
+
+    if (!feedbackMatch) {
+      console.error(
+        `generateProjectArchiveFeedback: model did not follow the expected format. ` +
+        `Raw response (first 300 chars): ${text.slice(0, 300)}`,
+      );
+      throw new Error(
+        'AI model did not return feedback in the expected format. Please try again.',
+      );
+    }
+
+    const feedback = feedbackMatch[1].trim();
 
     return {
       feedback,
