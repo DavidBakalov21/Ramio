@@ -43,6 +43,26 @@ C++ / Ramio runner (mandatory for C++ test output):
 - Do not require CMake, Google Test, Catch2, or other third-party libraries.`;
 }
 
+function generousScoringGuidance(maxPoints: number): string {
+  const minForMostlyWorking = Math.max(
+    maxPoints - 2,
+    Math.ceil(maxPoints * 0.85),
+  );
+  const maxMinorDeduction = Math.min(2, Math.ceil(maxPoints * 0.1));
+  const minPartialCredit = Math.floor(maxPoints * 0.75);
+  const largeDeductionFloor = maxPoints - Math.ceil(maxPoints * 0.25);
+
+  return `
+Scoring default (be generous — deduct as little as possible):
+- Start from full marks (${maxPoints}) and only deduct when something clearly matters for this assignment.
+- If main requirements are met and the solution works or mostly works, suggested points should be at least ${minForMostlyWorking} out of ${maxPoints}.
+- Style, naming, formatting, comments, and small structural nits may be noted in feedback but should cost at most ${maxMinorDeduction} point(s) total — often zero.
+- Do NOT stack many small deductions; several minor nits together still should not exceed ${maxMinorDeduction} point(s) unless the teacher rubric explicitly penalizes them.
+- Reserve large deductions (suggested score below ${largeDeductionFloor}) ONLY for clearly missing required features, wrong core behavior, or mostly non-functional work.
+- Partial effort that shows understanding deserves at least ${minPartialCredit} points unless the submission is empty or unrelated.
+- When unsure between two scores, choose the higher one.`;
+}
+
 export function toInferenceProfileId(modelId: string, region: string): string {
   if (
     modelId.startsWith('us.') ||
@@ -168,6 +188,7 @@ Tone and scoring (learning context — keep facts, soften judgment):
 - Small issues (naming, formatting, minor style, slightly messy structure) are worth mentioning briefly as improvements, framed as normal for the level — not as reasons to slash the grade.
 - Reserve clearly lower suggested scores for substantive gaps: wrong behavior, missing requirements, serious misunderstandings, or many failing tests if tests are relevant.
 - When something is imperfect but acceptable for the assignment, say so explicitly (e.g. that it is a minor nit or acceptable at this stage).
+${generousScoringGuidance(input.maxPoints)}
 
 IMPORTANT:
 - Do NOT address the student directly (no "you should...").
@@ -277,6 +298,7 @@ Tone and scoring (learning context — keep facts like tests, soften judgment):
 - Include a short "Deduction rationale" section in feedback:
   - For each deduction, provide: issue, violated requirement (or "teacher rubric"), and deducted points.
   - If no deductions were applied, explicitly say "No point deductions."
+${generousScoringGuidance(input.maxPoints)}
 - SuggestedPoints (the numeric field below) must be an integer. If your internal calculation is fractional, round using this rule:
   - decimal part >= 0.5 -> round up
   - decimal part < 0.5 -> round down
