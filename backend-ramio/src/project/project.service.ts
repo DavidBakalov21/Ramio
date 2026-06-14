@@ -735,6 +735,55 @@ export class ProjectService {
     };
   }
 
+  async generateProjectClassSummary(projectId: bigint, teacherId: bigint) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { course: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    await this.courseAccess.assertCanManageLoadedCourse(project.course, teacherId);
+
+    const submissions = await this.prisma.projectSubmission.findMany({
+      where: { projectId, isChecked: true },
+      include: { user: true },
+    });
+
+    if (submissions.length === 0) {
+      throw new BadRequestException(
+        'No assessed submissions found. Assess at least one submission before generating a summary.',
+      );
+    }
+
+    const assessedSubmissions = submissions
+      .filter((s) => s.teacherFeedback && s.teacherFeedback.trim().length > 0)
+      .map((s) => ({
+        username: s.user.username ?? s.user.email,
+        points: s.points ?? 0,
+        feedback: s.teacherFeedback ?? '',
+      }));
+
+    if (assessedSubmissions.length === 0) {
+      throw new BadRequestException(
+        'No assessed submissions with feedback found. Save AI feedback for at least one submission first.',
+      );
+    }
+
+    const summary = await this.bedrock.generateProjectClassSummary({
+      projectTitle: project.title,
+      projectDescription: project.description,
+      maxPoints: project.points,
+      assessedSubmissions,
+    });
+
+    const now = new Date();
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { aiSummary: summary, aiSummaryGeneratedAt: now },
+    });
+
+    return { summary, generatedAt: now.toISOString() };
+  }
+
   async getAiFeedbackForProjectSubmission(
     projectId: bigint,
     submissionId: bigint,
@@ -1237,6 +1286,8 @@ export class ProjectService {
     language: ProjectLanguage;
     dueDate: Date | null;
     assessmentPrompt: string | null;
+    aiSummary?: string | null;
+    aiSummaryGeneratedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
     courseId: bigint;
@@ -1249,6 +1300,8 @@ export class ProjectService {
       language: p.language,
       dueDate: p.dueDate?.toISOString() ?? null,
       assessmentPrompt: p.assessmentPrompt,
+      aiSummary: p.aiSummary ?? null,
+      aiSummaryGeneratedAt: p.aiSummaryGeneratedAt?.toISOString() ?? null,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       courseId: p.courseId.toString(),

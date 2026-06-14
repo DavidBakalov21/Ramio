@@ -43,6 +43,9 @@ export default function EditProjectPage() {
     [],
   );
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryGeneratedAt, setSummaryGeneratedAt] = useState<string | null>(null);
 
   const loadProject = async () => {
     setLoading(true);
@@ -62,6 +65,10 @@ export default function EditProjectPage() {
         p.dueDate ? new Date(p.dueDate).toISOString().slice(0, 10) : '',
       );
       setAssessmentPrompt(p.assessmentPrompt ?? '');
+      if (p.aiSummary) {
+        setSummary(p.aiSummary);
+        setSummaryGeneratedAt(p.aiSummaryGeneratedAt);
+      }
       setSubmissions(submissionsRes.data);
     } catch {
       setError('Failed to load project.');
@@ -170,6 +177,32 @@ export default function EditProjectPage() {
     }
   };
 
+  const handleGenerateSummary = async () => {
+    setSummaryLoading(true);
+    setSummary(null);
+    try {
+      const res = await api.post<{ summary: string; generatedAt: string }>(
+        `/project/${projectId}/generate-summary`,
+      );
+      setSummary(res.data.summary);
+      setSummaryGeneratedAt(res.data.generatedAt);
+    } catch (err: unknown) {
+      const msg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      showToast(
+        Array.isArray(msg)
+          ? msg[0]
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to generate summary.',
+        'error',
+      );
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   if (loadingUser || loading)
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
@@ -273,7 +306,28 @@ export default function EditProjectPage() {
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-          <p className="mb-2 text-xs font-medium text-slate-600">Submissions</p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium text-slate-600">Submissions</p>
+            <div className="flex items-center gap-2">
+              {summary && summaryGeneratedAt && !summaryLoading && (
+                <button
+                  type="button"
+                  onClick={() => setSummary(summary)}
+                  className="text-xs text-violet-600 hover:underline"
+                >
+                  View last summary ({new Date(summaryGeneratedAt).toLocaleDateString()})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleGenerateSummary()}
+                disabled={summaryLoading || submissions.filter((s) => s.isChecked).length === 0}
+                className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+              >
+                {summaryLoading ? 'Generating…' : summary ? 'Regenerate summary' : 'Generate summary'}
+              </button>
+            </div>
+          </div>
           {submissionsLoading ? (
             <p className="text-xs text-slate-500">Loading submissions…</p>
           ) : null}
@@ -379,6 +433,36 @@ export default function EditProjectPage() {
           </button>
         </div>
       </form>
+      {summary !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">
+                  Class summary — {title}
+                </h2>
+                {summaryGeneratedAt && (
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    Generated {new Date(summaryGeneratedAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSummary(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4">
+              <pre className="whitespace-pre-wrap text-sm text-slate-700">
+                {summary}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </TeacherPageShell>
   );
 }

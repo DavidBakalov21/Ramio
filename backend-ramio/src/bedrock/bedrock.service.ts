@@ -365,6 +365,47 @@ ${input.projectFilesXml}`;
     };
   }
 
+  async generateProjectClassSummary(input: {
+    projectTitle: string;
+    projectDescription?: string | null;
+    maxPoints: number;
+    assessedSubmissions: Array<{
+      username: string;
+      points: number;
+      feedback: string;
+    }>;
+  }): Promise<string> {
+    const submissionsBlock = input.assessedSubmissions
+      .map(
+        (s, i) =>
+          `--- Student ${i + 1} (${s.username}): ${s.points}/${input.maxPoints} pts ---\n${s.feedback}`,
+      )
+      .join('\n\n');
+
+    const prompt = `You are an experienced teacher who has just finished grading all student submissions for a project.
+
+Below you will find the AI-generated feedback and scores for each assessed submission.
+
+Your task: write a concise CLASS-WIDE SUMMARY for the teacher that covers:
+1. **Most difficult parts** – which concepts, tasks, or requirements were most commonly struggled with across students (based on recurring weaknesses in the feedback).
+2. **Top point-deduction reasons** – what issues led to the most point deductions overall (aggregate across all students, ranked by frequency/impact).
+3. **Overall class performance** – a brief snapshot: average score, spread (did most students do well or poorly?), any standout patterns.
+4. **Recommendations** – 2–3 actionable suggestions for the teacher to address in the next class or improve the assignment.
+
+Write clearly and concisely. Use bullet points where helpful. Do NOT repeat each student's individual feedback — synthesize across all of them.
+
+Project: ${input.projectTitle}
+Description: ${input.projectDescription ?? '(none)'}
+Max points: ${input.maxPoints}
+Total assessed submissions: ${input.assessedSubmissions.length}
+
+Individual submission feedbacks:
+
+${submissionsBlock}`;
+
+    return this.invoke(prompt, 2048);
+  }
+
   async generateUnitTests(
     sourceCode: string,
     language: TestLanguage = 'python',

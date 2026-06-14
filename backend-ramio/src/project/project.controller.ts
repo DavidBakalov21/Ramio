@@ -259,6 +259,15 @@ export class ProjectController {
     );
   }
 
+  @Post(':id/generate-summary')
+  @Roles(UserRole.TEACHER)
+  generateProjectClassSummary(
+    @Param('id', ParseIntPipe) id: number,
+    @User() user: PrismaUser,
+  ) {
+    return this.projectService.generateProjectClassSummary(BigInt(id), user.id);
+  }
+
   @Post(':id/submission/:submissionId/ai-feedback')
   @Roles(UserRole.TEACHER)
   getAiFeedbackForProjectSubmission(

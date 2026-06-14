@@ -209,18 +209,20 @@ model Assignment {
 }
 
 model Project {
-  id               BigInt          @id @default(autoincrement())
-  title            String
-  description      String?         @db.LongText
-  points           Int             @default(100)
-  language         ProjectLanguage @default(PYTHON)
-  dueDate          DateTime?
-  assessmentPrompt String?         @db.LongText
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  courseId         BigInt
-  course           Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  submissions      ProjectSubmission[]
+  id                   BigInt          @id @default(autoincrement())
+  title                String
+  description          String?         @db.LongText
+  points               Int             @default(100)
+  language             ProjectLanguage @default(PYTHON)
+  dueDate              DateTime?
+  assessmentPrompt     String?         @db.LongText
+  aiSummary            String?         @db.LongText
+  aiSummaryGeneratedAt DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  courseId             BigInt
+  course               Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions          ProjectSubmission[]
 }
 
 model ProjectSubmission {

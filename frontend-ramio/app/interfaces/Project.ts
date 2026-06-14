@@ -24,6 +24,8 @@ export interface CourseProject {
   language: ProjectLanguage;
   dueDate: string | null;
   assessmentPrompt: string | null;
+  aiSummary: string | null;
+  aiSummaryGeneratedAt: string | null;
   createdAt: string;
   updatedAt: string;
   courseId: string;
