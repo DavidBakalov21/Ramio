@@ -44,8 +44,9 @@ export default function EditProjectPage() {
   );
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [savedSummary, setSavedSummary] = useState<string | null>(null);
   const [summaryGeneratedAt, setSummaryGeneratedAt] = useState<string | null>(null);
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
 
   const loadProject = async () => {
     setLoading(true);
@@ -66,7 +67,7 @@ export default function EditProjectPage() {
       );
       setAssessmentPrompt(p.assessmentPrompt ?? '');
       if (p.aiSummary) {
-        setSummary(p.aiSummary);
+        setSavedSummary(p.aiSummary);
         setSummaryGeneratedAt(p.aiSummaryGeneratedAt);
       }
       setSubmissions(submissionsRes.data);
@@ -179,13 +180,14 @@ export default function EditProjectPage() {
 
   const handleGenerateSummary = async () => {
     setSummaryLoading(true);
-    setSummary(null);
+    setSummaryModalOpen(false);
     try {
       const res = await api.post<{ summary: string; generatedAt: string }>(
         `/project/${projectId}/generate-summary`,
       );
-      setSummary(res.data.summary);
+      setSavedSummary(res.data.summary);
       setSummaryGeneratedAt(res.data.generatedAt);
+      setSummaryModalOpen(true);
     } catch (err: unknown) {
       const msg = (
         err as { response?: { data?: { message?: string | string[] } } }
@@ -309,10 +311,10 @@ export default function EditProjectPage() {
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-medium text-slate-600">Submissions</p>
             <div className="flex items-center gap-2">
-              {summary && summaryGeneratedAt && !summaryLoading && (
+              {savedSummary && summaryGeneratedAt && !summaryLoading && (
                 <button
                   type="button"
-                  onClick={() => setSummary(summary)}
+                  onClick={() => setSummaryModalOpen(true)}
                   className="text-xs text-violet-600 hover:underline"
                 >
                   View last summary ({new Date(summaryGeneratedAt).toLocaleDateString()})
@@ -324,7 +326,7 @@ export default function EditProjectPage() {
                 disabled={summaryLoading || submissions.filter((s) => s.isChecked).length === 0}
                 className="rounded-full bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-50"
               >
-                {summaryLoading ? 'Generating…' : summary ? 'Regenerate summary' : 'Generate summary'}
+                {summaryLoading ? 'Generating…' : savedSummary ? 'Regenerate summary' : 'Generate summary'}
               </button>
             </div>
           </div>
@@ -433,7 +435,7 @@ export default function EditProjectPage() {
           </button>
         </div>
       </form>
-      {summary !== null && (
+      {summaryModalOpen && savedSummary && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -449,7 +451,7 @@ export default function EditProjectPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setSummary(null)}
+                onClick={() => setSummaryModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
               >
                 ✕
@@ -457,7 +459,7 @@ export default function EditProjectPage() {
             </div>
             <div className="overflow-y-auto px-5 py-4">
               <pre className="whitespace-pre-wrap text-sm text-slate-700">
-                {summary}
+                {savedSummary}
               </pre>
             </div>
           </div>
