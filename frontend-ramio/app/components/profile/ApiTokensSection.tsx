@@ -59,7 +59,7 @@ export function ApiTokensSection() {
         ...current,
       ]);
       setNewTokenName('');
-      showToast('API token created. Copy it now — it will not be shown again.', 'success');
+      showToast('API token created. Copy it now - it will not be shown again.', 'success');
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err

@@ -1,5 +1,5 @@
 export const ASSIGNMENT_DESCRIPTION_HINT =
-  'Visible to students. Also sent to the AI when you use “Ask AI for feedback” while grading, and when you generate tests from description—state what a correct solution must do.';
+  'Visible to students. Also sent to the AI when you use “Ask AI for feedback” while grading, and when you generate tests from description-state what a correct solution must do.';
 
 export const PROJECT_DESCRIPTION_HINT =
   'Visible to students as the project brief. The grading AI reads this too when you use “Ask AI for feedback”.';
