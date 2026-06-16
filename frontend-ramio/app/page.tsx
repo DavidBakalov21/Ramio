@@ -276,7 +276,9 @@ export default function Home() {
                           )}
                         </p>
                       </div>
-                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+                      <div
+                        className={`mt-auto grid gap-2 pt-4 ${course.isTeacher ? 'grid-cols-1' : 'grid-cols-2'}`}
+                      >
                         <button
                           type="button"
                           onClick={() => router.push(`/courses/${course.id}`)}
@@ -285,15 +287,8 @@ export default function Home() {
                           View course
                         </button>
 
-                        {course.isTeacher ? (
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/courses/${course.id}`)}
-                            className="flex h-9 w-full items-center justify-center rounded-full bg-violet-600 px-2 text-xs font-medium text-white transition hover:bg-violet-700"
-                          >
-                            Edit course
-                          </button>
-                        ) : course.isEnrolled ? (
+                        {!course.isTeacher &&
+                          (course.isEnrolled ? (
                           <span className="flex h-9 w-full items-center justify-center rounded-full bg-slate-100 px-2 text-xs font-medium text-slate-600">
                             Enrolled
                           </span>
@@ -318,7 +313,7 @@ export default function Home() {
                                 ? 'Enroll'
                                 : 'Request to enroll'}
                           </button>
-                        )}
+                        ))}
                       </div>
                     </motion.li>
                   ))}

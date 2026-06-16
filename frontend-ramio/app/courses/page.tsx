@@ -145,10 +145,6 @@ export default function AllCoursesPage() {
     router.push(`/courses/${courseId}`);
   };
 
-  const handleEditCourse = (courseId: string) => {
-    router.push(`/courses/${courseId}`);
-  };
-
   const openCreateModal = () => {
     setCreateTitle('');
     setCreateDescription('');
@@ -327,7 +323,9 @@ export default function AllCoursesPage() {
                           )}
                         </p>
                       </div>
-                      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+                      <div
+                        className={`mt-auto grid gap-2 pt-4 ${course.isTeacher ? 'grid-cols-1' : 'grid-cols-2'}`}
+                      >
                         <button
                           type="button"
                           onClick={() => handleViewCourse(course.id)}
@@ -336,15 +334,8 @@ export default function AllCoursesPage() {
                           View course
                         </button>
 
-                        {course.isTeacher ? (
-                          <button
-                            type="button"
-                            onClick={() => handleEditCourse(course.id)}
-                            className="flex h-9 w-full items-center justify-center rounded-full bg-violet-600 px-2 text-[11px] font-medium text-white transition hover:bg-violet-700"
-                          >
-                            Edit course
-                          </button>
-                        ) : course.isEnrolled ? (
+                        {!course.isTeacher &&
+                          (course.isEnrolled ? (
                           <span className="flex h-9 w-full items-center justify-center rounded-full bg-slate-100 px-2 text-[11px] font-medium text-slate-600">
                             Enrolled
                           </span>
@@ -369,7 +360,7 @@ export default function AllCoursesPage() {
                                 ? 'Enroll'
                                 : 'Request to enroll'}
                           </button>
-                        )}
+                        ))}
                       </div>
                     </motion.li>
                   ))}
