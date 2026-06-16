@@ -1,0 +1,2404 @@
+{
+ "Description": "Ramio — complete infrastructure: VPC, RDS, EC2, S3, CloudFront, Cognito, Lambda (ZipToPrompt + GithubRepoToS3), CodeBuild (5 languages)",
+ "Resources": {
+  "NetworkingVpc6B5E6F44": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/Resource"
+   }
+  },
+  "NetworkingVpcPublicSubnet1Subnet918289EE": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "eu-north-1a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet1/Subnet"
+   }
+  },
+  "NetworkingVpcPublicSubnet1RouteTable8FB3C18A": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "NetworkingVpcPublicSubnet1RouteTableAssociationD13830EA": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "NetworkingVpcPublicSubnet1RouteTable8FB3C18A"
+    },
+    "SubnetId": {
+     "Ref": "NetworkingVpcPublicSubnet1Subnet918289EE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "NetworkingVpcPublicSubnet1DefaultRoute80C01FA6": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "NetworkingVpcIGW21218DAB"
+    },
+    "RouteTableId": {
+     "Ref": "NetworkingVpcPublicSubnet1RouteTable8FB3C18A"
+    }
+   },
+   "DependsOn": [
+    "NetworkingVpcVPCGW12E561D8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "NetworkingVpcPublicSubnet2Subnet9D9E5AFB": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "eu-north-1b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet2/Subnet"
+   }
+  },
+  "NetworkingVpcPublicSubnet2RouteTable22886677": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "NetworkingVpcPublicSubnet2RouteTableAssociation2D4CEA06": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "NetworkingVpcPublicSubnet2RouteTable22886677"
+    },
+    "SubnetId": {
+     "Ref": "NetworkingVpcPublicSubnet2Subnet9D9E5AFB"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "NetworkingVpcPublicSubnet2DefaultRouteDF98F60F": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "NetworkingVpcIGW21218DAB"
+    },
+    "RouteTableId": {
+     "Ref": "NetworkingVpcPublicSubnet2RouteTable22886677"
+    }
+   },
+   "DependsOn": [
+    "NetworkingVpcVPCGW12E561D8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet1Subnet26E56905": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "eu-north-1a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Database"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/DatabaseSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet1/Subnet"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet1RouteTable8CA00A94": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/DatabaseSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet1/RouteTable"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet1RouteTableAssociation5B1FF34F": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "NetworkingVpcDatabaseSubnet1RouteTable8CA00A94"
+    },
+    "SubnetId": {
+     "Ref": "NetworkingVpcDatabaseSubnet1Subnet26E56905"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet1/RouteTableAssociation"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet2SubnetCF806811": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "eu-north-1b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Database"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/DatabaseSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet2/Subnet"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet2RouteTable18756324": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc/DatabaseSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet2/RouteTable"
+   }
+  },
+  "NetworkingVpcDatabaseSubnet2RouteTableAssociationBA93DA82": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "NetworkingVpcDatabaseSubnet2RouteTable18756324"
+    },
+    "SubnetId": {
+     "Ref": "NetworkingVpcDatabaseSubnet2SubnetCF806811"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/DatabaseSubnet2/RouteTableAssociation"
+   }
+  },
+  "NetworkingVpcIGW21218DAB": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Networking/Vpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/IGW"
+   }
+  },
+  "NetworkingVpcVPCGW12E561D8": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "NetworkingVpcIGW21218DAB"
+    },
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/Vpc/VPCGW"
+   }
+  },
+  "NetworkingDbSg37EB0EE1": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "MySQL - only from app EC2",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/DbSg/Resource"
+   }
+  },
+  "NetworkingDbSgfromRamioCompleteNetworkingApiSg4284379933068CFE86E2": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "MySQL from EC2",
+    "FromPort": 3306,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "NetworkingDbSg37EB0EE1",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "NetworkingApiSgCCE095DB",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3306
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/DbSg/from RamioCompleteNetworkingApiSg42843799:3306"
+   }
+  },
+  "NetworkingApiSgCCE095DB": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Ramio API + frontend",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "HTTP",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "HTTPS",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Frontend (nginx port)",
+      "FromPort": 3000,
+      "IpProtocol": "tcp",
+      "ToPort": 3000
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "NestJS API (tighten behind ALB later)",
+      "FromPort": 3333,
+      "IpProtocol": "tcp",
+      "ToPort": 3333
+     }
+    ],
+    "VpcId": {
+     "Ref": "NetworkingVpc6B5E6F44"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Networking/ApiSg/Resource"
+   }
+  },
+  "DatabaseMysqlSubnetGroup61BA7B4A": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for Mysql database",
+    "SubnetIds": [
+     {
+      "Ref": "NetworkingVpcDatabaseSubnet1Subnet26E56905"
+     },
+     {
+      "Ref": "NetworkingVpcDatabaseSubnet2SubnetCF806811"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Database/Mysql/SubnetGroup/Default"
+   }
+  },
+  "RamioCompleteDatabaseMysqlSecret2451ABBC3fdaad7efa858a3daf9490cf0a702aeb": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"ramio\"}"
+    },
+    "Name": "RamioComplete/rds/mysql"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Database/Mysql/Secret/Resource"
+   }
+  },
+  "DatabaseMysqlSecretAttachmentDF3016F8": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "RamioCompleteDatabaseMysqlSecret2451ABBC3fdaad7efa858a3daf9490cf0a702aeb"
+    },
+    "TargetId": {
+     "Ref": "DatabaseMysql23F22C78"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Database/Mysql/Secret/Attachment/Resource"
+   }
+  },
+  "DatabaseMysql23F22C78": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "AutoMinorVersionUpgrade": true,
+    "BackupRetentionPeriod": 1,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t4g.micro",
+    "DBName": "ramio",
+    "DBSubnetGroupName": {
+     "Ref": "DatabaseMysqlSubnetGroup61BA7B4A"
+    },
+    "DeleteAutomatedBackups": true,
+    "DeletionProtection": false,
+    "EnableCloudwatchLogsExports": [
+     "error",
+     "slowquery"
+    ],
+    "Engine": "mysql",
+    "EngineVersion": "8.0.45",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "RamioCompleteDatabaseMysqlSecret2451ABBC3fdaad7efa858a3daf9490cf0a702aeb"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "ramio",
+    "MaxAllocatedStorage": 20,
+    "MultiAZ": false,
+    "PubliclyAccessible": false,
+    "StorageType": "gp3",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "NetworkingDbSg37EB0EE1",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Database/Mysql/Resource"
+   }
+  },
+  "StorageSubmissionsBucket9F3F3407": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "ramio-file-storage",
+    "CorsConfiguration": {
+     "CorsRules": [
+      {
+       "AllowedHeaders": [
+        "*"
+       ],
+       "AllowedMethods": [
+        "GET",
+        "PUT",
+        "POST",
+        "DELETE"
+       ],
+       "AllowedOrigins": [
+        "*"
+       ],
+       "MaxAge": 3000
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/SubmissionsBucket/Resource"
+   }
+  },
+  "StorageSubmissionsBucketPolicy353E026C": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "StorageSubmissionsBucket9F3F3407"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "StorageFilesCdn6D8B8708"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "StorageSubmissionsBucket9F3F3407",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/SubmissionsBucket/Policy/Resource"
+   }
+  },
+  "StorageMaterialsBucket3B1402ED": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "ramio-materials",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/MaterialsBucket/Resource"
+   }
+  },
+  "StorageImagesBucketCEC17A37": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "ramio-images",
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/ImagesBucket/Resource"
+   }
+  },
+  "StorageImagesBucketPolicyE144D329": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "StorageImagesBucketCEC17A37"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "StorageImagesCdn2D1BDE01"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "StorageImagesBucketCEC17A37",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/ImagesBucket/Policy/Resource"
+   }
+  },
+  "StorageFilesCdnOrigin1S3OriginAccessControlA939DF4A": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "RamioCompleteStorageFilesCdnOrigin1S3OriginAccessControl30E911E0",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/FilesCdn/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "StorageFilesCdn6D8B8708": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Comment": "Ramio file storage CDN",
+     "DefaultCacheBehavior": {
+      "AllowedMethods": [
+       "GET",
+       "HEAD"
+      ],
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "RamioCompleteStorageFilesCdnOrigin16D9E2DFA",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "StorageSubmissionsBucket9F3F3407",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "RamioCompleteStorageFilesCdnOrigin16D9E2DFA",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "StorageFilesCdnOrigin1S3OriginAccessControlA939DF4A",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "PriceClass": "PriceClass_100"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/FilesCdn/Resource"
+   }
+  },
+  "StorageImagesCdnOrigin1S3OriginAccessControl3094556A": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "RamioCompleteStorageImagesCdOrigin1S3OriginAccessControlCE46510D",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/ImagesCdn/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "StorageImagesCdn2D1BDE01": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Comment": "Ramio images CDN",
+     "DefaultCacheBehavior": {
+      "AllowedMethods": [
+       "GET",
+       "HEAD"
+      ],
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "RamioCompleteStorageImagesCdnOrigin1F818F6D9",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "StorageImagesBucketCEC17A37",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "RamioCompleteStorageImagesCdnOrigin1F818F6D9",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "StorageImagesCdnOrigin1S3OriginAccessControl3094556A",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "PriceClass": "PriceClass_100"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Storage/ImagesCdn/Resource"
+   }
+  },
+  "CognitoUserPool279BBD48": {
+   "Type": "AWS::Cognito::UserPool",
+   "Properties": {
+    "AccountRecoverySetting": {
+     "RecoveryMechanisms": [
+      {
+       "Name": "verified_email",
+       "Priority": 1
+      }
+     ]
+    },
+    "AdminCreateUserConfig": {
+     "AllowAdminCreateUserOnly": false
+    },
+    "AutoVerifiedAttributes": [
+     "email"
+    ],
+    "EmailVerificationMessage": "The verification code to your new account is {####}",
+    "EmailVerificationSubject": "Verify your new account",
+    "Policies": {
+     "PasswordPolicy": {
+      "MinimumLength": 8,
+      "RequireLowercase": true,
+      "RequireNumbers": true,
+      "RequireSymbols": false,
+      "RequireUppercase": false
+     }
+    },
+    "Schema": [
+     {
+      "Mutable": true,
+      "Name": "email",
+      "Required": true
+     },
+     {
+      "Mutable": true,
+      "Name": "name",
+      "Required": false
+     },
+     {
+      "Mutable": true,
+      "Name": "picture",
+      "Required": false
+     }
+    ],
+    "SmsVerificationMessage": "The verification code to your new account is {####}",
+    "UserPoolName": "ramio-users",
+    "UsernameAttributes": [
+     "email"
+    ],
+    "VerificationMessageTemplate": {
+     "DefaultEmailOption": "CONFIRM_WITH_CODE",
+     "EmailMessage": "The verification code to your new account is {####}",
+     "EmailSubject": "Verify your new account",
+     "SmsMessage": "The verification code to your new account is {####}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Cognito/UserPool/Resource"
+   }
+  },
+  "CognitoAppClient76521BEA": {
+   "Type": "AWS::Cognito::UserPoolClient",
+   "Properties": {
+    "AccessTokenValidity": 60,
+    "AllowedOAuthFlows": [
+     "code"
+    ],
+    "AllowedOAuthFlowsUserPoolClient": true,
+    "AllowedOAuthScopes": [
+     "openid",
+     "email",
+     "profile"
+    ],
+    "CallbackURLs": [
+     "http://localhost:3333/auth/callback"
+    ],
+    "ClientName": "ramio-backend",
+    "ExplicitAuthFlows": [
+     "ALLOW_USER_PASSWORD_AUTH",
+     "ALLOW_USER_SRP_AUTH",
+     "ALLOW_REFRESH_TOKEN_AUTH"
+    ],
+    "GenerateSecret": true,
+    "IdTokenValidity": 60,
+    "LogoutURLs": [
+     "http://localhost:3000"
+    ],
+    "PreventUserExistenceErrors": "ENABLED",
+    "RefreshTokenValidity": 43200,
+    "SupportedIdentityProviders": [
+     "COGNITO"
+    ],
+    "TokenValidityUnits": {
+     "AccessToken": "minutes",
+     "IdToken": "minutes",
+     "RefreshToken": "minutes"
+    },
+    "UserPoolId": {
+     "Ref": "CognitoUserPool279BBD48"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Cognito/AppClient/Resource"
+   }
+  },
+  "CognitoDomain5225D07F": {
+   "Type": "AWS::Cognito::UserPoolDomain",
+   "Properties": {
+    "Domain": "ramio-auth",
+    "UserPoolId": {
+     "Ref": "CognitoUserPool279BBD48"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Cognito/Domain/Resource"
+   }
+  },
+  "LambdasZipToPromptRole175576D1": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "ZipToPrompt Lambda execution role",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/ZipToPromptRole/Resource"
+   }
+  },
+  "LambdasZipToPromptRoleDefaultPolicy0A0F9AFC": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageSubmissionsBucket9F3F3407",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageSubmissionsBucket9F3F3407",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdasZipToPromptRoleDefaultPolicy0A0F9AFC",
+    "Roles": [
+     {
+      "Ref": "LambdasZipToPromptRole175576D1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/ZipToPromptRole/DefaultPolicy/Resource"
+   }
+  },
+  "LambdasZipToPrompt92F0D963": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-791070656024-eu-north-1",
+     "S3Key": "f1375f7a2e0af9ad027b2a4b28a461086dee01dff067ac35d92c92351ac7402b.zip"
+    },
+    "Description": "Downloads S3 zip, extracts text from source/doc files, returns XML for Bedrock prompts",
+    "FunctionName": "ZipToPrompt",
+    "Handler": "index.handler",
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdasZipToPromptRole175576D1",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "LambdasZipToPromptRoleDefaultPolicy0A0F9AFC",
+    "LambdasZipToPromptRole175576D1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/ZipToPrompt/Resource",
+    "aws:asset:path": "asset.f1375f7a2e0af9ad027b2a4b28a461086dee01dff067ac35d92c92351ac7402b",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "LambdasGithubRepoToS3Role9105F599": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "GithubRepoToS3 Lambda execution role",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/GithubRepoToS3Role/Resource"
+   }
+  },
+  "LambdasGithubRepoToS3RoleDefaultPolicyD8CE03D3": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "StorageSubmissionsBucket9F3F3407",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdasGithubRepoToS3RoleDefaultPolicyD8CE03D3",
+    "Roles": [
+     {
+      "Ref": "LambdasGithubRepoToS3Role9105F599"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/GithubRepoToS3Role/DefaultPolicy/Resource"
+   }
+  },
+  "LambdasGithubRepoToS3DF48B168": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ImageUri": {
+      "Fn::Sub": "791070656024.dkr.ecr.eu-north-1.${AWS::URLSuffix}/cdk-hnb659fds-container-assets-791070656024-eu-north-1:d47397f30adfdbd8ef9d52b4f932784974563c761680a55b23fa48da5f0e942a"
+     }
+    },
+    "Description": "Clones a public GitHub repo, zips the contents, uploads to S3",
+    "FunctionName": "GithubRepoToS3",
+    "MemorySize": 1024,
+    "PackageType": "Image",
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdasGithubRepoToS3Role9105F599",
+      "Arn"
+     ]
+    },
+    "Timeout": 180
+   },
+   "DependsOn": [
+    "LambdasGithubRepoToS3RoleDefaultPolicyD8CE03D3",
+    "LambdasGithubRepoToS3Role9105F599"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Lambdas/GithubRepoToS3/Resource",
+    "aws:asset:path": "asset.d47397f30adfdbd8ef9d52b4f932784974563c761680a55b23fa48da5f0e942a",
+    "aws:asset:dockerfile-path": "Dockerfile",
+    "aws:asset:property": "Code.ImageUri"
+   }
+  },
+  "ComputeRoleCFC2EAF2": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ec2.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Ramio EC2 — SSM access + runtime AWS permissions granted by other constructs",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AmazonSSMManagedInstanceCore"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/Role/Resource"
+   }
+  },
+  "ComputeRoleDefaultPolicy9257E615": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "LambdasZipToPrompt92F0D963",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "LambdasGithubRepoToS3DF48B168",
+          "Arn"
+         ]
+        }
+       ],
+       "Sid": "InvokeLambdas"
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageSubmissionsBucket9F3F3407",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageSubmissionsBucket9F3F3407",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageMaterialsBucket3B1402ED",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageMaterialsBucket3B1402ED",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageImagesBucketCEC17A37",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageImagesBucketCEC17A37",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DatabaseMysqlSecretAttachmentDF3016F8"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "AppConfig1FDF3617"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ComputeRoleDefaultPolicy9257E615",
+    "Roles": [
+     {
+      "Ref": "ComputeRoleCFC2EAF2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/Role/DefaultPolicy/Resource"
+   }
+  },
+  "ComputeInstanceInstanceProfileB33DE0F7": {
+   "Type": "AWS::IAM::InstanceProfile",
+   "Properties": {
+    "Roles": [
+     {
+      "Ref": "ComputeRoleCFC2EAF2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/Instance/InstanceProfile"
+   }
+  },
+  "ComputeInstance734F92C2": {
+   "Type": "AWS::EC2::Instance",
+   "Properties": {
+    "AvailabilityZone": "eu-north-1a",
+    "IamInstanceProfile": {
+     "Ref": "ComputeInstanceInstanceProfileB33DE0F7"
+    },
+    "ImageId": "ami-00b88a12ff7b4882c",
+    "InstanceType": "t4g.nano",
+    "Monitoring": false,
+    "NetworkInterfaces": [
+     {
+      "AssociatePublicIpAddress": true,
+      "DeviceIndex": "0",
+      "GroupSet": [
+       {
+        "Fn::GetAtt": [
+         "NetworkingApiSgCCE095DB",
+         "GroupId"
+        ]
+       }
+      ],
+      "SubnetId": {
+       "Ref": "NetworkingVpcPublicSubnet1Subnet918289EE"
+      }
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "RamioComplete/Compute/Instance"
+     }
+    ],
+    "UserData": {
+     "Fn::Base64": "#!/bin/bash\n#!/bin/bash\nset -euxo pipefail\nexport DEBIAN_FRONTEND=noninteractive\napt-get update -y\napt-get install -y docker.io git\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker ubuntu || true"
+    }
+   },
+   "DependsOn": [
+    "ComputeRoleDefaultPolicy9257E615",
+    "ComputeRoleCFC2EAF2",
+    "NetworkingVpcPublicSubnet1DefaultRoute80C01FA6",
+    "NetworkingVpcPublicSubnet1RouteTableAssociationD13830EA",
+    "NetworkingVpcPublicSubnet2DefaultRouteDF98F60F",
+    "NetworkingVpcPublicSubnet2RouteTableAssociation2D4CEA06"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/Instance/Resource"
+   }
+  },
+  "ComputeElasticIp204F8FAB": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc"
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/ElasticIp"
+   }
+  },
+  "ComputeElasticIpAssociation1DC433B7": {
+   "Type": "AWS::EC2::EIPAssociation",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "ComputeElasticIp204F8FAB",
+      "AllocationId"
+     ]
+    },
+    "InstanceId": {
+     "Ref": "ComputeInstance734F92C2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/Compute/ElasticIpAssociation"
+   }
+  },
+  "BedrockPolicy9EAD7B51": {
+   "Type": "AWS::IAM::ManagedPolicy",
+   "Properties": {
+    "Description": "Allow Ramio backend to call Bedrock InvokeModel",
+    "ManagedPolicyName": "RamioComplete-bedrock-invoke",
+    "Path": "/",
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:bedrock:eu-north-1::foundation-model/*",
+        "arn:aws:bedrock:eu-north-1:791070656024:inference-profile/*"
+       ],
+       "Sid": "BedrockInvokeModel"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Roles": [
+     {
+      "Ref": "ComputeRoleCFC2EAF2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/BedrockPolicy/Resource"
+   }
+  },
+  "CodeBuildServiceRole4220DEB1": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "codebuild.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Ramio CodeBuild — read submission ZIPs from S3, write CW logs"
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/ServiceRole/Resource"
+   }
+  },
+  "CodeBuildServiceRoleDefaultPolicy162F0DEF": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "StorageSubmissionsBucket9F3F3407",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "StorageSubmissionsBucket9F3F3407",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": "arn:aws:logs:eu-north-1:791070656024:log-group:/aws/codebuild/*"
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildPythonProjectC8D9CBBE"
+           }
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildPythonProjectC8D9CBBE"
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "codebuild:CreateReportGroup",
+        "codebuild:CreateReport",
+        "codebuild:UpdateReport",
+        "codebuild:BatchPutTestCases",
+        "codebuild:BatchPutCodeCoverages"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":codebuild:eu-north-1:791070656024:report-group/",
+          {
+           "Ref": "CodeBuildPythonProjectC8D9CBBE"
+          },
+          "-*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildNodeJsProject65540471"
+           }
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildNodeJsProject65540471"
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "codebuild:CreateReportGroup",
+        "codebuild:CreateReport",
+        "codebuild:UpdateReport",
+        "codebuild:BatchPutTestCases",
+        "codebuild:BatchPutCodeCoverages"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":codebuild:eu-north-1:791070656024:report-group/",
+          {
+           "Ref": "CodeBuildNodeJsProject65540471"
+          },
+          "-*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildJavaProject276D69DC"
+           }
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildJavaProject276D69DC"
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "codebuild:CreateReportGroup",
+        "codebuild:CreateReport",
+        "codebuild:UpdateReport",
+        "codebuild:BatchPutTestCases",
+        "codebuild:BatchPutCodeCoverages"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":codebuild:eu-north-1:791070656024:report-group/",
+          {
+           "Ref": "CodeBuildJavaProject276D69DC"
+          },
+          "-*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildDotNetProject0C2C0FC1"
+           }
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildDotNetProject0C2C0FC1"
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "codebuild:CreateReportGroup",
+        "codebuild:CreateReport",
+        "codebuild:UpdateReport",
+        "codebuild:BatchPutTestCases",
+        "codebuild:BatchPutCodeCoverages"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":codebuild:eu-north-1:791070656024:report-group/",
+          {
+           "Ref": "CodeBuildDotNetProject0C2C0FC1"
+          },
+          "-*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildCppProjectDC4C2B69"
+           }
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":logs:eu-north-1:791070656024:log-group:/aws/codebuild/",
+           {
+            "Ref": "CodeBuildCppProjectDC4C2B69"
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "codebuild:CreateReportGroup",
+        "codebuild:CreateReport",
+        "codebuild:UpdateReport",
+        "codebuild:BatchPutTestCases",
+        "codebuild:BatchPutCodeCoverages"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          "arn:",
+          {
+           "Ref": "AWS::Partition"
+          },
+          ":codebuild:eu-north-1:791070656024:report-group/",
+          {
+           "Ref": "CodeBuildCppProjectDC4C2B69"
+          },
+          "-*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "CodeBuildServiceRoleDefaultPolicy162F0DEF",
+    "Roles": [
+     {
+      "Ref": "CodeBuildServiceRole4220DEB1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "CodeBuildPythonProjectC8D9CBBE": {
+   "Type": "AWS::CodeBuild::Project",
+   "Properties": {
+    "Artifacts": {
+     "Type": "NO_ARTIFACTS"
+    },
+    "Cache": {
+     "Type": "NO_CACHE"
+    },
+    "Description": "Ramio Python submission runner",
+    "EncryptionKey": "alias/aws/s3",
+    "Environment": {
+     "ComputeType": "BUILD_GENERAL1_SMALL",
+     "Image": "aws/codebuild/standard:7.0",
+     "ImagePullCredentialsType": "CODEBUILD",
+     "PrivilegedMode": false,
+     "Type": "LINUX_CONTAINER"
+    },
+    "Name": "PythonProject",
+    "ServiceRole": {
+     "Fn::GetAtt": [
+      "CodeBuildServiceRole4220DEB1",
+      "Arn"
+     ]
+    },
+    "Source": {
+     "BuildSpec": "{\n  \"version\": \"0.2\",\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"python\": \"3.12\"\n      },\n      \"commands\": [\n        \"pip install --upgrade pip\"\n      ]\n    },\n    \"build\": {\n      \"commands\": [\n        \"set -e\",\n        \"if [ -f requirements.txt ]; then pip install -r requirements.txt; fi\",\n        \"if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi\",\n        \"if python -m pytest --version >/dev/null 2>&1; then python -m pytest -v; else python -m unittest discover -s . -p \\\"test*.py\\\" -v; fi\"\n      ]\n    }\n  }\n}",
+     "Type": "NO_SOURCE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/PythonProject/Resource"
+   }
+  },
+  "CodeBuildNodeJsProject65540471": {
+   "Type": "AWS::CodeBuild::Project",
+   "Properties": {
+    "Artifacts": {
+     "Type": "NO_ARTIFACTS"
+    },
+    "Cache": {
+     "Type": "NO_CACHE"
+    },
+    "Description": "Ramio NodeJs submission runner",
+    "EncryptionKey": "alias/aws/s3",
+    "Environment": {
+     "ComputeType": "BUILD_GENERAL1_SMALL",
+     "Image": "aws/codebuild/standard:7.0",
+     "ImagePullCredentialsType": "CODEBUILD",
+     "PrivilegedMode": false,
+     "Type": "LINUX_CONTAINER"
+    },
+    "Name": "NodeJSProject",
+    "ServiceRole": {
+     "Fn::GetAtt": [
+      "CodeBuildServiceRole4220DEB1",
+      "Arn"
+     ]
+    },
+    "Source": {
+     "BuildSpec": "{\n  \"version\": \"0.2\",\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"nodejs\": \"20\"\n      }\n    },\n    \"build\": {\n      \"commands\": [\n        \"set -e\",\n        \"if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; else echo \\\"No package.json found\\\"; exit 1; fi\",\n        \"npm test --if-present || npx --yes jest --ci --runInBand\"\n      ]\n    }\n  }\n}",
+     "Type": "NO_SOURCE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/NodeJsProject/Resource"
+   }
+  },
+  "CodeBuildJavaProject276D69DC": {
+   "Type": "AWS::CodeBuild::Project",
+   "Properties": {
+    "Artifacts": {
+     "Type": "NO_ARTIFACTS"
+    },
+    "Cache": {
+     "Type": "NO_CACHE"
+    },
+    "Description": "Ramio Java submission runner",
+    "EncryptionKey": "alias/aws/s3",
+    "Environment": {
+     "ComputeType": "BUILD_GENERAL1_SMALL",
+     "Image": "aws/codebuild/standard:7.0",
+     "ImagePullCredentialsType": "CODEBUILD",
+     "PrivilegedMode": false,
+     "Type": "LINUX_CONTAINER"
+    },
+    "Name": "JavaProject",
+    "ServiceRole": {
+     "Fn::GetAtt": [
+      "CodeBuildServiceRole4220DEB1",
+      "Arn"
+     ]
+    },
+    "Source": {
+     "BuildSpec": "{\n  \"version\": \"0.2\",\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"java\": \"corretto21\"\n      }\n    },\n    \"build\": {\n      \"commands\": [\n        \"set -e\",\n        \"if [ -f gradlew ]; then chmod +x gradlew && ./gradlew test; elif [ -f pom.xml ]; then mvn -B test; else echo \\\"No gradlew or pom.xml found\\\"; exit 1; fi\"\n      ]\n    }\n  }\n}",
+     "Type": "NO_SOURCE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/JavaProject/Resource"
+   }
+  },
+  "CodeBuildDotNetProject0C2C0FC1": {
+   "Type": "AWS::CodeBuild::Project",
+   "Properties": {
+    "Artifacts": {
+     "Type": "NO_ARTIFACTS"
+    },
+    "Cache": {
+     "Type": "NO_CACHE"
+    },
+    "Description": "Ramio DotNet submission runner",
+    "EncryptionKey": "alias/aws/s3",
+    "Environment": {
+     "ComputeType": "BUILD_GENERAL1_SMALL",
+     "Image": "aws/codebuild/standard:7.0",
+     "ImagePullCredentialsType": "CODEBUILD",
+     "PrivilegedMode": false,
+     "Type": "LINUX_CONTAINER"
+    },
+    "Name": "DotNetProject",
+    "ServiceRole": {
+     "Fn::GetAtt": [
+      "CodeBuildServiceRole4220DEB1",
+      "Arn"
+     ]
+    },
+    "Source": {
+     "BuildSpec": "{\n  \"version\": \"0.2\",\n  \"phases\": {\n    \"install\": {\n      \"runtime-versions\": {\n        \"dotnet\": \"8.0\"\n      }\n    },\n    \"build\": {\n      \"commands\": [\n        \"set -e\",\n        \"dotnet restore\",\n        \"dotnet test --no-restore --verbosity normal\"\n      ]\n    }\n  }\n}",
+     "Type": "NO_SOURCE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/DotNetProject/Resource"
+   }
+  },
+  "CodeBuildCppProjectDC4C2B69": {
+   "Type": "AWS::CodeBuild::Project",
+   "Properties": {
+    "Artifacts": {
+     "Type": "NO_ARTIFACTS"
+    },
+    "Cache": {
+     "Type": "NO_CACHE"
+    },
+    "Description": "Ramio Cpp submission runner",
+    "EncryptionKey": "alias/aws/s3",
+    "Environment": {
+     "ComputeType": "BUILD_GENERAL1_SMALL",
+     "Image": "aws/codebuild/standard:7.0",
+     "ImagePullCredentialsType": "CODEBUILD",
+     "PrivilegedMode": false,
+     "Type": "LINUX_CONTAINER"
+    },
+    "Name": "CppProject",
+    "ServiceRole": {
+     "Fn::GetAtt": [
+      "CodeBuildServiceRole4220DEB1",
+      "Arn"
+     ]
+    },
+    "Source": {
+     "BuildSpec": "{\n  \"version\": \"0.2\",\n  \"phases\": {\n    \"install\": {\n      \"commands\": [\n        \"set -e\",\n        \"if command -v dnf >/dev/null; then dnf install -y cmake gcc-c++ make gtest-devel; elif command -v yum >/dev/null; then yum install -y cmake3 gcc-c++ make gtest-devel; else apt-get update && apt-get install -y cmake g++ make libgtest-dev; fi\",\n        \"mkdir -p /tmp/ramio-cpp-shim && printf '%s' 'CiNwcmFnbWEgb25jZQoKI2luY2x1ZGUgPGN4eGFiaS5oPgoKI2luY2x1ZGUgPGNtYXRoPgojaW5jbHVkZSA8Y3N0ZGxpYj4KI2luY2x1ZGUgPGNzdHJpbmc+CiNpbmNsdWRlIDxmdW5jdGlvbmFsPgojaW5jbHVkZSA8aW9zdHJlYW0+CiNpbmNsdWRlIDxtZW1vcnk+CiNpbmNsdWRlIDxzdGRleGNlcHQ+CiNpbmNsdWRlIDxzdHJpbmc+CiNpbmNsdWRlIDx0eXBlaW5mbz4KI2luY2x1ZGUgPHZlY3Rvcj4KCm5hbWVzcGFjZSBNaWNyb3NvZnQgewpuYW1lc3BhY2UgVmlzdWFsU3R1ZGlvIHsKbmFtZXNwYWNlIENwcFVuaXRUZXN0RnJhbWV3b3JrIHsKCm5hbWVzcGFjZSBEZXRhaWwgewoKdGVtcGxhdGUgPHR5cGVuYW1lIFQ+CnN0cnVjdCBSYW1pb1Rlc3RDbGFzc1R5cGVkZWYgewogIHVzaW5nIFRoZUNsYXNzID0gVDsKfTsKCmlubGluZSBzdGQ6OnN0cmluZyBkZW1hbmdsZVR5cGVOYW1lKGNvbnN0IGNoYXIqIG1hbmdsZWQpIHsKICBpZiAobWFuZ2xlZCA9PSBudWxscHRyKSB7CiAgICByZXR1cm4gIlVua25vd25TdWl0ZSI7CiAgfQogIGludCBzdGF0dXMgPSAwOwogIHN0ZDo6dW5pcXVlX3B0cjxjaGFyLCB2b2lkICgqKSh2b2lkKik+IGRlbWFuZ2xlZCgKICAgICAgYWJpOjpfX2N4YV9kZW1hbmdsZShtYW5nbGVkLCBudWxscHRyLCBudWxscHRyLCAmc3RhdHVzKSwKICAgICAgc3RkOjpmcmVlKTsKICBpZiAoc3RhdHVzID09IDAgJiYgZGVtYW5nbGVkKSB7CiAgICByZXR1cm4gZGVtYW5nbGVkLmdldCgpOwogIH0KICByZXR1cm4gbWFuZ2xlZDsKfQoKdGVtcGxhdGUgPHR5cGVuYW1lIFQ+CmlubGluZSBjb25zdCBjaGFyKiBzdWl0ZU5hbWVGb3IoKSB7CiAgc3RhdGljIGNvbnN0IHN0ZDo6c3RyaW5nIG5hbWUgPSBkZW1hbmdsZVR5cGVOYW1lKHR5cGVpZChUKS5uYW1lKCkpOwogIHJldHVybiBuYW1lLmNfc3RyKCk7Cn0KCmlubGluZSBzdGQ6OnZlY3RvcjxzdGQ6OmZ1bmN0aW9uPHZvaWQoKT4+JiByZWdpc3RlcmVkVGVzdHMoKSB7CiAgc3RhdGljIHN0ZDo6dmVjdG9yPHN0ZDo6ZnVuY3Rpb248dm9pZCgpPj4gdGVzdHM7CiAgcmV0dXJuIHRlc3RzOwp9CgppbmxpbmUgdm9pZCByZWdpc3RlclRlc3QoY29uc3QgY2hhciogc3VpdGUsIGNvbnN0IGNoYXIqIG1ldGhvZCwKICAgICAgICAgICAgICAgICAgICAgICAgIHN0ZDo6ZnVuY3Rpb248dm9pZCgpPiBmbikgewogIHJlZ2lzdGVyZWRUZXN0cygpLnB1c2hfYmFjayhbc3VpdGUsIG1ldGhvZCwgZm4gPSBzdGQ6Om1vdmUoZm4pXSgpIHsKICAgIHN0ZDo6Y291dCA8PCAiWyBSVU4gICAgICBdICIgPDwgc3VpdGUgPDwgIi4iIDw8IG1ldGhvZCA8PCBzdGQ6OmVuZGw7CiAgICB0cnkgewogICAgICBmbigpOwogICAgICBzdGQ6OmNvdXQgPDwgIlsgICAgICAgT0sgXSAiIDw8IHN1aXRlIDw8ICIuIiA8PCBtZXRob2QgPDwgc3RkOjplbmRsOwogICAgfSBjYXRjaCAoY29uc3Qgc3RkOjpleGNlcHRpb24mIGUpIHsKICAgICAgc3RkOjpjb3V0IDw8ICJbICBGQUlMRUQgIF0gIiA8PCBzdWl0ZSA8PCAiLiIgPDwgbWV0aG9kIDw8ICIgKCIKICAgICAgICAgICAgICAgIDw8IGUud2hhdCgpIDw8ICIpIiA8PCBzdGQ6OmVuZGw7CiAgICAgIHRocm93OwogICAgfQogIH0pOwp9CgpbW25vcmV0dXJuXV0gaW5saW5lIHZvaWQgZmFpbChjb25zdCBjaGFyKiB3aGF0LAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogIGlmIChtZXNzYWdlICE9IG51bGxwdHIgJiYgbWVzc2FnZVswXSAhPSBMJ1wwJykgewogICAgc3RkOjpzdHJpbmcgbXNnOwogICAgZm9yIChjb25zdCB3Y2hhcl90KiBwID0gbWVzc2FnZTsgKnA7ICsrcCkgewogICAgICBtc2cucHVzaF9iYWNrKHN0YXRpY19jYXN0PGNoYXI+KCpwKSk7CiAgICB9CiAgICB0aHJvdyBzdGQ6OnJ1bnRpbWVfZXJyb3Ioc3RkOjpzdHJpbmcod2hhdCkgKyAiOiAiICsgbXNnKTsKICB9CiAgdGhyb3cgc3RkOjpydW50aW1lX2Vycm9yKHdoYXQpOwp9CgppbmxpbmUgaW50IHJ1bkFsbCgpIHsKICBpbnQgZmFpbGVkID0gMDsKICBjb25zdCBhdXRvJiB0ZXN0cyA9IHJlZ2lzdGVyZWRUZXN0cygpOwogIGlmICh0ZXN0cy5lbXB0eSgpKSB7CiAgICBzdGQ6OmNlcnIgPDwgIk5vIHRlc3RzIHJlZ2lzdGVyZWQuIiA8PCBzdGQ6OmVuZGw7CiAgICByZXR1cm4gMTsKICB9CiAgZm9yIChjb25zdCBhdXRvJiB0ZXN0IDogdGVzdHMpIHsKICAgIHRyeSB7CiAgICAgIHRlc3QoKTsKICAgIH0gY2F0Y2ggKC4uLikgewogICAgICBmYWlsZWQrKzsKICAgIH0KICB9CiAgc3RkOjpjb3V0IDw8ICJbPT09PT09PT09PV0gIiA8PCB0ZXN0cy5zaXplKCkgPDwgIiB0ZXN0cyByYW4uIiA8PCBzdGQ6OmVuZGw7CiAgaWYgKGZhaWxlZCA9PSAwKSB7CiAgICBzdGQ6OmNvdXQgPDwgIlsgIFBBU1NFRCAgXSAiIDw8IHRlc3RzLnNpemUoKSA8PCAiIHRlc3RzLiIgPDwgc3RkOjplbmRsOwogICAgcmV0dXJuIDA7CiAgfQogIHN0ZDo6Y291dCA8PCAiWyAgRkFJTEVEICBdICIgPDwgZmFpbGVkIDw8ICIgdGVzdHMuIiA8PCBzdGQ6OmVuZGw7CiAgcmV0dXJuIDE7Cn0KCn0gIC8vIG5hbWVzcGFjZSBEZXRhaWwKCmNsYXNzIEFzc2VydCB7CiBwdWJsaWM6CiAgc3RhdGljIHZvaWQgSXNUcnVlKGJvb2wgY29uZGl0aW9uLCBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKCFjb25kaXRpb24pIHsKICAgICAgRGV0YWlsOjpmYWlsKCJJc1RydWUgZmFpbGVkIiwgbWVzc2FnZSk7CiAgICB9CiAgfQoKICBzdGF0aWMgdm9pZCBJc0ZhbHNlKGJvb2wgY29uZGl0aW9uLCBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKGNvbmRpdGlvbikgewogICAgICBEZXRhaWw6OmZhaWwoIklzRmFsc2UgZmFpbGVkIiwgbWVzc2FnZSk7CiAgICB9CiAgfQoKICBzdGF0aWMgdm9pZCBBcmVFcXVhbChib29sIGV4cGVjdGVkLCBib29sIGFjdHVhbCwKICAgICAgICAgICAgICAgICAgICAgICBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKGV4cGVjdGVkICE9IGFjdHVhbCkgewogICAgICBEZXRhaWw6OmZhaWwoIkFyZUVxdWFsIGZhaWxlZCIsIG1lc3NhZ2UpOwogICAgfQogIH0KCiAgc3RhdGljIHZvaWQgQXJlRXF1YWwoaW50IGV4cGVjdGVkLCBpbnQgYWN0dWFsLAogICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHdjaGFyX3QqIG1lc3NhZ2UgPSBudWxscHRyKSB7CiAgICBpZiAoZXhwZWN0ZWQgIT0gYWN0dWFsKSB7CiAgICAgIERldGFpbDo6ZmFpbCgiQXJlRXF1YWwgZmFpbGVkIiwgbWVzc2FnZSk7CiAgICB9CiAgfQoKICBzdGF0aWMgdm9pZCBBcmVFcXVhbChsb25nIGV4cGVjdGVkLCBsb25nIGFjdHVhbCwKICAgICAgICAgICAgICAgICAgICAgICBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKGV4cGVjdGVkICE9IGFjdHVhbCkgewogICAgICBEZXRhaWw6OmZhaWwoIkFyZUVxdWFsIGZhaWxlZCIsIG1lc3NhZ2UpOwogICAgfQogIH0KCiAgc3RhdGljIHZvaWQgQXJlRXF1YWwobG9uZyBsb25nIGV4cGVjdGVkLCBsb25nIGxvbmcgYWN0dWFsLAogICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHdjaGFyX3QqIG1lc3NhZ2UgPSBudWxscHRyKSB7CiAgICBpZiAoZXhwZWN0ZWQgIT0gYWN0dWFsKSB7CiAgICAgIERldGFpbDo6ZmFpbCgiQXJlRXF1YWwgZmFpbGVkIiwgbWVzc2FnZSk7CiAgICB9CiAgfQoKICBzdGF0aWMgdm9pZCBBcmVFcXVhbCh1bnNpZ25lZCBpbnQgZXhwZWN0ZWQsIHVuc2lnbmVkIGludCBhY3R1YWwsCiAgICAgICAgICAgICAgICAgICAgICAgY29uc3Qgd2NoYXJfdCogbWVzc2FnZSA9IG51bGxwdHIpIHsKICAgIGlmIChleHBlY3RlZCAhPSBhY3R1YWwpIHsKICAgICAgRGV0YWlsOjpmYWlsKCJBcmVFcXVhbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHN0YXRpYyB2b2lkIEFyZUVxdWFsKHNpemVfdCBleHBlY3RlZCwgc2l6ZV90IGFjdHVhbCwKICAgICAgICAgICAgICAgICAgICAgICBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKGV4cGVjdGVkICE9IGFjdHVhbCkgewogICAgICBEZXRhaWw6OmZhaWwoIkFyZUVxdWFsIGZhaWxlZCIsIG1lc3NhZ2UpOwogICAgfQogIH0KCiAgc3RhdGljIHZvaWQgQXJlRXF1YWwoZG91YmxlIGV4cGVjdGVkLCBkb3VibGUgYWN0dWFsLCBkb3VibGUgZGVsdGEsCiAgICAgICAgICAgICAgICAgICAgICAgY29uc3Qgd2NoYXJfdCogbWVzc2FnZSA9IG51bGxwdHIpIHsKICAgIGlmIChzdGQ6OmZhYnMoZXhwZWN0ZWQgLSBhY3R1YWwpID4gZGVsdGEpIHsKICAgICAgRGV0YWlsOjpmYWlsKCJBcmVFcXVhbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHN0YXRpYyB2b2lkIEFyZUVxdWFsKGZsb2F0IGV4cGVjdGVkLCBmbG9hdCBhY3R1YWwsIGZsb2F0IGRlbHRhLAogICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHdjaGFyX3QqIG1lc3NhZ2UgPSBudWxscHRyKSB7CiAgICBpZiAoc3RkOjpmYWJzKGV4cGVjdGVkIC0gYWN0dWFsKSA+IGRlbHRhKSB7CiAgICAgIERldGFpbDo6ZmFpbCgiQXJlRXF1YWwgZmFpbGVkIiwgbWVzc2FnZSk7CiAgICB9CiAgfQoKICBzdGF0aWMgdm9pZCBBcmVFcXVhbChjb25zdCBjaGFyKiBleHBlY3RlZCwgY29uc3QgY2hhciogYWN0dWFsLAogICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHdjaGFyX3QqIG1lc3NhZ2UgPSBudWxscHRyKSB7CiAgICBpZiAoc3RkOjpzdHJjbXAoZXhwZWN0ZWQsIGFjdHVhbCkgIT0gMCkgewogICAgICBEZXRhaWw6OmZhaWwoIkFyZUVxdWFsIGZhaWxlZCIsIG1lc3NhZ2UpOwogICAgfQogIH0KCiAgc3RhdGljIHZvaWQgQXJlRXF1YWwoY29uc3Qgd2NoYXJfdCogZXhwZWN0ZWQsIGNvbnN0IHdjaGFyX3QqIGFjdHVhbCwKICAgICAgICAgICAgICAgICAgICAgICBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKHN0ZDo6d2NzY21wKGV4cGVjdGVkLCBhY3R1YWwpICE9IDApIHsKICAgICAgRGV0YWlsOjpmYWlsKCJBcmVFcXVhbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHRlbXBsYXRlIDx0eXBlbmFtZSBUPgogIHN0YXRpYyB2b2lkIEFyZUVxdWFsKGNvbnN0IFQmIGV4cGVjdGVkLCBjb25zdCBUJiBhY3R1YWwsCiAgICAgICAgICAgICAgICAgICAgICAgY29uc3Qgd2NoYXJfdCogbWVzc2FnZSA9IG51bGxwdHIpIHsKICAgIGlmICghKGV4cGVjdGVkID09IGFjdHVhbCkpIHsKICAgICAgRGV0YWlsOjpmYWlsKCJBcmVFcXVhbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHN0YXRpYyB2b2lkIElzTnVsbChjb25zdCB2b2lkKiBwb2ludGVyLCBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKHBvaW50ZXIgIT0gbnVsbHB0cikgewogICAgICBEZXRhaWw6OmZhaWwoIklzTnVsbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHN0YXRpYyB2b2lkIElzTm90TnVsbChjb25zdCB2b2lkKiBwb2ludGVyLCBjb25zdCB3Y2hhcl90KiBtZXNzYWdlID0gbnVsbHB0cikgewogICAgaWYgKHBvaW50ZXIgPT0gbnVsbHB0cikgewogICAgICBEZXRhaWw6OmZhaWwoIklzTm90TnVsbCBmYWlsZWQiLCBtZXNzYWdlKTsKICAgIH0KICB9CgogIHN0YXRpYyB2b2lkIEZhaWwoY29uc3Qgd2NoYXJfdCogbWVzc2FnZSA9IG51bGxwdHIpIHsKICAgIERldGFpbDo6ZmFpbCgiRmFpbCIsIG1lc3NhZ2UpOwogIH0KCiAgdGVtcGxhdGUgPHR5cGVuYW1lIEV4cGVjdGVkRXhjZXB0aW9uLCB0eXBlbmFtZSBGdW5jdG9yPgogIHN0YXRpYyB2b2lkIEV4cGVjdEV4Y2VwdGlvbihGdW5jdG9yIGZ1bmN0b3IsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IHdjaGFyX3QqIG1lc3NhZ2UgPSBudWxscHRyKSB7CiAgICB0cnkgewogICAgICBmdW5jdG9yKCk7CiAgICB9IGNhdGNoIChjb25zdCBFeHBlY3RlZEV4Y2VwdGlvbiYpIHsKICAgICAgcmV0dXJuOwogICAgfSBjYXRjaCAoLi4uKSB7CiAgICAgIERldGFpbDo6ZmFpbCgiRXhwZWN0RXhjZXB0aW9uIGZhaWxlZDogd3JvbmcgZXhjZXB0aW9uIHR5cGUiLCBtZXNzYWdlKTsKICAgIH0KICAgIERldGFpbDo6ZmFpbCgiRXhwZWN0RXhjZXB0aW9uIGZhaWxlZDogbm8gZXhjZXB0aW9uIHRocm93biIsIG1lc3NhZ2UpOwogIH0KCiAgdGVtcGxhdGUgPHR5cGVuYW1lIEV4cGVjdGVkRXhjZXB0aW9uLCB0eXBlbmFtZSBSZXR1cm5UeXBlPgogIHN0YXRpYyB2b2lkIEV4cGVjdEV4Y2VwdGlvbihSZXR1cm5UeXBlICgqZnVuYykoKSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY29uc3Qgd2NoYXJfdCogbWVzc2FnZSA9IG51bGxwdHIpIHsKICAgIEV4cGVjdEV4Y2VwdGlvbjxFeHBlY3RlZEV4Y2VwdGlvbj4oZnVuYywgbWVzc2FnZSk7CiAgfQp9OwoKc3RydWN0IFRlc3RDbGFzcyB7fTsKCn0gIC8vIG5hbWVzcGFjZSBDcHBVbml0VGVzdEZyYW1ld29yawp9ICAvLyBuYW1lc3BhY2UgVmlzdWFsU3R1ZGlvCn0gIC8vIG5hbWVzcGFjZSBNaWNyb3NvZnQKCiNkZWZpbmUgVEVTVF9DTEFTUyhDbGFzc05hbWUpICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogIHN0cnVjdCBDbGFzc05hbWUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgOiBwdWJsaWMgOjpNaWNyb3NvZnQ6OlZpc3VhbFN0dWRpbzo6Q3BwVW5pdFRlc3RGcmFtZXdvcms6OlRlc3RDbGFzcywgICBcCiAgICAgICAgcHJpdmF0ZSA6Ok1pY3Jvc29mdDo6VmlzdWFsU3R1ZGlvOjpDcHBVbml0VGVzdEZyYW1ld29yazo6RGV0YWlsOjogIFwKICAgICAgICAgICAgUmFtaW9UZXN0Q2xhc3NUeXBlZGVmPENsYXNzTmFtZT4KCiNkZWZpbmUgVEVTVF9NRVRIT0QoTWV0aG9kTmFtZSkgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogIHN0YXRpYyBpbmxpbmUgc3RydWN0IE1ldGhvZE5hbWUjI19yYW1pb19yZWcgeyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgIE1ldGhvZE5hbWUjI19yYW1pb19yZWcoKSB7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAgIHVzaW5nIFN1aXRlID0gVGhlQ2xhc3M7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICA6Ok1pY3Jvc29mdDo6VmlzdWFsU3R1ZGlvOjpDcHBVbml0VGVzdEZyYW1ld29yazo6RGV0YWlsOjpyZWdpc3RlclRlc3QoIFwKICAgICAgICAgIDo6TWljcm9zb2Z0OjpWaXN1YWxTdHVkaW86OkNwcFVuaXRUZXN0RnJhbWV3b3JrOjpEZXRhaWw6OiAgICAgICAgICBcCiAgICAgICAgICAgICAgc3VpdGVOYW1lRm9yPFN1aXRlPigpLCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgI01ldGhvZE5hbWUsIFtdKCkgeyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgICAgICAgICAgU3VpdGUgaW5zdGFuY2U7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgICAgICAgICAgIGluc3RhbmNlLk1ldGhvZE5hbWUoKTsgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogICAgICAgICAgfSk7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFwKICAgIH0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcCiAgfSBNZXRob2ROYW1lIyNfcmFtaW9fcmVnX2luc3RhbmNlOyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXAogIHZvaWQgTWV0aG9kTmFtZSgpCgojZGVmaW5lIFRFU1RfTUVUSE9EX0lOSVRJQUxJWkUoTWV0aG9kTmFtZSkgdm9pZCBNZXRob2ROYW1lKCkKI2RlZmluZSBURVNUX01FVEhPRF9DTEVBTlVQKE1ldGhvZE5hbWUpIHZvaWQgTWV0aG9kTmFtZSgpCiNkZWZpbmUgVEVTVF9DTEFTU19JTklUSUFMSVpFKE1ldGhvZE5hbWUpIHZvaWQgTWV0aG9kTmFtZSgpCiNkZWZpbmUgVEVTVF9DTEFTU19DTEVBTlVQKE1ldGhvZE5hbWUpIHZvaWQgTWV0aG9kTmFtZSgpCgppbnQgbWFpbigpIHsKICByZXR1cm4gOjpNaWNyb3NvZnQ6OlZpc3VhbFN0dWRpbzo6Q3BwVW5pdFRlc3RGcmFtZXdvcms6OkRldGFpbDo6cnVuQWxsKCk7Cn0K' | base64 -d > /tmp/ramio-cpp-shim/CppUnitTest.h\"\n      ]\n    },\n    \"build\": {\n      \"commands\": [\n        \"set -e\",\n        \"CMAKE=cmake; command -v cmake >/dev/null || CMAKE=cmake3\",\n        \"if [ \\\"$(find . -maxdepth 1 -mindepth 1 -type d | wc -l | tr -d \\\" \\\")\\\" = \\\"1\\\" ] && [ \\\"$(find . -maxdepth 1 -mindepth 1 -type f | wc -l | tr -d \\\" \\\")\\\" = \\\"0\\\" ]; then cd \\\"$(find . -maxdepth 1 -mindepth 1 -type d | head -1)\\\"; fi\",\n        \"if [ -f CMakeLists.txt ]; then $CMAKE -S . -B build && $CMAKE --build build && ctest --test-dir build --output-on-failure -V; elif [ -f Makefile ] || [ -f makefile ]; then make test; else CMAKE_FILE=\\\"$(find . -name CMakeLists.txt -not -path \\\"*/build/*\\\" -not -path \\\"*/.git/*\\\" 2>/dev/null | awk '{print length, $0}' | sort -n | head -1 | cut -d\\\" \\\" -f2-)\\\"; if [ -n \\\"$CMAKE_FILE\\\" ]; then cd \\\"$(dirname \\\"$CMAKE_FILE\\\")\\\" && $CMAKE -S . -B build && $CMAKE --build build && ctest --test-dir build --output-on-failure -V; elif [ -f Solution.cpp ] && [ -f SolutionTest.cpp ]; then g++ -std=c++17 -Wall -Wextra -O0 Solution.cpp SolutionTest.cpp -o solution_test && ./solution_test; else TEST_CPP=\\\"$(find . \\\\( -path ./.git -o -path ./build \\\\) -prune -o -type f \\\\( -iname '*_test.cpp' -o -iname '*Test.cpp' -o -iname 'test_*.cpp' \\\\) -print 2>/dev/null | awk '{print length, $0}' | sort -n | head -1 | cut -d\\\" \\\" -f2-)\\\"; if [ -n \\\"$TEST_CPP\\\" ]; then INC_FLAGS=\\\"\\\"; for d in include inc src .; do [ -d \\\"$d\\\" ] && INC_FLAGS=\\\"$INC_FLAGS -I$d\\\"; done; SRC_CPPS=\\\"\\\"; if [ -d src ]; then SRC_CPPS=\\\"$(find src -name '*.cpp' | tr '\\\\n' ' ')\\\"; fi; if [ -z \\\"$SRC_CPPS\\\" ]; then TEST_DIR=\\\"$(dirname \\\"$TEST_CPP\\\")\\\"; SRC_CPPS=\\\"$(find . \\\\( -path ./.git -o -path ./build -o -path \\\"./$TEST_DIR\\\" \\\\) -prune -o -type f -name '*.cpp' -print 2>/dev/null | tr '\\\\n' ' ')\\\"; fi; if grep -Eq '#include [<\\\"]CppUnitTest' \\\"$TEST_CPP\\\" 2>/dev/null; then INC_FLAGS=\\\"$INC_FLAGS -I /tmp/ramio-cpp-shim\\\"; fi; GTEST_LIBS=\\\"\\\"; if grep -Eq '#include [<\\\"]gtest' \\\"$TEST_CPP\\\" 2>/dev/null; then GTEST_LIBS=\\\"-lgtest -lgtest_main -pthread\\\"; fi; g++ -std=c++17 -Wall -Wextra -O0 $INC_FLAGS $SRC_CPPS \\\"$TEST_CPP\\\" -o ramio_cpp_test $GTEST_LIBS && ./ramio_cpp_test; else echo \\\"No CMakeLists.txt, Makefile, Solution.cpp/SolutionTest.cpp, or *_test.cpp layout found\\\"; echo \\\"Archive contents (first 40 files):\\\"; find . -type f | head -40; exit 1; fi; fi; fi\"\n      ]\n    }\n  }\n}",
+     "Type": "NO_SOURCE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/CppProject/Resource"
+   }
+  },
+  "CodeBuildApiPolicy19288946": {
+   "Type": "AWS::IAM::ManagedPolicy",
+   "Properties": {
+    "Description": "Attach to Ramio backend IAM identity for CodeBuild access",
+    "ManagedPolicyName": "RamioComplete-codebuild-api",
+    "Path": "/",
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "codebuild:StartBuild",
+        "codebuild:BatchGetBuilds"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:codebuild:eu-north-1:791070656024:project/PythonProject",
+        "arn:aws:codebuild:eu-north-1:791070656024:project/NodeJSProject",
+        "arn:aws:codebuild:eu-north-1:791070656024:project/JavaProject",
+        "arn:aws:codebuild:eu-north-1:791070656024:project/DotNetProject",
+        "arn:aws:codebuild:eu-north-1:791070656024:project/CppProject",
+        "arn:aws:codebuild:eu-north-1:791070656024:build/*"
+       ],
+       "Sid": "CodeBuildStartAndStatus"
+      },
+      {
+       "Action": [
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents",
+        "logs:DescribeLogStreams"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:logs:eu-north-1:791070656024:log-group:/aws/codebuild/*",
+        "arn:aws:logs:eu-north-1:791070656024:log-group:/aws/codebuild/*:log-stream:*"
+       ],
+       "Sid": "CodeBuildLogsRead"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Roles": [
+     {
+      "Ref": "ComputeRoleCFC2EAF2"
+     }
+    ],
+    "Users": [
+     "file-manager"
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CodeBuild/ApiPolicy/Resource"
+   }
+  },
+  "AppConfig1FDF3617": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "Ramio backend: infrastructure values. Add Stripe keys + Cognito secret after deploy.",
+    "Name": "RamioComplete/app/config",
+    "SecretString": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"PORT\":\"3333\",\"FRONTEND_URL\":\"http://localhost:3000\",\"FRONTEND_BASE_URL\":\"http://localhost:3000\",\"ORIGINS\":\"http://localhost:3000\",\"BACKEND_CALLBACK_URL\":\"http://localhost:3333/auth/callback\",\"COGNITO_REGION\":\"eu-north-1\",\"COGNITO_USER_POOL_ID\":\"",
+       {
+        "Ref": "CognitoUserPool279BBD48"
+       },
+       "\",\"COGNITO_CLIENT_ID\":\"",
+       {
+        "Ref": "CognitoAppClient76521BEA"
+       },
+       "\",\"COGNITO_DOMAIN\":\"https://ramio-auth.auth.eu-north-1.amazoncognito.com\",\"S3_REGION\":\"eu-north-1\",\"S3_BUCKET\":\"",
+       {
+        "Ref": "StorageSubmissionsBucket9F3F3407"
+       },
+       "\",\"S3_BUCKET_ASSIGNMENTS\":\"",
+       {
+        "Ref": "StorageSubmissionsBucket9F3F3407"
+       },
+       "\",\"S3_BUCKET_MATERIALS\":\"",
+       {
+        "Ref": "StorageMaterialsBucket3B1402ED"
+       },
+       "\",\"S3_BUCKET_BACKGROUND\":\"",
+       {
+        "Ref": "StorageImagesBucketCEC17A37"
+       },
+       "\",\"BEDROCK_REGION\":\"eu-north-1\",\"BEDROCK_MODEL_ID\":\"anthropic.claude-3-5-sonnet-20241022-v2:0\",\"PROJECT_ZIP_TO_PROMPT_LAMBDA_ARN\":\"",
+       {
+        "Fn::GetAtt": [
+         "LambdasZipToPrompt92F0D963",
+         "Arn"
+        ]
+       },
+       "\",\"GITHUB_REPO_TO_S3_LAMBDA_ARN\":\"",
+       {
+        "Fn::GetAtt": [
+         "LambdasGithubRepoToS3DF48B168",
+         "Arn"
+        ]
+       },
+       "\",\"CODEBUILD_REGION\":\"eu-north-1\",\"CODEBUILD_PROJECT_Python\":\"PythonProject\",\"CODEBUILD_PROJECT_NODE_JS\":\"NodeJSProject\",\"CODEBUILD_PROJECT_JAVA\":\"JavaProject\",\"CODEBUILD_PROJECT_DOTNET\":\"DotNetProject\",\"CODEBUILD_PROJECT_CPP\":\"CppProject\",\"COGNITO_CLIENT_SECRET\":\"REPLACE_AFTER_DEPLOY\",\"S3_ACCESS_KEY_ID\":\"REPLACE_WITH_IAM_KEY\",\"S3_SECRET_ACCESS_KEY\":\"REPLACE_WITH_IAM_SECRET\",\"STRIPE_SECRET_KEY\":\"REPLACE_WITH_STRIPE_KEY\",\"STRIPE_WEBHOOK_SECRET\":\"REPLACE_WITH_STRIPE_WEBHOOK_SECRET\",\"STRIPE_SUPPORT_PRICE_ID\":\"REPLACE_WITH_PRICE_ID\",\"STRIPE_PRO_PRICE_ID\":\"REPLACE_WITH_PRICE_ID\",\"STRIPE_PREMIUM_PRICE_ID\":\"REPLACE_WITH_PRICE_ID\"}"
+      ]
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/AppConfig/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/32STW/bMAyGf0vvira62GHHJN6KHIYZcddrQdOMp8SWApFqEBj+74Mtf23DduLLR69EkVKik0+f9ccHuPEGy8umNoVucwG8KLjxW0uY6Pb1imp/sq/ZXmWhqA3mobAkPVvU0QWhFyhqWvjCtswODYhxdjarzJt3EFrOOFghb0meQegG97HomG1FAH82ZEXlhMEbuT97F65Duf+Cg608MauDZQGLFEst+sshG8Pqmp3yJes2BYECmGZ/vO1cKN2tweTOCX1sKd1NOzvFA+UGLFTkdRvv2RtjeAFfkaz6nA1/rUTcKX7S7S7gJRYbVQyZqw3eFzzmMdkBU6ewdqE8eWdFt6lh8aYIwxPlT9+9qYzdIhLz3lnxru6P+gdeb+4Uusoacbr9weQzFy2znsS+NmOPf5ApTV0Dxq4NkXTKQKPbo4tfbYhLs4uaBp95dzI1qW/D3MvF8BvoVA1NUYJuvwaL00edderwQv7QQEUT66f/BswkrLd9UIR+Aiv/vKaPdHVsxPl7P3+FrqQimLrUbebdmXCYxii7Th2JXfBIajghF6iMrYZXCHIN0inrStJn/vCeJDp51I8PZzZm44MV05A+xvgLCLkPF+MDAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "RamioComplete/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "VpcId": {
+   "Value": {
+    "Ref": "NetworkingVpc6B5E6F44"
+   }
+  },
+  "DbEndpoint": {
+   "Description": "RDS MySQL host (port 3306, private subnet)",
+   "Value": {
+    "Fn::GetAtt": [
+     "DatabaseMysql23F22C78",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "DbSecretArn": {
+   "Description": "Secrets Manager: RDS username + password",
+   "Value": {
+    "Ref": "DatabaseMysqlSecretAttachmentDF3016F8"
+   }
+  },
+  "Ec2InstanceId": {
+   "Value": {
+    "Ref": "ComputeInstance734F92C2"
+   }
+  },
+  "Ec2ElasticIp": {
+   "Description": "Static public IP — point your DNS here",
+   "Value": {
+    "Ref": "ComputeElasticIp204F8FAB"
+   }
+  },
+  "SubmissionsBucket": {
+   "Value": {
+    "Ref": "StorageSubmissionsBucket9F3F3407"
+   }
+  },
+  "MaterialsBucket": {
+   "Value": {
+    "Ref": "StorageMaterialsBucket3B1402ED"
+   }
+  },
+  "ImagesBucket": {
+   "Value": {
+    "Ref": "StorageImagesBucketCEC17A37"
+   }
+  },
+  "FilesCdnDomain": {
+   "Description": "CloudFront domain for file/submission downloads",
+   "Value": {
+    "Fn::GetAtt": [
+     "StorageFilesCdn6D8B8708",
+     "DomainName"
+    ]
+   }
+  },
+  "ImagesCdnDomain": {
+   "Description": "CloudFront domain for user/course images",
+   "Value": {
+    "Fn::GetAtt": [
+     "StorageImagesCdn2D1BDE01",
+     "DomainName"
+    ]
+   }
+  },
+  "CognitoUserPoolId": {
+   "Description": "Set COGNITO_USER_POOL_ID in backend .env",
+   "Value": {
+    "Ref": "CognitoUserPool279BBD48"
+   }
+  },
+  "CognitoClientId": {
+   "Description": "Set COGNITO_CLIENT_ID in backend .env",
+   "Value": {
+    "Ref": "CognitoAppClient76521BEA"
+   }
+  },
+  "CognitoDomain": {
+   "Description": "Set COGNITO_DOMAIN in backend .env",
+   "Value": "https://ramio-auth.auth.eu-north-1.amazoncognito.com"
+  },
+  "ZipToPromptArn": {
+   "Description": "Set PROJECT_ZIP_TO_PROMPT_LAMBDA_ARN in backend .env",
+   "Value": {
+    "Fn::GetAtt": [
+     "LambdasZipToPrompt92F0D963",
+     "Arn"
+    ]
+   }
+  },
+  "GithubRepoToS3Arn": {
+   "Description": "Set GITHUB_REPO_TO_S3_LAMBDA_ARN in backend .env",
+   "Value": {
+    "Fn::GetAtt": [
+     "LambdasGithubRepoToS3DF48B168",
+     "Arn"
+    ]
+   }
+  },
+  "AppConfigSecretArn": {
+   "Description": "Secrets Manager ARN containing all app config values",
+   "Value": {
+    "Ref": "AppConfig1FDF3617"
+   }
+  },
+  "CodeBuildApiPolicyArn": {
+   "Description": "Attach to any IAM identity that needs CodeBuild access",
+   "Value": {
+    "Ref": "CodeBuildApiPolicy19288946"
+   }
+  },
+  "CodeBuildPythonProject": {
+   "Description": "Set CODEBUILD_PROJECT_Python in backend .env",
+   "Value": "PythonProject"
+  },
+  "CodeBuildNodeJSProject": {
+   "Description": "Set CODEBUILD_PROJECT_NODE_JS in backend .env",
+   "Value": "NodeJSProject"
+  },
+  "CodeBuildJavaProject": {
+   "Description": "Set CODEBUILD_PROJECT_JAVA in backend .env",
+   "Value": "JavaProject"
+  },
+  "CodeBuildDotNetProject": {
+   "Description": "Set CODEBUILD_PROJECT_DOTNET in backend .env",
+   "Value": "DotNetProject"
+  },
+  "CodeBuildCppProject": {
+   "Description": "Set CODEBUILD_PROJECT_CPP in backend .env",
+   "Value": "CppProject"
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

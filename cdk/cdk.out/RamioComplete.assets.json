@@ -1,0 +1,51 @@
+{
+  "version": "54.0.0",
+  "files": {
+    "f1375f7a2e0af9ad027b2a4b28a461086dee01dff067ac35d92c92351ac7402b": {
+      "displayName": "Lambdas/ZipToPrompt/Code",
+      "source": {
+        "path": "asset.f1375f7a2e0af9ad027b2a4b28a461086dee01dff067ac35d92c92351ac7402b",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "791070656024-eu-north-1-2bdfde51": {
+          "bucketName": "cdk-hnb659fds-assets-791070656024-eu-north-1",
+          "objectKey": "f1375f7a2e0af9ad027b2a4b28a461086dee01dff067ac35d92c92351ac7402b.zip",
+          "region": "eu-north-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::791070656024:role/cdk-hnb659fds-file-publishing-role-791070656024-eu-north-1"
+        }
+      }
+    },
+    "847e9232a7740645c4c9eaeeef335c6af34acb8810b9625155067033e82c9206": {
+      "displayName": "RamioComplete Template",
+      "source": {
+        "path": "RamioComplete.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "791070656024-eu-north-1-5b64ff26": {
+          "bucketName": "cdk-hnb659fds-assets-791070656024-eu-north-1",
+          "objectKey": "847e9232a7740645c4c9eaeeef335c6af34acb8810b9625155067033e82c9206.json",
+          "region": "eu-north-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::791070656024:role/cdk-hnb659fds-file-publishing-role-791070656024-eu-north-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {
+    "d47397f30adfdbd8ef9d52b4f932784974563c761680a55b23fa48da5f0e942a": {
+      "displayName": "Lambdas/GithubRepoToS3/AssetImage",
+      "source": {
+        "directory": "asset.d47397f30adfdbd8ef9d52b4f932784974563c761680a55b23fa48da5f0e942a"
+      },
+      "destinations": {
+        "791070656024-eu-north-1-a03a6feb": {
+          "repositoryName": "cdk-hnb659fds-container-assets-791070656024-eu-north-1",
+          "imageTag": "d47397f30adfdbd8ef9d52b4f932784974563c761680a55b23fa48da5f0e942a",
+          "region": "eu-north-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::791070656024:role/cdk-hnb659fds-image-publishing-role-791070656024-eu-north-1"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1253 @@
+{
+  "/RamioComplete": [
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/VpcId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "VpcId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:216:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/DbEndpoint": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DbEndpoint"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:218:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/DbSecretArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DbSecretArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:222:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Ec2InstanceId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Ec2InstanceId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:227:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Ec2ElasticIp": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "Ec2ElasticIp"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:230:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/SubmissionsBucket": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "SubmissionsBucket"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:235:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/MaterialsBucket": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "MaterialsBucket"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:238:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/ImagesBucket": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ImagesBucket"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:241:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/FilesCdnDomain": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "FilesCdnDomain"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:244:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/ImagesCdnDomain": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ImagesCdnDomain"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:248:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CognitoUserPoolId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoUserPoolId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:253:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CognitoClientId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoClientId"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:257:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CognitoDomain": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoDomain"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:261:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/ZipToPromptArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ZipToPromptArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:266:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/GithubRepoToS3Arn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "GithubRepoToS3Arn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:270:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/AppConfigSecretArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AppConfigSecretArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:275:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildApiPolicyArn": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildApiPolicyArn"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:279:5)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildPythonProject": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildPythonProject"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:284:7)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildNodeJSProject": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildNodeJSProject"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:284:7)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildJavaProject": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildJavaProject"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:284:7)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildDotNetProject": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildDotNetProject"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:284:7)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuildCppProject": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildCppProject"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:284:7)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/ElasticIp": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeElasticIp204F8FAB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new Compute (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/compute.ts:69:22)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:90:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/ElasticIpAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeElasticIpAssociation1DC433B7"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "new Compute (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/compute.ts:70:5)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:90:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/BedrockPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BedrockPolicy9EAD7B51"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new ManagedPolicy2 in aws-cdk-lib...",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:98:27)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/AppConfig/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AppConfig1FDF3617"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Secret2 in aws-cdk-lib...",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:149:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...App.synth in aws-cdk-lib...",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:16:5)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpc6B5E6F44"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Vpc2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:17:16)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/IGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcIGW21218DAB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Vpc2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:17:16)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/VPCGW": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcVPCGW12E561D8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Vpc2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:17:16)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/DbSg/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingDbSg37EB0EE1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new SecurityGroup2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:34:17)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/DbSg/from RamioCompleteNetworkingApiSg42843799:3306": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingDbSgfromRamioCompleteNetworkingApiSg4284379933068CFE86E2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:46:15)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/ApiSg/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingApiSgCCE095DB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new SecurityGroup2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:40:18)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Database/Mysql/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DatabaseMysql23F22C78"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new DatabaseInstance2 in aws-cdk-lib...",
+        "new Database (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/database.ts:23:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:64:22)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/SubmissionsBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageSubmissionsBucket9F3F3407"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:26:30)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/MaterialsBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageMaterialsBucket3B1402ED"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:48:28)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/ImagesBucket/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageImagesBucketCEC17A37"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Bucket2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:56:25)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/FilesCdn/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageFilesCdn6D8B8708"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:64:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/ImagesCdn/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageImagesCdn2D1BDE01"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:77:22)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Cognito/UserPool/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoUserPool279BBD48"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new UserPool2 in aws-cdk-lib...",
+        "new RamioCognito (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/cognito.ts:22:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:77:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Cognito/AppClient/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoAppClient76521BEA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new UserPoolClient2 in aws-cdk-lib...",
+        "new RamioCognito (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/cognito.ts:69:27)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:77:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Cognito/Domain/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CognitoDomain5225D07F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new UserPoolDomain2 in aws-cdk-lib...",
+        "new RamioCognito (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/cognito.ts:95:27)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:77:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/ZipToPromptRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasZipToPromptRole175576D1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Role2 in aws-cdk-lib...",
+        "new Lambdas (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/lambdas.ts:29:29)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:85:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/ZipToPrompt/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasZipToPrompt92F0D963"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Function2 in aws-cdk-lib...",
+        "new Lambdas (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/lambdas.ts:42:24)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:85:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/GithubRepoToS3Role/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasGithubRepoToS3Role9105F599"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Role2 in aws-cdk-lib...",
+        "new Lambdas (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/lambdas.ts:91:28)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:85:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/GithubRepoToS3/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasGithubRepoToS3DF48B168"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new DockerImageFunction2 in aws-cdk-lib...",
+        "new Lambdas (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/lambdas.ts:102:27)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:85:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/Role/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeRoleCFC2EAF2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Role2 in aws-cdk-lib...",
+        "new Compute (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/compute.ts:33:17)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:90:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/Instance/InstanceProfile": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeInstanceInstanceProfileB33DE0F7"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Instance2 in aws-cdk-lib...",
+        "new Compute (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/compute.ts:57:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:90:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/Instance/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeInstance734F92C2"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Instance2 in aws-cdk-lib...",
+        "new Compute (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/compute.ts:57:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:90:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildServiceRole4220DEB1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Role2 in aws-cdk-lib...",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:83:25)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/PythonProject/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildPythonProjectC8D9CBBE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Project2 in aws-cdk-lib...",
+        "/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104: (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104:2)",
+        "Array.map (:)",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:103:33)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/NodeJsProject/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildNodeJsProject65540471"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Project2 in aws-cdk-lib...",
+        "/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104: (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104:2)",
+        "Array.map (:)",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:103:33)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/JavaProject/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildJavaProject276D69DC"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Project2 in aws-cdk-lib...",
+        "/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104: (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104:2)",
+        "Array.map (:)",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:103:33)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/DotNetProject/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildDotNetProject0C2C0FC1"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Project2 in aws-cdk-lib...",
+        "/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104: (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104:2)",
+        "Array.map (:)",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:103:33)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/CppProject/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildCppProjectDC4C2B69"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Project2 in aws-cdk-lib...",
+        "/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104: (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:104:2)",
+        "Array.map (:)",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:103:33)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/ApiPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildApiPolicy19288946"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new ManagedPolicy2 in aws-cdk-lib...",
+        "new CodeBuild (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/codebuild.ts:125:22)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:138:23)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet1Subnet918289EE"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet1RouteTable8FB3C18A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet1RouteTableAssociationD13830EA"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet1/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet1DefaultRoute80C01FA6"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:208 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...new Vpc2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:17:16)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet2Subnet9D9E5AFB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet2RouteTable22886677"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet2RouteTableAssociation2D4CEA06"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:268 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/PublicSubnet2/DefaultRoute": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcPublicSubnet2DefaultRouteDF98F60F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:208 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...new Vpc2 in aws-cdk-lib...",
+        "new Networking (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/networking.ts:17:16)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:58:24)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet1/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet1Subnet26E56905"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet1/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet1RouteTable8CA00A94"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet1/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet1RouteTableAssociation5B1FF34F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet2/Subnet": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet2SubnetCF806811"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet2/RouteTable": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet2RouteTable18756324"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Networking/Vpc/DatabaseSubnet2/RouteTableAssociation": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "NetworkingVpcDatabaseSubnet2RouteTableAssociationBA93DA82"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        ".../Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/node_modules/aws-cdk-lib/aws-ec2/lib/vpc.js:1:272 in aws-cdk-lib...",
+        "Array.forEach (:)",
+        "...aws-cdk-lib..."
+      ]
+    }
+  ],
+  "/RamioComplete/Database/Mysql/SubnetGroup/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DatabaseMysqlSubnetGroup61BA7B4A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new DatabaseInstance2 in aws-cdk-lib...",
+        "new Database (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/database.ts:23:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:64:22)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/RamioComplete/Database/Mysql/Secret/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "RamioCompleteDatabaseMysqlSecret2451ABBC3fdaad7efa858a3daf9490cf0a702aeb"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new DatabaseInstance2 in aws-cdk-lib...",
+        "new Database (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/database.ts:23:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:64:22)"
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/SubmissionsBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageSubmissionsBucketPolicy353E026C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/ImagesBucket/Policy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageImagesBucketPolicyE144D329"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/ZipToPromptRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasZipToPromptRoleDefaultPolicy0A0F9AFC"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Lambdas/GithubRepoToS3Role/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdasGithubRepoToS3RoleDefaultPolicyD8CE03D3"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Compute/Role/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ComputeRoleDefaultPolicy9257E615"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...WrappedClass.<anonymous> in aws-cdk-lib...",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:120:18)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals..."
+      ]
+    }
+  ],
+  "/RamioComplete/CodeBuild/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CodeBuildServiceRoleDefaultPolicy162F0DEF"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/RamioComplete/Database/Mysql/Secret/Attachment/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "DatabaseMysqlSecretAttachmentDF3016F8"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new DatabaseInstance2 in aws-cdk-lib...",
+        "new Database (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/database.ts:23:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:64:22)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)",
+        "...node internals, ts-node..."
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/FilesCdn/Origin1/S3OriginAccessControl/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageFilesCdnOrigin1S3OriginAccessControlA939DF4A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:64:21)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)"
+      ]
+    }
+  ],
+  "/RamioComplete/Storage/ImagesCdn/Origin1/S3OriginAccessControl/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "StorageImagesCdnOrigin1S3OriginAccessControl3094556A"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...new Distribution2 in aws-cdk-lib...",
+        "new Storage (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/constructs/storage.ts:77:22)",
+        "new RamioCompleteStack (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/lib/ramio-complete-stack.ts:70:21)",
+        "<anonymous> (/Users/daviddavid/Desktop/projects/RamioFull/Ramio/cdk/bin/ramio.ts:7:1)"
+      ]
+    }
+  ]
+}
